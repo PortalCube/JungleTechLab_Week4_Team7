@@ -5,7 +5,7 @@ struct VS_OUT
     float2 UV  : TEXCOORD0;
 };
 
-VS_OUT main(uint id : SV_VertexID)
+VS_OUT MainVS(uint id : SV_VertexID)
 {
     VS_OUT output;
     output.UV = float2((id << 1) & 2, id & 2);

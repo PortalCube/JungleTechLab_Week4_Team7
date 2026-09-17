@@ -120,12 +120,6 @@ project "MyEngine"
         shaderentry "MainPS"
         shaderobjectfileoutput "%{cfg.targetdir}/Shader/%{file.basename}.cso"
 
-    -- These shaders use a lowercase entry point instead of MainVS/MainPS.
-    filter {
-        "files:Shader/RotationGizmoVS.hlsl or Shader/RotationGizmoPS.hlsl or Shader/UnlightPS.hlsl"
-    }
-        shaderentry "main"
-
     filter "files:**.hlsli"
         buildaction "None"
 

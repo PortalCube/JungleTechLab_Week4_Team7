@@ -16,7 +16,7 @@ uint SampleStencil(int2 coord)
     return max(s.x, s.y);
 }
 
-float4 main(PS_IN input) : SV_Target
+float4 MainPS(PS_IN input) : SV_Target
 {
     const int2 pixelCoord = int2(input.Pos.xy);
     uint width, height;

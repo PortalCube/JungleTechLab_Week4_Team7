@@ -17,7 +17,7 @@ struct PS_INPUT
 static const float RingWidthPixels = 3.0f;
 static const float RingRadius = 1.0f;
 
-PS_INPUT main(VS_INPUT Input)
+PS_INPUT MainVS(VS_INPUT Input)
 {
     PS_INPUT Output;
 

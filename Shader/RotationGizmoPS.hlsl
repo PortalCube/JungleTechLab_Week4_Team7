@@ -6,7 +6,7 @@ struct PS_INPUT
     nointerpolation float PivotDepth : TEXCOORD0;
 };
 
-float4 main(PS_INPUT Input) : SV_TARGET
+float4 MainPS(PS_INPUT Input) : SV_TARGET
 {
      clip(Input.PivotDepth - Input.Position.z);
 	return float4(ColorOverride, 1.0f);
