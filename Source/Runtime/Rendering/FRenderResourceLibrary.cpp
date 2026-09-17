@@ -156,7 +156,7 @@ const FMaterialEntry materialTable[] = {
     {
         .Id = FName("Textured"),
         .PipelineID = FName("Textured"),
-        .TextureName = "Question_Block",
+        .TextureName = "masteryi_head",
     },
     {
         .Id = FName("Billboard"),
