@@ -108,7 +108,3 @@ void FEditorApplication::OnWindowSize(UINT Width, UINT Height) {
     Camera.Projection.Aspect = SizePixels.X / SizePixels.Y;
   }
 }
-
-void FEditorApplication::CollectGarbage() {
-  FGarbageCollector::Get().CollectGarbage();
-}

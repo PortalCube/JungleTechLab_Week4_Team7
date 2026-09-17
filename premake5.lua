@@ -1,6 +1,6 @@
 workspace "MyEngine"
     architecture "x86_64"
-    configurations { "Debug", "Release", "Analysis" }
+    configurations { "Debug", "Release" }
     platforms { "x86", "x64" }
     startproject "MyEngine"
     system "windows"
@@ -23,9 +23,6 @@ externalproject "DirectXTK_Desktop_2026"
     uuid "E0B52AE7-E160-4D32-BF3F-910B785E5A8E"
     kind "StaticLib"
     language "C++"
-    configmap {
-        ["Analysis"] = "Debug"
-    }
 
 project "MyEngine"
     uuid "05383B45-2B78-451C-9197-8B61474A12BC"
@@ -54,8 +51,10 @@ project "MyEngine"
         "Source/ThirdParty/DirectXTK/Inc",
         "Source/ThirdParty/DirectXTK/Src"
     }
-
+    
     defines { "NOMINMAX", "_CONSOLE" }
+    
+    -- 동적 링크는 여기에 추가
     links {
         "DirectXTK_Desktop_2026",
         "user32",
@@ -64,10 +63,19 @@ project "MyEngine"
         "d3dcompiler"
     }
 
+    -- 미리 컴파일된 헤더로 컴파일 시간 최적화
+    pchheader "pch.h"
+    pchsource "Source/pch.cpp"
+
+    -- 모든 cpp 파일에 #include "pch.h" 삽입하여 굳이 작성 안해도 되게함
+    forceincludes { "pch.h" }
+
     warnings "Default"
-    buildoptions { "/utf-8", "/FS", "/MP" }
+    multiprocessorcompile "On"
+    buildoptions { "/utf-8", "/FS" }
     linkoptions { "/DEBUG" }
 
+    -- 텍스쳐 DDS 빌드 스크립트
     postbuildmessage "Copying textures to output directory..."
     postbuildcommands {
         '{COPYDIR} "%{wks.location}Resources/Textures" "%{cfg.targetdir}/Textures"',
@@ -84,13 +92,7 @@ project "MyEngine"
         symbols "On"
         linktimeoptimization "On"
 
-    filter "configurations:Analysis"
-        defines { "_DEBUG" }
-        symbols "On"
-        buildoptions { "/analyze" }
-
     filter { "configurations:Debug", "platforms:x64" }
-        forceincludes { "Runtime/Core/Log.h" }
         prebuildmessage "Converting PNG textures to DDS..."
         prebuildcommands {
             'call "%{wks.location}ConvertTextures.bat"'
@@ -107,6 +109,8 @@ project "MyEngine"
 
     filter "files:Source/ThirdParty/Imgui/**.cpp"
         warnings "Off"
+        enablepch "Off"
+        removeforceincludes { "pch.h" }
 
     filter "files:**VS.hlsl"
         shadertype "Vertex"
