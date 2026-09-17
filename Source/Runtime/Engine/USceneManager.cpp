@@ -3,7 +3,7 @@
 #include <sstream>
 #include <string>
 #include <filesystem>
-#include "ThirdParty/Json/nlohmann/json.hpp"
+#include "ThirdParty/Json/json.hpp"
 #include "Runtime/CoreUObject/FGarbageCollector.h"
 #include "Runtime/Engine/FArchive.h"
 #include "Runtime/CoreUObject/FUObjectArray.h"
