@@ -26,7 +26,6 @@ void FEditor::Initialize(USceneManager *SceneManager) {
   if (SelectedActorTextComp)
   {
     SelectedActorTextComp->Initialize();
-    FGarbageCollector::Get().AddRoot(SelectedActorTextComp.Get());
     SelectedActorTextComp->SetInheritRotation(false);
     SelectedActorTextComp->SetMeshID(FName("Rect"));
     SelectedActorTextComp->SetMaterialID(FName("SelectedActor_Text"));
@@ -37,9 +36,6 @@ void FEditor::Initialize(USceneManager *SceneManager) {
 }
 
 void FEditor::Shutdown() {
-  if (SelectedActorTextComp) {
-    FGarbageCollector::Get().RemoveRoot(SelectedActorTextComp.Get());
-  }
   SaveState();
   State.FlushToFile();
 }
