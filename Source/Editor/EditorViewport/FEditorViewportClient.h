@@ -4,7 +4,7 @@
 
 #include "Runtime/Engine/ShowFlags.h"
 
-class FEditorViewport final {
+class FEditorViewportClient final {
 	bool bFocused = false;
 	bool bHovered = false;
 public:

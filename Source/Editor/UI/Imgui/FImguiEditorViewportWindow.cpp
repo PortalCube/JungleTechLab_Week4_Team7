@@ -12,7 +12,7 @@
 
 void FImguiEditorViewportWindow::Process(FEditor &Editor, float DeltaTime)
 {
-    FEditorViewport *Viewport = Editor.GetActiveViewport();
+    FEditorViewportClient *Viewport = Editor.GetActiveViewport();
     if (!Viewport)
     {
         return;
@@ -64,7 +64,7 @@ void FImguiEditorViewportWindow::EndWindow() const
     ImGui::End();
 }
 
-void FImguiEditorViewportWindow::SyncViewportRect(FEditorViewport &Viewport,
+void FImguiEditorViewportWindow::SyncViewportRect(FEditorViewportClient &Viewport,
                                                   const FVector2 &ClientSize) const
 {
     const FVector2 WindowPos{ImGui::GetWindowPos().x, ImGui::GetWindowPos().y};
@@ -119,7 +119,7 @@ void FImguiEditorViewportWindow::ClampWindowToWorkArea() const
 }
 
 void FImguiEditorViewportWindow::UpdateSelection(FEditor &Editor,
-                                                 const FEditorViewport &Viewport,
+                                                 const FEditorViewportClient &Viewport,
                                                  const FViewportInput &Input)
 {
     if (Input.bPickRequested)
@@ -129,7 +129,7 @@ void FImguiEditorViewportWindow::UpdateSelection(FEditor &Editor,
 }
 
 void FImguiEditorViewportWindow::UpdateGizmo(FEditor &Editor,
-                                             const FEditorViewport &Viewport,
+                                             const FEditorViewportClient &Viewport,
                                              const FViewportInput &Input)
 {
     FGizmo &Gizmo = Editor.GetGizmo();
@@ -154,7 +154,7 @@ void FImguiEditorViewportWindow::UpdateGizmo(FEditor &Editor,
     }
 }
 
-void FImguiEditorViewportWindow::UpdateCamera(FEditor &Editor, FEditorViewport &Viewport,
+void FImguiEditorViewportWindow::UpdateCamera(FEditor &Editor, FEditorViewportClient &Viewport,
                                               const FViewportInput &Input, float DeltaTime)
 {
     if (!Input.bFocused)
@@ -222,7 +222,7 @@ void FImguiEditorViewportWindow::UpdateShortcuts(FEditor &Editor) const
 }
 
 void FImguiEditorViewportWindow::HandlePicking(FEditor &Editor,
-                                               const FEditorViewport &Viewport,
+                                               const FEditorViewportClient &Viewport,
                                                const FVector2 &LocalMousePixels,
                                                const FVector2 &ViewportSizePixels)
 {
@@ -270,7 +270,7 @@ void FImguiEditorViewportWindow::HandlePicking(FEditor &Editor,
 }
 
 void FImguiEditorViewportWindow::UpdateGizmoHover(FEditor &Editor,
-                                                  const FEditorViewport &Viewport,
+                                                  const FEditorViewportClient &Viewport,
                                                   const FVector2 &LocalMousePixels,
                                                   const FVector2 &ViewportSizePixels)
 {
