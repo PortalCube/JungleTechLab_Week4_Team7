@@ -5,6 +5,7 @@
 #include "Source/Runtime/Core/TArray.h"
 #include "Source/Runtime/Core/FString.h"
 #include "Source/Runtime/Core/IntTypes.h"
+#include "Source/Runtime/Rendering/Vertices.h"
 
 struct FObjIndex
 {
@@ -25,7 +26,7 @@ class FObjParser
 {
 public:
 	static bool LoadObj(const char* InFilePath, FRawObjData& OutResult);
-
+	static bool ConvertObjToVertex(const FRawObjData& InObjData, TArray<FVertexData>& OutVertices, TArray<uint32>& OutIndices);
 
 	static FObjIndex ParseFaceToken(const FString& Token);
 };

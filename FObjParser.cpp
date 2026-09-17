@@ -67,6 +67,46 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
     return true;
 }
 
+bool FObjParser::ConvertObjToVertex(const FRawObjData& InObjData, TArray<FVertexData>& OutVertices, TArray<uint32>& OutIndices)
+{
+    for (size_t i = 0; i < InObjData.Faces.size(); i++)
+    {
+        for (size_t j = 0; j < InObjData.Faces[i].size(); j++)
+        {
+            FVertexData Vertex{};
+
+            int vIdx = InObjData.Faces[i][j].v - 1;
+            int vtIdx = InObjData.Faces[i][j].vt - 1;
+            int vnIdx = InObjData.Faces[i][j].vn - 1;
+
+            if (vIdx >= 0 && vIdx < static_cast<int>(InObjData.Positions.size()))
+            {
+                Vertex.x = InObjData.Positions[vIdx].X;
+                Vertex.y = InObjData.Positions[vIdx].Y;
+                Vertex.z = InObjData.Positions[vIdx].Z;
+            }
+
+            if (vtIdx >= 0 && vtIdx < static_cast<int>(InObjData.TexCoords.size()))
+            {
+                Vertex.u = InObjData.TexCoords[vtIdx].X;
+                Vertex.v = InObjData.TexCoords[vtIdx].Y;
+            }
+
+            if (vnIdx >= 0 && vnIdx < static_cast<int>(InObjData.Normals.size()))
+            {
+                Vertex.nx = InObjData.Normals[vnIdx].X;
+                Vertex.ny = InObjData.Normals[vnIdx].Y;
+                Vertex.nz = InObjData.Normals[vnIdx].Z;
+            }
+
+            OutIndices.push_back(static_cast<uint32>(OutVertices.size()));
+            OutVertices.push_back(Vertex);
+        }
+    }
+
+    return true;
+}
+
 FObjIndex FObjParser::ParseFaceToken(const FString& Token)
 {
     FObjIndex Result;

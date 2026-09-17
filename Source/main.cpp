@@ -87,40 +87,7 @@ int WINAPI wWinMain(
 
 	if (FObjParser::LoadObj(TestFilePath, RawData))
 	{
-		for (size_t i = 0; i < RawData.Faces.size(); i++)
-		{
-			for (size_t j = 0; j < RawData.Faces[i].size(); j++)
-			{
-				FVertexData Vertex{};
-
-				int vIdx = RawData.Faces[i][j].v - 1;
-				int vtIdx = RawData.Faces[i][j].vt - 1;
-				int vnIdx = RawData.Faces[i][j].vn - 1;
-
-				if (vIdx >= 0 && vIdx < static_cast<int>(RawData.Positions.size()))
-				{
-					Vertex.x = RawData.Positions[vIdx].X;
-					Vertex.y = RawData.Positions[vIdx].Y;
-					Vertex.z = RawData.Positions[vIdx].Z;
-				}
-
-				if (vtIdx >= 0 && vtIdx < static_cast<int>(RawData.TexCoords.size()))
-				{
-					Vertex.u = RawData.TexCoords[vtIdx].X;
-					Vertex.v = RawData.TexCoords[vtIdx].Y;
-				}
-
-				if (vnIdx >= 0 && vnIdx < static_cast<int>(RawData.Normals.size()))
-				{
-					Vertex.nx = RawData.Normals[vnIdx].X;
-					Vertex.ny = RawData.Normals[vnIdx].Y;
-					Vertex.nz = RawData.Normals[vnIdx].Z;
-				}
-
-				TestIndices.push_back(static_cast<uint32>(TestIndices.size()));
-				TestVertices.push_back(Vertex);
-			}
-		}
+		FObjParser::ConvertObjToVertex(RawData, TestVertices, TestIndices);
 	}
 
 
