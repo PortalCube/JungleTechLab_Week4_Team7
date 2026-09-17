@@ -157,7 +157,7 @@ void FImguiControlPanelWindow::GridSetting(FEditor& Editor)
 void FImguiControlPanelWindow::RenderModeAndShowFlagSetting(FEditor& Editor)
 {
     
-    FEditorViewport* ActiveViewport = Editor.GetActiveViewport();
+    FEditorViewportClient* ActiveViewport = Editor.GetActiveViewport();
     if (ActiveViewport)
     {
         // 뷰 모드 드롭박스
@@ -196,7 +196,7 @@ void FImguiControlPanelWindow::RenderModeAndShowFlagSetting(FEditor& Editor)
 
 void FImguiControlPanelWindow::CameraSetting(FEditor& Editor)
 {
-    if (FEditorViewport* Viewport = Editor.GetActiveViewport())
+    if (FEditorViewportClient* Viewport = Editor.GetActiveViewport())
     {
         FCamera& Camera = Viewport->ViewportCamera;
 

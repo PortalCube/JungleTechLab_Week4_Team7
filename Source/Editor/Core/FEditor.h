@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Editor/EditorViewport/FEditorViewport.h"
+#include "Editor/EditorViewport/FEditorViewportClient.h"
 #include "Editor/Gizmo/FGizmo.h"
 #include "Editor/Grid/FGrid.h"
 #include "Editor/Core/FEditorState.h"
@@ -43,9 +43,9 @@ public:
   void LoadScene(const FString &Path);
   bool CheckSceneExists();
 
-  void AddViewport(FEditorViewport Viewport);
+  void AddViewport(FEditorViewportClient Viewport);
   void DeleteViewport(int32 IndexOfViewport);
-  FEditorViewport* GetActiveViewport(); // 임시로 0번 반환
+  FEditorViewportClient* GetActiveViewport(); // 임시로 0번 반환
 
   void UpdateCamera();
 
@@ -55,7 +55,7 @@ public:
   [[nodiscard]] bool ActorSelected() const { return SelectedActor.IsValid(); }
   [[nodiscard]] bool ObjectSelected() const { return SelectedActor.IsValid(); }
 
-  [[nodiscard]] TArray<FEditorViewport> &GetViewports() {
+  [[nodiscard]] TArray<FEditorViewportClient> &GetViewports() {
     return EditorViewports;
   }
   [[nodiscard]] UScene *GetCurrentScene() const {
@@ -78,8 +78,8 @@ public:
 private:
   USceneManager *SceneManager =
       nullptr; // 씬을 다중으로 가질 수 있도록 구조개선 가능-이경우 에디터쪽에
-               // 클래스를 추가해 씬과 FEditorViewport들을 연관
-  TArray<FEditorViewport> EditorViewports;
+               // 클래스를 추가해 씬과 FEditorViewportClient들을 연관
+  TArray<FEditorViewportClient> EditorViewports;
 
   FGizmo Gizmo;
   FGrid Grid;

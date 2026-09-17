@@ -37,7 +37,7 @@ void FEditorApplication::Initialize_Runtime(USceneManager *SceneManager,
   this->CurrentScene = SceneManager->CurrentScene;
 
   Editor.Initialize(SceneManager);
-  Editor.AddViewport(FEditorViewport{});
+  Editor.AddViewport(FEditorViewportClient{});
   Editor.LoadState();
 }
 
@@ -62,7 +62,7 @@ void FEditorApplication::Tick(float DeltaTime) {
 }
 
 void FEditorApplication::Render() {
-  const TArray<FEditorViewport> &EditorViewports = Editor.GetViewports();
+  const TArray<FEditorViewportClient> &EditorViewports = Editor.GetViewports();
 
   for (auto &EditorViewport : EditorViewports) {
     // 뷰포트 렌더링 명세 구성
