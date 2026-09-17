@@ -1,10 +1,11 @@
-cbuffer GridConstant : register(b0)
+cbuffer GridLineConstants : register(b0)
 {
     row_major float4x4 MVP;
-    row_major float4x4 World;
-    float CellSize;
+    float3 CameraPosition;
+    float FadeStartDistance;
+    float FadeEndDistance;
     float3 Padding;
-}
+};
 
 struct VS_INPUT
 {
@@ -17,15 +18,15 @@ struct VS_INPUT
 struct PS_INPUT
 {
     float4 Position : SV_Position;
-    float3 WorldPos : TEXCOORD0;
+    float4 Color : COLOR;
+    float3 WorldPosition : TEXCOORD0;
 };
 
 PS_INPUT MainVS(VS_INPUT Input)
 {
     PS_INPUT Output;
-    float4 Local = float4(Input.Position, 1.0f);
-
-    Output.Position = mul(Local, MVP);
-    Output.WorldPos = mul(Local, World).xyz;
+    Output.Position = mul(float4(Input.Position, 1.0f), MVP);
+    Output.Color = Input.Color;
+    Output.WorldPosition = Input.Position;
     return Output;
 }

@@ -12,5 +12,5 @@ protected:
 	explicit USphereComp() = default;
 
 public:
-	void Register(UScene& InScene) override;
+	void Initialize() override;
 };

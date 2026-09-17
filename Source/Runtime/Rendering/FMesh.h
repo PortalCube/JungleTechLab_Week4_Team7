@@ -3,13 +3,13 @@
 #include "Vertices.h"
 #include "Runtime/Math/FVector.h"
 #include "Runtime/Core/IntTypes.h"
+#include "Runtime/Core/FName.h"
 #include <d3d11.h>
 #include <wrl/client.h>
 #include "Runtime/Core/TArray.h"
 #include "Runtime/Geometry/FAxisAlignedBoundingBox.h"
 
 class FRenderer;
-enum class EMeshID : uint8;
 
 class FMesh final
 {
@@ -25,7 +25,7 @@ public:
 
 	// 버퍼 데이터 갱신
 	bool UpdateBuffers(ID3D11Device* Device, ID3D11DeviceContext* Context, const struct FMeshDesc& Desc);
-	EMeshID MeshId;
+	FName MeshId{"None"};
 private:
 	void BindResources(ID3D11DeviceContext& Context) const;
 

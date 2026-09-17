@@ -21,6 +21,7 @@ public:
     
     AActor* GetActorOwner() const { return ActorOwner; }
     USceneComponent* GetSceneOwner() const { return SceneOwner; }
+    void SetActorOwner(AActor* Owner) { ActorOwner = Owner; } //selectedacotor 한테 textcomponent 바로 붙여야해서 만듦
 
     virtual void Register(UScene& InScene);
     virtual void BeginPlay();
@@ -35,7 +36,8 @@ public:
 
 	virtual void Serialize(FArchive& Archive) const override;
 	virtual void Deserialize(const FArchive& Archive) override;
-
+    
+    void SetInheritRotation(bool bInherit) { bInheritRotation = bInherit; }
 protected:
 	USceneComponent() = default;
 
@@ -49,8 +51,9 @@ public:
 	//void SetRelativeTransformFromGlobal(const FTransform& GlobalTransform);
 
 protected:
-  AActor* ActorOwner = nullptr;
-  USceneComponent* SceneOwner = nullptr;
-  UScene* Scene = nullptr;
-  bool bHasBegunPlay = false;
+    AActor* ActorOwner = nullptr;
+    USceneComponent* SceneOwner = nullptr;
+    UScene* Scene = nullptr;
+    bool bHasBegunPlay = false;
+    bool bInheritRotation = true;
 };

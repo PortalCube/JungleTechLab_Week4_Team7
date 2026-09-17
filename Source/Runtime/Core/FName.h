@@ -22,8 +22,11 @@ private:
 	FNameEntry Entry;
 
 public:
+	FName();
 	FName(const char* CharPtr);
 	FName(const FString& Str);
+
+	bool IsNone() const;
 
 	/// <summary>
 	/// 두 FName의 문자열을 사전식으로 비교합니다.
@@ -56,4 +59,22 @@ public:
 	/// </summary>
 	/// <returns>생성할 때 사용된 원본 문자열</returns>
 	FString ToString() const;
+
+	/// <summary>
+	/// FName으로 해싱 값을 만듭니다.
+	/// </summary>
+	/// <returns>FName의 해싱 값</returns>
+	size_t GetHash() const;
 };
+
+namespace std
+{
+	template <>
+	struct hash<FName>
+	{
+		size_t operator()(const FName& Name) const noexcept
+		{
+			return Name.GetHash();
+		}
+	};
+}

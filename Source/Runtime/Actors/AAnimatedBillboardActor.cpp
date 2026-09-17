@@ -16,7 +16,7 @@ AAnimatedBillboardActor::AAnimatedBillboardActor()
 		// 폭발 스프라이트 텍스처 지정
 		Comp->SetTexture("Explosion");
 		// 시트 분할 및 루프 재생 설정
-		Comp->SetSpriteSheet(5, 5, 20.0f, 25);
+		Comp->SetSpriteSheet(6, 6, 20.0f, 36);
 		Comp->SetLooping(true);
 		Comp->Play();
 	}

@@ -14,7 +14,6 @@ struct FCameraProjection
 	EProjectionType ProjectionType = EProjectionType::Perspective;
 	float FOV = 60.0f; // Perspective 전용, Vertical
 	float Aspect = 1.0f; // Perspective 전용. Width / Height
-	float Width = 4.0f; // Orthographic 전용
 	float Height = 4.0f; // Orthographic 전용
 	float NearZ = 0.1f;
 	float FarZ = 100.0f;
@@ -41,8 +40,9 @@ inline FMatrix FCameraProjection::CreateProjectionMatrix() const
 	}
 
 	case EProjectionType::Orthographic:
+		const float OrthoWidth = Height * Aspect;
 		Matrix.M[0][0] = 1.0f / (FarZ - NearZ);
-		Matrix.M[1][1] = 2.0f / Width;
+		Matrix.M[1][1] = 2.0f / OrthoWidth;
 		Matrix.M[2][2] = 2.0f / Height;
 		Matrix.M[3][0] = -NearZ / (FarZ - NearZ);
 		Matrix.M[3][3] = 1.0f;

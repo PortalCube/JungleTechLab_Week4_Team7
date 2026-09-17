@@ -15,3 +15,10 @@ imgui.ini
 
 # Editor Config
 editor.ini
+
+# Cursor / VS Code / clangd (local IntelliSense)
+.vscode/
+.clangd
+compile_flags.txt
+compile_commands.json
+.cache/

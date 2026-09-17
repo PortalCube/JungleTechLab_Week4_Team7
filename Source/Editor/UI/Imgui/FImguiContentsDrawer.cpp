@@ -13,11 +13,6 @@
 #include "FImguiDragDrop.h"
 FImguiContentsDrawer::FImguiContentsDrawer() : LeftPanelWidth(200.0f)
 {
-
-
-
-
-
 	RootPath = std::filesystem::current_path() / "Resources";
 	CurrentPath = RootPath;
 
@@ -25,22 +20,6 @@ FImguiContentsDrawer::FImguiContentsDrawer() : LeftPanelWidth(200.0f)
 
 void FImguiContentsDrawer::Process(FEditor& Editor)
 {
-	ImGuiStyle& style = ImGui::GetStyle();
-
-	const ImGuiViewport* Viewport = ImGui::GetMainViewport();
-
-	// 처음 뜰 때만 화면 안쪽에 자리잡게 한다.
-	// 이후에는 사용자가 옮긴 위치가 imgui.ini에 저장되어 그쪽이 우선한다.
-	const ImVec2 DefaultSize(Viewport->WorkSize.x * 0.6f, Viewport->WorkSize.y * 0.45f);
-	ImGui::SetNextWindowSize(DefaultSize, ImGuiCond_FirstUseEver);
-	ImGui::SetNextWindowPos(
-		ImVec2(Viewport->WorkPos.x + 40.0f,
-			Viewport->WorkPos.y + Viewport->WorkSize.y - DefaultSize.y - 40.0f),
-		ImGuiCond_FirstUseEver);
-
-	// 드래그로 늘리더라도 화면보다 커져서 아래가 잘리지 않게 한다.
-	ImGui::SetNextWindowSizeConstraints(ImVec2(200.0f, 120.0f), Viewport->WorkSize);
-
 	ImGui::Begin("Content Drawer");
 
 	// GetContentRegionAvail은 Begin 다음에 불러야 이 창의 남은 영역이 나온다.
@@ -101,7 +80,7 @@ TSharedPtr<FTexture> FImguiContentsDrawer::GetOrLoadThumbnail(const FContentEntr
 	{
 		return nullptr;
 	}
-	if (Item.Extension != ".png" && Item.Extension != ".jpg" && Item.Extension != ".jpeg")
+	if (Item.Extension != ".dds" && Item.Extension != ".png" && Item.Extension != ".jpg" && Item.Extension != ".jpeg")
 	{
 		return nullptr;
 	}

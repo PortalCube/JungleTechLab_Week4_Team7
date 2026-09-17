@@ -17,21 +17,36 @@ public:
 	static inline FString DefaultFileName = "editor.ini";
 
 private:
+	static constexpr float SaveIntervalSeconds = 5.0f;
+	float TimeSinceLastSave = 0.0f;
+	bool bDirty = false;
+
 	// Camera
 	float CameraSensitivity = 0.5f;
 	float CameraSpeed = 10.0f;
-	FVector CameraLocation = { 0.0f, 0.0f, 0.0f };
+	FVector CameraLocation = { -8.0f, 0.0f, 4.0f };
 	float CameraYaw = 0.0f;
-	float CameraPitch = 0.0f;
+	float CameraPitch = -20.0f;
+	float CameraFOV = 60.0f;
+
+	// Grid
+	float GridCellSize = 1.0f;
+
+	// Spawn Actor
+	float SpawnActorMinLocation = -3.0f;
+	float SpawnActorMaxLocation = 3.0f;
 
 	// Gizmo
-	uint8 GizmoMode = 0;
+	uint8 GizmoMode = 1;
 	uint8 GizmoSpace = 0;
-	uint32 SelectedActor = -1; // Note: uint32이므로 -1은 언더플로우됨
+	uint32 SelectedActor = -1;
 
 public:
 	void WriteToFile(FStringView FilePath = DefaultFileName) const;
 	void ReadFromFile(FStringView FilePath = DefaultFileName);
+	void ResetToDefaults();
+	void Tick(float DeltaTime);
+	void FlushToFile(FStringView FilePath = DefaultFileName);
 
 	void SetCameraSensitivity(float Value);
 	float GetCameraSensitivity() const { return CameraSensitivity; }
@@ -47,6 +62,18 @@ public:
 
 	void SetCameraPitch(float Value);
 	float GetCameraPitch() const { return CameraPitch; }
+
+	void SetCameraFOV(float Value);
+	float GetCameraFOV() const { return CameraFOV; }
+
+	void SetGridCellSize(float Value);
+	float GetGridCellSize() const { return GridCellSize; }
+
+	void SetSpawnActorMinLocation(float Value);
+	float GetSpawnActorMinLocation() const { return SpawnActorMinLocation; }
+
+	void SetSpawnActorMaxLocation(float Value);
+	float GetSpawnActorMaxLocation() const { return SpawnActorMaxLocation; }
 
 	void SetGizmoMode(uint8 Value);
 	uint8 GetGizmoMode() const { return GizmoMode; }

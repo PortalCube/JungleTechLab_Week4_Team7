@@ -10,4 +10,15 @@ AInstancingActor::AInstancingActor()
 {
 	CreateRootComponent(UInstancePrimitiveComponent::StaticClass());
 
+	if (auto* PrimComp = GetRootComponent()->Cast<UInstancePrimitiveComponent>())
+	{
+		PrimComp->SetMeshID(FName("MasterYi"));
+		PrimComp->SetMaterialID(FName("Instance_Textured"));
+		PrimComp->SetTextureID(FName("MasterYi_Head"));
+	}
+
+	FTransform DefaultTransform;
+	DefaultTransform.Scale3D = FVector(5.0f, 5.0f, 5.0f);
+	SetTransform(DefaultTransform);
+
 }

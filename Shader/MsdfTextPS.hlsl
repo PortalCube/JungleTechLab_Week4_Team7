@@ -25,7 +25,7 @@ float4 MainPS(PS_INPUT Input) : SV_Target
     float screenPxDistance = sd / fwidth(sd);
     float opacity = saturate(screenPxDistance + 0.5f);
     
-    clip(opacity - 0.5f);
+    clip(opacity - 0.1f);
     
     float3 baseColor = float3(1.0f, 1.0f, 1.0f);
     float3 finalColor = lerp(baseColor, ColorOverride, ColorOverrideAmount);

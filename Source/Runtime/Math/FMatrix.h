@@ -15,7 +15,7 @@ struct FMatrix
 	[[nodiscard]] FMatrix(const FVector& InX, const FVector& InY, const FVector& InZ, const FVector& InW);
 	[[nodiscard]] explicit FMatrix(float N);
 
-	static FMatrix GetIdentity()
+	inline static FMatrix GetIdentity()
 	{
 		FMatrix t;
 
@@ -26,7 +26,7 @@ struct FMatrix
 		return t;
 	}
 
-	FMatrix Transpose() const
+	inline FMatrix Transpose() const
 	{
 		FMatrix result;
 
@@ -37,7 +37,7 @@ struct FMatrix
 		return result;
 	}
 
-	bool Inverse(FMatrix& Dst) const
+	inline bool Inverse(FMatrix& Dst) const
 	{
 		const float Det = Determinant();
 		if (fabsf(Det) < 1e-8f)
@@ -99,7 +99,7 @@ struct FMatrix
 
 
 
-	static FMatrix MakeScale(const FVector& S)
+	inline static FMatrix MakeScale(const FVector& S)
 	{
 		FMatrix R = GetIdentity();
 		R.M[0][0] = S.X;
@@ -108,7 +108,7 @@ struct FMatrix
 		return R;
 	}
 
-	static FMatrix MakeTranslation(const FVector& T)
+	inline static FMatrix MakeTranslation(const FVector& T)
 	{
 		FMatrix R = GetIdentity();
 		R.M[3][0] = T.X;
@@ -117,7 +117,7 @@ struct FMatrix
 		return R;
 	}
 
-	static FMatrix MakeRotationX(float Rad)
+	inline static FMatrix MakeRotationX(float Rad)
 	{
 		const float c = cosf(Rad), s = sinf(Rad);
 		FMatrix R = GetIdentity();
@@ -126,7 +126,7 @@ struct FMatrix
 		return R;
 	}
 
-	static FMatrix MakeRotationY(float Rad)
+	inline static FMatrix MakeRotationY(float Rad)
 	{
 		const float c = cosf(Rad), s = sinf(Rad);
 		FMatrix R = GetIdentity();
@@ -135,7 +135,7 @@ struct FMatrix
 		return R;
 	}
 
-	static FMatrix MakeRotationZ(float Rad)
+	inline static FMatrix MakeRotationZ(float Rad)
 	{
 		const float c = cosf(Rad), s = sinf(Rad);
 		FMatrix R = GetIdentity();
@@ -144,7 +144,7 @@ struct FMatrix
 		return R;
 	}
 
-	FMatrix operator*(const FMatrix& Other) const
+	inline FMatrix operator*(const FMatrix& Other) const
 	{
 		FMatrix R;
 		for (int i = 0; i < 4; ++i)
@@ -156,7 +156,7 @@ struct FMatrix
 		return R;
 	}
 
-	FMatrix operator*(float Scalar) const
+	inline FMatrix operator*(float Scalar) const
 	{
 		FMatrix Result;
 		for (int i = 0; i < 4; ++i)

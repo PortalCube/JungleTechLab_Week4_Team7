@@ -11,6 +11,8 @@
 #include "Runtime/Engine/FRenderView.h"
 #include "Runtime/Input/FCameraInputController.h"
 
+#include "Editor/Visualizer/FVisualizerRegistry.h"
+
 class FEditorApplication final {
 	FEditor Editor;
 
@@ -27,6 +29,7 @@ class FEditorApplication final {
 	FImguiWorldOutliner WorldOutliner;
 	FImguiContentsDrawer ContentsDrawer;
 
+	FVisualizerRegistry VisualizerRegistry;
 
 	FRenderView* RenderView = nullptr;
 
@@ -46,11 +49,11 @@ public:
 
 	void Initialize_ImguiWin32DX11(HWND& Window, ID3D11Device* Device, ID3D11DeviceContext* Context);
 	void Initialize_Runtime(USceneManager* SceneManager, FRenderView* RenderView);
-	bool CheckSceneExistsAndInitializeIfNotExists(const FString& path = "");
+	void Shutdown();
 	void Update(float DeltaTime);
 	void Render();
 	void OnWindowSize(UINT Width, UINT Height);
-
+	
 	void CollectGarbage();
 
 private:

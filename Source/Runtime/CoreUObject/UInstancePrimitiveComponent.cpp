@@ -1,5 +1,4 @@
 #include "UInstancePrimitiveComponent.h"
-#include "Runtime/Rendering/FRenderer.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Rendering/ShaderConstants.h"
 #include "Runtime/Engine/UScene.h"
@@ -7,46 +6,85 @@
 
 IMPLEMENT_UCLASS(UInstancePrimitiveComponent, UPrimitiveComponent)
 
-void UInstancePrimitiveComponent::Register(UScene& Scene)
+void UInstancePrimitiveComponent::Initialize()
 {
-	FRenderResourceLibrary* Resources = Scene.GetRenderResourceLibrary();
-	if (!PrimitiveMesh)
-	{
-		SetMesh(Resources ? Resources->GetMesh(EMeshID::Cube) : nullptr);
-	}
-	
-	if (!PrimitiveMaterial)
-	{
-		SetMaterial(Resources ? Resources->GetMaterial(EMaterialID::Instance_Simple) : nullptr);
-	}
+    Super::Initialize();
 
-	Super::Register(Scene);
+    //SetMeshID(FName("Cube"));
+    
+	if (GetMaterialID().IsNone())
+	{
+		SetMaterialID(FName("Instance_Simple"));
+	}
+	else if (GetMaterialID() == FName("Textured"))
+	{
+		SetMaterialID(FName("Instance_Textured"));
+	}
+    
+    RenderData.type = ERenderType::Instancing;
+
+    // 텍스처 ID가 지정되어 있고 머티리얼이 있는 경우 텍스처 설정
+    if (!GetTextureID().IsNone() && GetTextureID() != FName("None"))
+    {
+        auto Mat = FRenderResourceLibrary::Get().GetMaterial(GetMaterialID());
+        if (Mat)
+        {
+            auto Tex = FRenderResourceLibrary::Get().GetTexture(GetTextureID());
+            if (Tex)
+            {
+                Mat->SetTexture(Tex);
+            }
+        }
+    }
+
 }
 
-void UInstancePrimitiveComponent::Render(FRenderer& renderer, const FCamera& Camera, const bool& bHighlighted)
+void UInstancePrimitiveComponent::AddInstance(const FVector& WorldPosition, const FVector4& Color)
 {
-	// 매 프레임 이전 인스턴스 누적 방지
-	Instances.clear();
+    InstanceTransforms.push_back({ WorldPosition, Color });
+}
 
-	FMatrix WorldMatrix = GetGlobalTransform().ToMatrix();
-	const auto& Positions = GetMesh()->GetPositions();
-	TArray<FVector> WorldPositions;
-	
-	WorldPositions.reserve(Positions.size());
-	for (const FVector& LocalPos : Positions)
-	{
-		// 정점 좌표 변환 (W = 1.0f 기준)
-		FVector WorldPos = WorldMatrix.TransformPointRow(LocalPos);
-		FMatrix PosMatrix = FMatrix::MakeTranslation(WorldPos);
-		FInstanceData Data
-		{
-			.World = PosMatrix,
-			.Color = FVector4(GetColor(), 1.0f),
-		};
+void UInstancePrimitiveComponent::ClearInstances()
+{
+    InstanceTransforms.clear();
+}
 
-		Instances.push_back(Data);
-	}
+void UInstancePrimitiveComponent::BuildRenderData()
+{
+    TArray<FInstanceData> Built;
+    const FTransform BaseTransform = GetGlobalTransform();
 
+    if (InstanceTransforms.empty())
+    {
+        // 등록된 인스턴스 없으면 자기 자신 트랜스폼 적용
+        Built.push_back(FInstanceData{
+            .World    = BaseTransform.ToMatrix(),
+            .Color    = FVector4(GetColor(), 1.0f),
+            .UVScale  = {1.0f, 1.0f},
+            .UVOffset = {0.0f, 0.0f},
+        });
+    }
+    else
+    {
+        Built.reserve(InstanceTransforms.size());
+        for (const auto& Entry : InstanceTransforms)
+        {
+            FTransform InstTransform = BaseTransform;
+            InstTransform.Location = Entry.Position;
+            Built.push_back(FInstanceData{
+                .World    = InstTransform.ToMatrix(),
+                .Color    = Entry.Color,
+                .UVScale  = {1.0f, 1.0f},
+                .UVOffset = {0.0f, 0.0f},
+            });
+        }
+    }
 
-	renderer.AddTextInstanceArray(Instances, GetMesh()->MeshId, GetMaterial()->MaterialId);
+    RenderData.Instances = std::move(Built);
+}
+
+const FRenderData& UInstancePrimitiveComponent::GetRenderData(const FCamera& Camera)
+{
+    BuildRenderData();
+    return RenderData;
 }

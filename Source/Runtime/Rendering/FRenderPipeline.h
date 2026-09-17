@@ -1,15 +1,14 @@
 #pragma once
 
 #include "EBlendMode.h"
+#include "Runtime/Core/FString.h"
 #include "Vertices.h"
 #include <d3d11.h>
 #include <wrl/client.h>
-#include "Runtime/Core/FString.h"
 
 #include "Runtime/Core/IntTypes.h"
 
 // 내장 파이프라인 식별자 전방선언
-enum class EPipelineID : uint8;
 
 struct FRenderPipelineDesc {
   FWString VertexShaderFileName;
@@ -32,9 +31,12 @@ class FRenderPipeline final {
 
 public:
   [[nodiscard]] FRenderPipelineDesc GetPipelineDesc() const { return desc; }
+  void SetStencilRef(UINT InRef) { StencilRef = InRef; }
+  [[nodiscard]] UINT GetStencilRef() const { return StencilRef; }
 
 private:
   FRenderPipelineDesc desc;
+  UINT StencilRef = 0;
 
   void Bind(ID3D11DeviceContext &Context) const;
 

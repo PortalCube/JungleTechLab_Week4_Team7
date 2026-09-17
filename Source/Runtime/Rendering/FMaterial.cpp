@@ -17,17 +17,14 @@ void FMaterial::SetTexture(const TSharedPtr<FTexture>& InTexture)
 }
 
 
-bool FMaterial::SetTextureByName(const FString& InTextureName)
+bool FMaterial::SetTextureByName(const FName& InTextureName)
 {
     auto& lib = FRenderResourceLibrary::Get();
-    
-    FString LowerKey = InTextureName;
-    std::transform(LowerKey.begin(), LowerKey.end(), LowerKey.begin(), ::tolower);
 
-    auto it = lib.GetTexture(LowerKey);
+    auto it = lib.GetTexture(InTextureName);
     if (it == nullptr)
     {
-        UE_LOG("[Material] Texture '%s' not found in texture map.", LowerKey.c_str());
+        UE_LOG("[Material] Texture '%s' not found in texture map.", InTextureName.ToString().c_str());
         return false;
     }
 

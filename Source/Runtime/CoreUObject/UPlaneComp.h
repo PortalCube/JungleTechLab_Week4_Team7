@@ -10,5 +10,6 @@ class UPlaneComp : public UPrimitiveComponent
 protected:
 	explicit UPlaneComp() = default;
 
-	void Register(UScene& InScene) override;
+public:
+	void Initialize() override;
 };

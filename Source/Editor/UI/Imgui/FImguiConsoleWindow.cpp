@@ -43,26 +43,28 @@ static void  Strtrim(char* s) { char* str_end = s + strlen(s); while (str_end > 
 
 void FImguiConsoleWindow::Process(FEditor& Editor)
 {
-	if (!bIsOpened)
-		return;
+	ImGui::Begin("Console Window", nullptr, ImGuiWindowFlags_MenuBar);
 
-	if (!ImGui::Begin("Console Window", &bIsOpened, ImGuiWindowFlags_MenuBar)) {
-		ImGui::End();
-		return;
-	}
 
-	if (ImGui::BeginPopupContextItem())
-	{
-		if (ImGui::MenuItem("Close Console")) {
-			bIsOpened = false;
-		}
-		ImGui::EndPopup();
-	}
-	bool copy_to_clipboard = false;
+	const bool bCopyToClipboard = ShowMenuBar();
+
+	ShowLogRegion(bCopyToClipboard);
+
+	ImGui::Separator();
+
+	ShowCommandLine();
+
+	ImGui::End();
+}
+
+bool FImguiConsoleWindow::ShowMenuBar()
+{
+	bool bCopyToClipboard = false;
+
 	if (ImGui::BeginMenuBar()) {
 		if (ImGui::BeginMenu("Actions"))
 		{
-			copy_to_clipboard = ImGui::MenuItem("Copy");
+			bCopyToClipboard = ImGui::MenuItem("Copy");
 			if (ImGui::MenuItem("Clear")) { FLogManager::Get().Clear(); }
 			ImGui::EndMenu();
 		}
@@ -78,50 +80,29 @@ void FImguiConsoleWindow::Process(FEditor& Editor)
 		ImGui::EndMenuBar();
 	}
 
-	std::time_t now = std::time(nullptr);
-	std::tm local_time;
-	localtime_s(&local_time, &now);
+	return bCopyToClipboard;
+}
 
-	if (ImGui::SmallButton("Add Debug Text")) { UE_LOG("%dY-%dm-%dd %dH:%dM:%dS", local_time.tm_year+1900, local_time.tm_mon+1, local_time.tm_mday, local_time.tm_hour, local_time.tm_min, local_time.tm_sec); UE_LOG_WARN("진돗개 둘"); UE_LOG_ERROR("DEFCON 1!!"); }
-
+void FImguiConsoleWindow::ShowLogRegion(bool bCopyToClipboard)
+{
 	ImGuiStyle& style = ImGui::GetStyle();
 	const float footer_height_to_reserve = style.SeparatorSize + style.ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 	if (ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), ImGuiChildFlags_NavFlattened, ImGuiWindowFlags_HorizontalScrollbar)) {
 		if (ImGui::BeginPopupContextWindow())
 		{
-			if (ImGui::Selectable("Clear")) FLogManager::Get().Clear();;
+			if (ImGui::Selectable("Clear")) FLogManager::Get().Clear();
 			ImGui::EndPopup();
 		}
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
-		if (copy_to_clipboard)
+		if (bCopyToClipboard)
 			ImGui::LogToClipboard();
-		for (FString item : FLogManager::Get().GetLogs())
-		{
-			const char* str = item.c_str();
-			if (!Filter.PassFilter(str))
-				continue;
 
-			// Normally you would store more information in your item than just a string.
-			// (e.g. make Items[] an array of structure, store color/type etc.)
-			ImVec4 color;
-			bool has_color = false;
-			if (strstr(str, "[ERROR]")) {
-				if (!bShowError) continue;
-				color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f); has_color = true;
-			}
-			else if (strstr(str, "[Warning]")) {
-				if (!bShowWarn) continue;
-				color = ImVec4(0.6f, 0.8f, 0.4f, 1.0f); has_color = true;
-			}
-			else if (!bShowLog) continue;
-			else if (strncmp(str, "# ", 2) == 0) { color = ImVec4(1.0f, 0.8f, 0.6f, 1.0f); has_color = true; }
-			if (has_color)
-				ImGui::PushStyleColor(ImGuiCol_Text, color);
-			ImGui::TextUnformatted(str);
-			if (has_color)
-				ImGui::PopStyleColor();
+		for (const FString& item : FLogManager::Get().GetLogs())
+		{
+			ShowLogLine(item.c_str());
 		}
-		if (copy_to_clipboard)
+
+		if (bCopyToClipboard)
 			ImGui::LogFinish();
 
 		// Keep up at the bottom of the scroll region if we were already at the bottom at the beginning of the frame.
@@ -131,17 +112,41 @@ void FImguiConsoleWindow::Process(FEditor& Editor)
 		ScrollToBottom = false;
 
 		ImGui::PopStyleVar();
-
-		
 	}
 	ImGui::EndChild();
+}
 
-	ImGui::Separator();
+void FImguiConsoleWindow::ShowLogLine(const char* Line) const
+{
+	if (!Filter.PassFilter(Line))
+		return;
 
-	// Command-line
+	// 레벨 토글에 걸리면 숨기고, 아니면 레벨별 색을 정한다.
+	ImVec4 color;
+	bool has_color = false;
+	if (strstr(Line, "[ERROR]")) {
+		if (!bShowError) return;
+		color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f); has_color = true;
+	}
+	else if (strstr(Line, "[Warning]")) {
+		if (!bShowWarn) return;
+		color = ImVec4(0.6f, 0.8f, 0.4f, 1.0f); has_color = true;
+	}
+	else if (!bShowLog) return;
+	else if (strncmp(Line, "# ", 2) == 0) { color = ImVec4(1.0f, 0.8f, 0.6f, 1.0f); has_color = true; }
+
+	if (has_color)
+		ImGui::PushStyleColor(ImGuiCol_Text, color);
+	ImGui::TextUnformatted(Line);
+	if (has_color)
+		ImGui::PopStyleColor();
+}
+
+void FImguiConsoleWindow::ShowCommandLine()
+{
 	bool reclaim_focus = false;
 	ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory;
-	if (ImGui::InputText("Input", InputBuf, IM_COUNTOF(InputBuf), input_text_flags, &TextEditCallbackStub, (void*)this))
+	if (ImGui::InputText("Input", InputBuf, IM_COUNTOF(InputBuf), input_text_flags, &TextEditCallbackStub, this))
 	{
 		char* s = InputBuf;
 		Strtrim(s);
@@ -155,24 +160,23 @@ void FImguiConsoleWindow::Process(FEditor& Editor)
 	ImGui::SetItemDefaultFocus();
 	if (reclaim_focus)
 		ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
-
-
-	ImGui::End();
 }
 
 FImguiConsoleWindow::FImguiConsoleWindow()
 {
 	FLogManager::Get().Clear();
-	memset(InputBuf, 0, sizeof(InputBuf));
-	HistoryPos = -1;
 
 	// "CLASSIFY" is here to provide the test case where "C"+[tab] completes to "CL" and display multiple matches.
 	Commands.push_back("HELP");
 	Commands.push_back("HISTORY");
 	Commands.push_back("CLEAR");
 	Commands.push_back("CLASSIFY");
-	AutoScroll = true;
-	ScrollToBottom = false;
+}
+
+int FImguiConsoleWindow::TextEditCallbackStub(ImGuiInputTextCallbackData* Data)
+{
+	auto* Console = static_cast<FImguiConsoleWindow*>(Data->UserData);
+	return Console->TextEditCallback(Data);
 }
 
 FImguiConsoleWindow::~FImguiConsoleWindow()

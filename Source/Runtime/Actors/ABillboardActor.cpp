@@ -10,6 +10,11 @@ ABillboardActor::ABillboardActor()
 {
 	// 기본 큐브 컴포넌트 장착
 	CreateRootComponent(UBillBoardComp::StaticClass());
+	
+	if (auto* PrimComp = GetRootComponent()->Cast<UBillBoardComp>())
+	{
+		PrimComp->SetTextureID(FName("masteryi"));
+	}
 }
 
 UBillBoardComp* ABillboardActor::GetBillboardComponent() const

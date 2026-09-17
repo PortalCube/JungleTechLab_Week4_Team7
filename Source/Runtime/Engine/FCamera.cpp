@@ -19,8 +19,6 @@ FMatrix FCamera::GetProjectionMatrix() const
 
 FMatrix FCamera::CreateViewProjectionMatrix() const
 {
-	const FMatrix InverseRotationMatrix = GetRotationMatrix().Transpose();
-
 	// 뷰 행렬 계산
 	const FMatrix ViewMatrix = GetViewMatrix();
 	const FMatrix ProjectionMatrix = GetProjectionMatrix();

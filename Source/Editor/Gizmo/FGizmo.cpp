@@ -15,13 +15,13 @@
 void FGizmo::Initialize()
 {
 	auto& RenderResources = FRenderResourceLibrary::Get();
-	ArrowMesh = RenderResources.GetMesh(EMeshID::Arrow);
-	CircleMesh = RenderResources.GetMesh(EMeshID::Circle);
-	RotationGizmoMesh = RenderResources.GetMesh(EMeshID::RotGizmo);
-	SquareArrowMesh = RenderResources.GetMesh(EMeshID::SquareArrow);
+	ArrowMesh = RenderResources.GetMesh(FName("Arrow"));
+	CircleMesh = RenderResources.GetMesh(FName("Circle"));
+	RotationGizmoMesh = RenderResources.GetMesh(FName("RotGizmo"));
+	SquareArrowMesh = RenderResources.GetMesh(FName("SquareArrow"));
 
-	Material = RenderResources.GetMaterial(EMaterialID::Gizmo);
-	RotationGizmoMaterial = RenderResources.GetMaterial(EMaterialID::RotGizmo);
+	Material = RenderResources.GetMaterial(FName("Gizmo"));
+	RotationGizmoMaterial = RenderResources.GetMaterial(FName("RotGizmo"));
 }
 
 void FGizmo::Draw(FRenderer& Renderer, const FTransform& Transform, const FCamera& Camera) const
@@ -240,18 +240,22 @@ void FGizmo::DrawAxis(FRenderer& Renderer, EGizmoHandle Handle, const FMatrix& M
 		return;
 	}
 
+	FVector DrawColor = Color[static_cast<uint8>(Handle) - 1];
 	if (ActiveHandle == Handle)
 	{
-		Renderer.Draw<FObjectConstants>(*GizmoMesh, *GizmoMaterial, { MVP, ActiveColor, 1.0f });
+		DrawColor = ActiveColor;
 	}
 	else if (HoveredHandle == Handle && ActiveHandle == EGizmoHandle::None)
 	{
-		Renderer.Draw<FObjectConstants>(*GizmoMesh, *GizmoMaterial, { MVP, HoverColor, 1.0f });
+		DrawColor = HoverColor;
 	}
-	else
-	{
-		Renderer.Draw<FObjectConstants>(*GizmoMesh, *GizmoMaterial, { MVP, Color[static_cast<uint8>(Handle) - 1], 1.0f });
-	}
+
+	FObjectConstants Constants{};
+	Constants.MVP = MVP;
+	Constants.ColorOverride = DrawColor;
+	Constants.ColorOverrideAmount = 1.0f;
+	Constants.DisableShading = 1.0f;
+	Renderer.Draw(*GizmoMesh, *GizmoMaterial, Constants);
 }
 
 float FGizmo::CalculateGizmoScale(const FVector& GizmoLocation, const FCamera& Camera) const

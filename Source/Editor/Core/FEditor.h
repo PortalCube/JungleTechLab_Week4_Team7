@@ -11,6 +11,7 @@
 #include "Runtime/Actors/AActor.h"
 #include "Runtime/Engine/USceneManager.h"
 #include "Runtime/Rendering/ShaderConstants.h"
+#include "Runtime/CoreUObject/UTextInstanceComponent.h"
 
 enum class EEditorPrimitiveType : uint8 {
   Cube,
@@ -33,6 +34,7 @@ public:
 
 public:
   void Initialize(USceneManager *SceneManager);
+  void Shutdown();
 
   void Process();
 
@@ -43,7 +45,9 @@ public:
 
   void AddViewport(FEditorViewport Viewport);
   void DeleteViewport(int32 IndexOfViewport);
-  FEditorViewport *GetActiveViewport(); // 임시로 0번 반환
+  FEditorViewport* GetActiveViewport(); // 임시로 0번 반환
+
+  void UpdateCamera();
 
   bool SelectActor(AActor *Actor);
   void UnSelectActor();
@@ -58,6 +62,7 @@ public:
     return SceneManager ? SceneManager->CurrentScene : nullptr;
   }
   void SpawnActorToCurrentScene(UClass* Type, int Count = 1);
+  void SpawnInstancingToCurrentScene(int Count);
   // 피킹 등에서 현재 씬의 렌더링 대상 컴포넌트가 필요할 때 사용
   [[nodiscard]] TArray<UPrimitiveComponent *> GetPrimitiveComponents() const;
   FGizmo &GetGizmo() { return Gizmo; }
@@ -65,6 +70,10 @@ public:
   FRenderResourceLibrary *GetRendererLibrary();
 
   void ClearSelectionForGC();
+
+  void SaveState();
+  void LoadState();
+  UTextInstanceComponent* GetTextcomp() { return SelectedActorTextComp; }
 
 private:
   USceneManager *SceneManager =
@@ -75,4 +84,5 @@ private:
   FGizmo Gizmo;
   FGrid Grid;
   TWeakObjectPtr<AActor> SelectedActor;
+  TWeakObjectPtr<UTextInstanceComponent> SelectedActorTextComp;
 };

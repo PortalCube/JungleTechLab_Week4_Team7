@@ -4,7 +4,10 @@
 #include "FImguiEditorViewportWindow.h"
 #include "FImguiPropertyWindow.h"
 
-class FImguiToolbar final {
+class FImguiToolbar final 
+{
+
+
 public:
 	FImguiToolbar() = default;
 	~FImguiToolbar() = default;
@@ -20,4 +23,7 @@ public:
 
 	FString ToNarrow(const wchar_t* Wide);
 	bool PickSceneFile(FString& OutPath, bool bSave);
+	void ShowFileBar(FString CurrentScenePath, FEditor& Editor);
+	void ShowViewBar(FEditor& Editor, FImguiConsoleWindow& ConsoleWindow);
+
 };

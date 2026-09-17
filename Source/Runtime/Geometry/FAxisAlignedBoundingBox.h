@@ -27,5 +27,4 @@ struct FAxisAlignedBoundingBox
 	FAxisAlignedBoundingBox() = default;
 	FAxisAlignedBoundingBox(const FMesh& Mesh);
 	FAxisAlignedBoundingBox(const FMesh& Mesh, const FMatrix& ModelMatrix);	
-	
 };

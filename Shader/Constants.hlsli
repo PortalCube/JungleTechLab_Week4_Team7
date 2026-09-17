@@ -6,6 +6,8 @@ cbuffer ObjectConstants : register(b0)
     float2 UVScale;
     float2 UVOffset;
     row_major float4x4 World;
+    float DisableShading;
+    float3 ObjectPadding;
 }
 
 cbuffer FrameConstants : register(b1)

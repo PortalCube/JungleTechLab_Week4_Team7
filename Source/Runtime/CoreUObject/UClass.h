@@ -57,6 +57,11 @@ public:
 		return (typeId < classList.size()) ? classList[typeId].get() : nullptr;
 	}
 
+	UClass* GetSuperClass()
+	{
+		return superClass;
+	}
+
 
 
 

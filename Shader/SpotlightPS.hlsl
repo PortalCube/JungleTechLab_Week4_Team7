@@ -10,28 +10,25 @@ struct PS_INPUT
 
 float4 MainPS(PS_INPUT Input) : SV_Target
 {
-    // 거리 감쇠 연산
-    float DistanceFactor = saturate(1.0f - Input.UV.y);
-    float DistanceFalloff = pow(DistanceFactor, 2.5f);
+    // UV.y: apex=0, base=1
+    float T = saturate(Input.UV.y);
 
-    // 원뿔 가장자리 감쇠
-    float3 Normal = normalize(Input.ClipNormal);
-    float EdgeFactor = saturate(abs(Normal.z));
-    EdgeFactor = smoothstep(0.0f, 0.8f, EdgeFactor);
-    EdgeFactor = pow(EdgeFactor, 0.65f);
+    // 거리 감쇠 - apex에서 밝고 base로 갈수록 어두워짐
+    float DistanceFactor = 1.0f - T;
+    float DistanceFalloff = pow(DistanceFactor, 2.0f);
 
     // 기본 색상
     float3 BaseColor = lerp(Input.Color.rgb, ColorOverride, ColorOverrideAmount);
 
-    // 중심부 발광
+    // 중심부 발광 (apex 근처)
     float CoreGlow = pow(DistanceFactor, 5.0f);
-    float3 CoreColor = lerp(BaseColor, float3(1.0f, 1.0f, 1.0f), CoreGlow * 0.45f);
+    float3 CoreColor = lerp(BaseColor, float3(1.0f, 1.0f, 1.0f), CoreGlow * 0.5f);
 
-    // 빛의 세기 연산
-    float LightIntensity = DistanceFalloff * EdgeFactor;
-    float GlowIntensity = CoreGlow * EdgeFactor * 0.8f;
+    // 빛의 세기
+    float LightIntensity = DistanceFalloff;
+    float GlowIntensity = CoreGlow * 0.8f;
 
-    // 기본 빛 합성
+    // 합성
     float3 FinalColor = CoreColor * LightIntensity;
     FinalColor += float3(1.0f, 1.0f, 1.0f) * GlowIntensity;
 

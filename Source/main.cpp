@@ -62,8 +62,9 @@ int WINAPI wWinMain(
 		return -1;
 	}
 
+	//RTTI를 위한 UClass 초기화
 	UClass::ResolveTypeBitsets();
-
+	//새씬 생성
 	USceneManager SceneManager;
 	SceneManager.SetScene(NewObject<UScene>());
 
@@ -95,18 +96,16 @@ int WINAPI wWinMain(
 		}
 
 		FInputManager::Get().BeginFrame();
-
 		EditorApp.Update(FTimeManager::Get().GetDeltaTime());
 
-		Renderer.BeginFrame(); 
-
+		Renderer.BeginFrame();
 		EditorApp.Render();
-
 		Renderer.SwapBuffer();
 
 		//EditorApp.CollectGarbage();
 	}
 
+	EditorApp.Shutdown();
 	SceneManager.Release();
 	//EditorApp.CollectGarbage();
 	Renderer.Shutdown();

@@ -104,3 +104,8 @@ const FCharacterInfo& FFont::GetCharInfo(char32_t InCharacter) const
 	static const FCharacterInfo defaultInfo{};
 	return defaultInfo;
 }
+
+void FFont::SetTexture(const TSharedPtr<FTexture>& InTexture)
+{
+	Texture = InTexture;
+}

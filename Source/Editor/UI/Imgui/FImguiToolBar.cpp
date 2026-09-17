@@ -1,86 +1,25 @@
 ﻿#include "FImguiToolBar.h"
 #include "ThirdParty/Imgui/imgui.h"
 
+// "표시명\0패턴\0" 이중 널 종료 필요
+constexpr wchar_t SceneFilter[] = L"Scene Files (*.Scene)\0*.Scene\0All Files (*.*)\0*.*\0";
+
 void FImguiToolbar::Process(FEditor& Editor, FImguiConsoleWindow& ConsoleWindow, FImguiControlPanelWindow& ControlPanelWindow, FImguiPropertyWindow& PropertyWindow)
 {
-    //씬 저장, 로드
     static FString CurrentScenePath;
 
 	if (ImGui::BeginMainMenuBar()) 
     {
-        if (ImGui::BeginMenu("File"))
-        {
-            if (ImGui::MenuItem("New Scene")) 
-            {
-                Editor.NewScene();
-                CurrentScenePath.clear();
-            }
-            if (ImGui::MenuItem("Save Scene"))
-            {
-                // 경로가 있으면 그대로 덮어쓰고, 없으면 다른 이름으로 저장과 같게 동작
-                if (CurrentScenePath.empty())
-                {
-                    FString Path;
-                    if (PickSceneFile(Path,true))
-                    {
-                        CurrentScenePath = Path;
-                        Editor.SaveScene(Path);
-                    }
-                }
-                else
-                {
-                    Editor.SaveScene(CurrentScenePath);
-                }
-            }
+        //씬 저장,로드 기능
+        ShowFileBar(CurrentScenePath, Editor);
 
-            if (ImGui::MenuItem("Save scene as..."))
-            {
-                FString Path;
-                if (PickSceneFile(Path, true))
-                {
-                    CurrentScenePath = Path;
-                    Editor.SaveScene(Path);
-                }
-            }
-
-            if (ImGui::MenuItem("Load Scene"))
-            {
-                FString Path;
-                if (PickSceneFile(Path,false))
-                {
-                    CurrentScenePath = Path;
-                    Editor.LoadScene(Path);
-                }
-            }
-
-            ImGui::EndMenu();
-        }
-
-
-
-
-        if (ImGui::BeginMenu("View"))
-        {
-            if (ImGui::MenuItem("Console")) { ConsoleWindow.bIsOpened = true; }
-            ImGui::EndMenu();
-        }
-
-        auto& Gizmo = Editor.GetGizmo();
-        
-		static const char* GizmoModes[4] = { "None", "Translation", "Rotation", "Scale" };
-        const int SelectedItem = static_cast<int>(Editor.GetGizmo().Mode);
-		if (ImGui::Button(GizmoModes[SelectedItem], { 150.0f, 0.0f }))
-		{
-			Gizmo.Mode = static_cast<EGizmoMode>((SelectedItem + 1) % 4);
-		}
+        //Imgui Window들 소환
+        ShowViewBar(Editor, ConsoleWindow);
 
         ImGui::EndMainMenuBar();
 	}
 }
 
-
-// "표시명\0패턴\0" 이중 널 종료 필요
-constexpr wchar_t SceneFilter[] = L"Scene Files (*.Scene)\0*.Scene\0All Files (*.*)\0*.*\0";
 // 취소하면 false
 bool FImguiToolbar::PickSceneFile(FString& OutPath, bool bSave)
 {
@@ -103,4 +42,75 @@ bool FImguiToolbar::PickSceneFile(FString& OutPath, bool bSave)
 
    OutPath = std::filesystem::path(Buffer).string();
     return true;
+}
+
+void FImguiToolbar::ShowFileBar(FString CurrentScenePath, FEditor& Editor)
+{
+
+
+    if (ImGui::BeginMenu("File"))
+    {
+        if (ImGui::MenuItem("New Scene"))
+        {
+            Editor.NewScene();
+            CurrentScenePath.clear();
+        }
+        if (ImGui::MenuItem("Save Scene"))
+        {
+            // 경로가 있으면 그대로 덮어쓰고, 없으면 다른 이름으로 저장과 같게 동작
+            if (CurrentScenePath.empty())
+            {
+                FString Path;
+                if (PickSceneFile(Path, true))
+                {
+                    CurrentScenePath = Path;
+                    Editor.SaveScene(Path);
+                }
+            }
+            else
+            {
+                Editor.SaveScene(CurrentScenePath);
+            }
+        }
+
+        if (ImGui::MenuItem("Save scene as..."))
+        {
+            FString Path;
+            if (PickSceneFile(Path, true))
+            {
+                CurrentScenePath = Path;
+                Editor.SaveScene(Path);
+            }
+        }
+
+        if (ImGui::MenuItem("Load Scene"))
+        {
+            FString Path;
+            if (PickSceneFile(Path, false))
+            {
+                CurrentScenePath = Path;
+                Editor.LoadScene(Path);
+            }
+        }
+
+        ImGui::EndMenu();
+    }
+
+}
+
+void FImguiToolbar::ShowViewBar(FEditor& Editor, FImguiConsoleWindow& ConsoleWindow)
+{
+    if (ImGui::BeginMenu("View"))
+    {
+        ImGui::EndMenu();
+    }
+
+    auto& Gizmo = Editor.GetGizmo();
+
+    static const char* GizmoModes[4] = { "None", "Translation", "Rotation", "Scale" };
+    const int SelectedItem = static_cast<int>(Editor.GetGizmo().Mode);
+    if (ImGui::Button(GizmoModes[SelectedItem], { 150.0f, 0.0f }))
+    {
+        Gizmo.Mode = static_cast<EGizmoMode>((SelectedItem + 1) % 4);
+    }
 }

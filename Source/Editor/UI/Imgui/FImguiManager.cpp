@@ -62,6 +62,7 @@ void FImguiManager::NewFrame()
 		ImGui::DockBuilderDockWindow("World Outliner", PropertyWindowID);
 		ImGui::DockBuilderDockWindow("Jungle Property Window", PropertyWindowID);
 		ImGui::DockBuilderDockWindow("Jungle Control Panel", ControlPanelID);
+		ImGui::DockBuilderDockWindow("Content Drawer", ConsoleID);
 		ImGui::DockBuilderDockWindow("Console Window", ConsoleID);
 
 		ImGui::DockBuilderFinish(DockSpaceID);

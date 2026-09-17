@@ -11,6 +11,11 @@ struct PS_INPUT
 float4 MainPS(PS_INPUT Input) : SV_Target
 {
     float3 BaseColor = lerp(Input.Color.rgb, ColorOverride, ColorOverrideAmount);
+
+    if (DisableShading > 0.5f)
+    {
+        return float4(BaseColor, Input.Color.a);
+    }
     
     float3 N = normalize(Input.Normal);
     float NdotL = max(0.0f, dot(N, -normalize(LightDirection)));

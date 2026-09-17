@@ -23,26 +23,12 @@ bool FLineBatcher::Initialize(ID3D11Device* Device) {
 		return false;
 	}
 
-	// 상수 버퍼 생성
-	D3D11_BUFFER_DESC CbDesc{
-		.ByteWidth = sizeof(FObjectConstants),
-		.Usage = D3D11_USAGE_DYNAMIC,
-		.BindFlags = D3D11_BIND_CONSTANT_BUFFER,
-		.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-	};
-
-	Result = Device->CreateBuffer(&CbDesc, nullptr, &ConstantBuffer);
-	if (FAILED(Result)) {
-		return false;
-	}
-
 	LineVertices.reserve(MaxVertices);
 	return true;
 }
 
 void FLineBatcher::Shutdown() {
 	DynamicLineVertexBuffer.Reset();
-	ConstantBuffer.Reset();
 	LineVertices.clear();
 }
 
@@ -90,6 +76,20 @@ void FLineBatcher::DrawBoxMinMax(const FVector& Min, const FVector& Max, const F
 	DrawLine(FVector{ Min.X, Max.Y, Min.Z }, FVector{ Min.X, Max.Y, Max.Z }, Color);
 }
 
+void FLineBatcher::DrawQuad(
+	const FVector& A,
+	const FVector& B,
+	const FVector& C,
+	const FVector& D,
+	const FVector4& Color
+)
+{
+	DrawLine(A, B, Color);
+	DrawLine(B, C, Color);
+	DrawLine(C, D, Color);
+	DrawLine(D, A, Color);
+}
+
 void FLineBatcher::DrawSphere(const FVector& Center, float Radius, const FVector4& Color, uint32 Segments) {
 	if (Segments < 4) Segments = 4;
 	const float Step = std::numbers::pi_v<float> * 2.0f / static_cast<float>(Segments);
@@ -110,8 +110,9 @@ void FLineBatcher::DrawSphere(const FVector& Center, float Radius, const FVector
 	}
 }
 
-void FLineBatcher::Flush(ID3D11DeviceContext& Context, FRenderer& Renderer, const FMatrix& ViewProjection) {
-	if (LineVertices.empty() || !DynamicLineVertexBuffer || !ConstantBuffer) {
+void FLineBatcher::Flush(ID3D11DeviceContext& Context,
+	const TSharedPtr<FRenderPipeline>& Pipeline) {
+	if (LineVertices.empty() || !DynamicLineVertexBuffer) {
 		return;
 	}
 
@@ -127,33 +128,12 @@ void FLineBatcher::Flush(ID3D11DeviceContext& Context, FRenderer& Renderer, cons
 	memcpy(MappedVb.pData, LineVertices.data(), DataSize);
 	Context.Unmap(DynamicLineVertexBuffer.Get(), 0);
 
-	// 상수 버퍼 매핑 및 행렬 복사
-	static const FMatrix UnrealClipToD3DClip{
-		FVector{ 0.0f, 0.0f, 1.0f }, FVector{ 1.0f, 0.0f, 0.0f },
-		FVector{ 0.0f, 1.0f, 0.0f }, FVector{ 0.0f, 0.0f, 0.0f }
-	};
-
-	FObjectConstants Constants{};
-	Constants.MVP = ViewProjection * UnrealClipToD3DClip;
-	Constants.ColorOverrideAmount = 0.0f;
-
-	D3D11_MAPPED_SUBRESOURCE MappedCb{};
-	Result = Context.Map(ConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedCb);
-	if (SUCCEEDED(Result)) {
-		memcpy(MappedCb.pData, &Constants, sizeof(Constants));
-		Context.Unmap(ConstantBuffer.Get(), 0);
-	}
-
 	// 파이프라인 바인딩
-	auto Pipeline = Renderer.GetPipeline(EPipelineID::Simple_Solid);
 	if (Pipeline) {
 		Pipeline->Bind(Context);
 	}
 
 	// 버퍼 및 토폴로지 바인딩
-	Context.VSSetConstantBuffers(0, 1, ConstantBuffer.GetAddressOf());
-	Context.PSSetConstantBuffers(0, 1, ConstantBuffer.GetAddressOf());
-
 	const UINT Stride = sizeof(FVertexData);
 	const UINT Offset = 0;
 	Context.IASetVertexBuffers(0, 1, DynamicLineVertexBuffer.GetAddressOf(), &Stride, &Offset);

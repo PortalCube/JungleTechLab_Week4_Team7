@@ -31,7 +31,7 @@ public:
   [[nodiscard]] bool HasBegunPlay() const { return bHasBegunPlay; }
 
   // 렌더링 컴포넌트 목록 반환
-  [[nodiscard]] TArray<UPrimitiveComponent*> GetRenderComponents() const;
+  [[nodiscard]] const TArray<UPrimitiveComponent*>& GetRenderComponents() const;
   [[nodiscard]] FRenderResourceLibrary* GetRenderResourceLibrary() const {
     return RenderResourceLibrary;
   }

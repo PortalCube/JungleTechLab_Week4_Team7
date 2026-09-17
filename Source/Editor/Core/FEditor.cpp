@@ -10,15 +10,38 @@
 #include "Runtime/CoreUObject/UObject.h"
 #include "Runtime/CoreUObject/USphereComp.h"
 #include "Runtime/Engine/FTimeManager.h"
+#include "Runtime/Input/FInputManager.h"
+#include "Runtime/Actors/AInstancingActor.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
+#include "Runtime/Math/Random.h"
+#include "Runtime/CoreUObject/FGarbageCollector.h"
 #include <numbers>
 
 
 void FEditor::Initialize(USceneManager *SceneManager) {
-    State.ReadFromFile();
+  State.ReadFromFile();
   Gizmo.Initialize();
-  Grid.Initialize();
+
+  SelectedActorTextComp = NewObject<UTextInstanceComponent>();
+  if (SelectedActorTextComp)
+  {
+    SelectedActorTextComp->Initialize();
+    FGarbageCollector::Get().AddRoot(SelectedActorTextComp.Get());
+    SelectedActorTextComp->SetInheritRotation(false);
+    SelectedActorTextComp->SetMeshID(FName("Rect"));
+    SelectedActorTextComp->SetMaterialID(FName("SelectedActor_Text"));
+    SelectedActorTextComp->SetFont(FName("bazziotf"));
+  }
+
   this->SceneManager = SceneManager;
+}
+
+void FEditor::Shutdown() {
+  if (SelectedActorTextComp) {
+    FGarbageCollector::Get().RemoveRoot(SelectedActorTextComp.Get());
+  }
+  SaveState();
+  State.FlushToFile();
 }
 
 FRenderResourceLibrary *FEditor::GetRendererLibrary() {
@@ -27,6 +50,14 @@ FRenderResourceLibrary *FEditor::GetRendererLibrary() {
 
 void FEditor::Process() {
   // 씬의 액터 업데이트
+  
+    if (FInputManager::Get().IsKeyDown(VK_DELETE) && SelectedActor)
+    {
+        AActor* Target = SelectedActor;
+        UnSelectActor();
+        Target->Destroy();
+    }
+    
   if (SceneManager && SceneManager->CurrentScene) {
     SceneManager->CurrentScene->Update(FTimeManager::Get().GetDeltaTime());
   }
@@ -34,11 +65,47 @@ void FEditor::Process() {
   if (SelectedActor) {
     SelectedActor->SetTransform(SelectedTransform);
   }
+
+  SaveState();
+  State.Tick(FTimeManager::Get().GetDeltaTime());
+}
+
+void FEditor::SaveState() {
+  const FEditorViewport* Viewport = GetActiveViewport();
+  if (!Viewport) { return; }
+
+  const FCamera& Camera = Viewport->ViewportCamera;
+  State.SetCameraLocation(Camera.Position);
+  State.SetCameraPitch(Camera.Pitch);
+  State.SetCameraYaw(Camera.Yaw);
+  State.SetCameraFOV(Camera.Projection.FOV);
+  State.SetGridCellSize(Grid.GetCellSize());
+  State.SetGizmoMode(static_cast<uint8>(Gizmo.Mode));
+  State.SetGizmoSpace(static_cast<uint8>(Gizmo.GetSpace()));
+  State.SetSelectedActor(SelectedActor ? SelectedActor->GetUUID() : static_cast<uint32>(-1));
+}
+
+void FEditor::LoadState()
+{
+    FEditorViewport* Viewport = GetActiveViewport();
+    if (!Viewport) { return; }
+
+    FCamera& Camera = Viewport->ViewportCamera;
+
+    Camera.Position = State.GetCameraLocation();
+    Camera.Pitch = State.GetCameraPitch();
+    Camera.Yaw = State.GetCameraYaw();
+    Camera.Projection.FOV = State.GetCameraFOV();
+    Grid.SetCellSize(State.GetGridCellSize());
+    Gizmo.Mode = static_cast<EGizmoMode>(State.GetGizmoMode());
+    Gizmo.SetGizmoSpace(static_cast<EGizmoSpace>(State.GetGizmoSpace()));
 }
 
 void FEditor::NewScene() {
-  SelectedActor = nullptr;
+  UnSelectActor();
   SceneManager->SetScene(NewObject<UScene>());
+  State.ResetToDefaults();
+  LoadState();
 }
 
 void FEditor::SaveScene(const FString &Path) { SceneManager->SaveScene(Path); }
@@ -81,6 +148,17 @@ bool FEditor::SelectActor(AActor *Actor) {
   if (SelectedActor) {
     SelectedTransform = SelectedActor->GetTransform();
     SelectedEulerDegDisplay = SelectedTransform.Rotation.GetEulerXYZ();
+    if (Gizmo.Mode == EGizmoMode::None) {
+      Gizmo.Mode = EGizmoMode::Translate;
+    }
+
+    if (SelectedActorTextComp) {
+      SelectedActorTextComp->SetActorOwner(SelectedActor.Get());
+      FTransform RelativeTrans;
+      RelativeTrans.Location = FVector{ 0.0f, 0.0f, 1.5f }; 
+      SelectedActorTextComp->SetRelativeTransform(RelativeTrans);
+      SelectedActorTextComp->SetText(L"UUID : " + std::to_wstring(SelectedActor->GetUUID()));
+    }
   }
 
   return true;
@@ -91,6 +169,9 @@ void FEditor::UnSelectActor() {
     SelectedActor->SetTransform(SelectedTransform);
   }
   SelectedActor = nullptr;
+  if (SelectedActorTextComp) {
+    SelectedActorTextComp->SetActorOwner(nullptr);
+  }
 }
 
 TArray<UPrimitiveComponent *> FEditor::GetPrimitiveComponents() const {
@@ -113,22 +194,90 @@ void FEditor::SpawnActorToCurrentScene(UClass* Type, int Size) {
 
     if (Size <= 0) { return; }
 
+    const float Min = State.GetSpawnActorMinLocation();
+    const float Max = State.GetSpawnActorMaxLocation();
+    if (Min > Max) { return; }
+
     for (int i = 0; i < Size; ++i)
     {
-        // 오프셋 적용
-        static int SpawnSerial = 0;
-        const float Offset = 0.25f * static_cast<float>(SpawnSerial++);
+
+        FVector Location
+        {
+            Random::GetFloat(Min, Max, 2),
+            Random::GetFloat(Min, Max, 2),
+            Random::GetFloat(Min, Max, 2),
+        };
 
         FTransform Transform;
-        Transform.Location = FVector{ Offset, 0.0f, 0.0f };
+        Transform.Location = Location;
         Transform.Scale3D = FVector{ 0.5f, 0.5f, 0.5f };
 
         AActor* NewActor = SceneManager->CurrentScene->SpawnActor(Type);
         if (!NewActor) { return; }
 
-        USceneComponent* RootComponent = NewActor->GetRootComponent();
-        RootComponent->SetRelativeTransform(Transform);
+
+        FTransform CurrentTransform = NewActor->GetTransform();
+        CurrentTransform.Location = Location;
+        NewActor->SetTransform(CurrentTransform);
+
+        // 액터 시작 및 선택
         NewActor->BeginPlay();
         SelectActor(NewActor);
     }
 }
+
+void FEditor::SpawnInstancingToCurrentScene(int Count)
+{
+    if (!SceneManager || !SceneManager->CurrentScene || Count <= 0) return;
+
+    // 무작위 색상 계산
+    const float Hue = static_cast<float>(std::rand()) / RAND_MAX;
+    const float S = 0.85f;
+    const float V = 1.0f;
+    const float H6 = Hue * 6.0f;
+    const int   HI = static_cast<int>(H6);
+    const float F  = H6 - static_cast<float>(HI);
+    const float P  = V * (1.0f - S);
+    const float Q  = V * (1.0f - S * F);
+    const float T  = V * (1.0f - S * (1.0f - F));
+    FVector4 Color;
+    switch (HI % 6)
+    {
+    case 0: Color = {V, T, P, 1.0f}; break;
+    case 1: Color = {Q, V, P, 1.0f}; break;
+    case 2: Color = {P, V, T, 1.0f}; break;
+    case 3: Color = {P, Q, V, 1.0f}; break;
+    case 4: Color = {T, P, V, 1.0f}; break;
+    default:Color = {V, P, Q, 1.0f}; break;
+    }
+
+    AActor* TargetActor = SceneManager->CurrentScene->SpawnActor(AInstancingActor::StaticClass());
+    
+    if (!TargetActor) return;
+    TargetActor->BeginPlay();
+
+    auto* Comp = TargetActor->GetRootComponent()->Cast<UInstancePrimitiveComponent>();
+    if (!Comp) return;
+
+    // 일정 반경 및 높이 이내 좌표 추가
+    const float MaxDistance = 25.0f;
+    const float MaxHeight = 15.0f;
+    const float TwoPi = 6.2831853f;
+    const FVector Center = TargetActor->GetTransform().Location;
+
+    for (int i = 0; i < Count; ++i)
+    {
+        float Angle = (static_cast<float>(std::rand()) / RAND_MAX) * TwoPi;
+        float Dist = std::sqrt(static_cast<float>(std::rand()) / RAND_MAX) * MaxDistance;
+        float OffsetZ = ((static_cast<float>(std::rand()) / RAND_MAX) * 2.0f - 1.0f) * MaxHeight;
+        FVector Pos;
+        Pos.X = Center.X + std::cos(Angle) * Dist;
+        Pos.Y = Center.Y + std::sin(Angle) * Dist;
+        Pos.Z = Center.Z + OffsetZ;
+        Comp->AddInstance(Pos, Color);
+    }
+
+    // 액터 선택
+    SelectActor(TargetActor);
+}
+

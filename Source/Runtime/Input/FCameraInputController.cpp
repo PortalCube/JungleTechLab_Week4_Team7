@@ -1,12 +1,13 @@
-﻿#include "FCameraInputController.h"
+#include "FCameraInputController.h"
 
 #include "Runtime/Engine/FCamera.h"
 #include "Runtime/Math/FMatrix.h"
 #include <Windows.h>
 
 #include "FInputManager.h"
+#include <algorithm>
 
-void FCameraInputController::UpdateKeyInput(FCamera& Camera, float DeltaTime) const
+void FCameraInputController::UpdateKeyInput(FCamera& Camera, float DeltaTime) 
 {
 	const FMatrix Rotation =
 		FMatrix::MakeRotation(FVector(0.0f, Camera.Pitch, Camera.Yaw));
@@ -68,7 +69,23 @@ void FCameraInputController::UpdateKeyInput(FCamera& Camera, float DeltaTime) co
 		RelativeSpeed *= 0.5f;
 	}
 
-	Camera.Position += Direction * CameraMoveSpeed * RelativeSpeed * DeltaTime;
+	// 대각선 정규화
+	if (Direction.SizeSquared() > 0.0f)
+	{
+		Direction = (Direction /Direction.Size());
+	}
+
+	const FVector TargetVelocity = Direction * CameraMoveSpeed * RelativeSpeed;
+
+	const float Rate = (Direction.SizeSquared() > 0.0f) ? Acceleration : Damping;
+	const float Alpha = 1.0f - std::exp(-Rate * DeltaTime);
+
+	Velocity += (TargetVelocity - Velocity) * Alpha;
+
+	// 아주 느려지면 0으로 떨어뜨려 미세하게 떠다니는 것을 막는다
+	if (Velocity.SizeSquared() < 0.0001f) { Velocity = FVector{}; }
+
+	Camera.Position += Velocity * DeltaTime;
 }
 
 void FCameraInputController::UpdateMouseInput(FCamera& Camera) const
@@ -78,5 +95,6 @@ void FCameraInputController::UpdateMouseInput(FCamera& Camera) const
 		FVector2 Delta = FInputManager::Get().GetMouseDelta() * CameraRotateSpeed;
 		Camera.Yaw += Delta.X;
 		Camera.Pitch -= Delta.Y;
+		Camera.Pitch = std::clamp(Camera.Pitch, -89.0f, 89.0f);
 	}
 }

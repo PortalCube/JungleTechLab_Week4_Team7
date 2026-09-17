@@ -130,7 +130,7 @@ void FConfigArchive::SetVector(const FString& Section, const FString& Key, const
 	for (int i = 0; i < 3; ++i)
 	{
 		FString ItemKey = std::format("{}.{}", Key, i);
-		Object[Section][Key] = std::to_string(Value[i]);
+		Object[Section][ItemKey] = std::to_string(Value[i]);
 	}
 }
 
@@ -154,6 +154,6 @@ void FConfigArchive::SetVector2(const FString& Section, const FString& Key, cons
 	for (int i = 0; i < 2; ++i)
 	{
 		FString ItemKey = std::format("{}.{}", Key, i);
-		Object[Section][Key] = std::to_string(Value[i]);
+		Object[Section][ItemKey] = std::to_string(Value[i]);
 	}
 }

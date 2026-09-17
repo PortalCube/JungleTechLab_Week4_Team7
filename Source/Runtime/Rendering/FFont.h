@@ -3,6 +3,8 @@
 #include "Runtime/Core/TMap.h"
 #include "ThirdParty/Json/json.hpp"
 #include "Runtime/Core/FString.h"
+#include "Runtime/Core/PointerTypes.h"
+#include "FTexture.h"
 
 struct FCharacterInfo
 {
@@ -25,9 +27,10 @@ public:
 	void InitializeForASCII(float InNumberOfLine);
 	void Deserialize(const FWString& path);
 	const FCharacterInfo& GetCharInfo(char32_t InCharacter) const;
+	void SetTexture(const TSharedPtr<FTexture>& InName);
 private:
-	//FTexture	// 텍스처 아틀라스
+	
 	//FMeterial	// 폰트 머터리얼
-
+	TSharedPtr<FTexture> Texture;
 	TMap<char32_t, FCharacterInfo> CharInfoMap;
 };

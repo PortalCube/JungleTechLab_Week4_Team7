@@ -62,10 +62,7 @@ void UAnimatedBillboardComp::Deserialize(const FArchive& Archive)
 	GridX = Archive.GetInt32("GridX");
 	GridY = Archive.GetInt32("GridY");
 	TotalFrames = Archive.GetInt32("TotalFrames");
-	//CurrentFrame = Archive.GetInt32("CurrentFrame");
 	FrameRate = Archive.GetFloat("FrameRate");
-	//ElapsedTime = Archive.GetFloat("ElapsedTime");
-	//bPlaying = Archive.GetBool("Playing");
 	bLoop = Archive.GetBool("Loop");
 	CurrentUVScale = Archive.GetVector2("CurrentUVScale");
 	CurrentUVOffset = Archive.GetVector2("CurrentUVOffset");
@@ -98,7 +95,9 @@ void UAnimatedBillboardComp::Update(float DeltaTime) {
 }
 
 
-void UAnimatedBillboardComp::RefreshUV() {
+
+void UAnimatedBillboardComp::RefreshUV()
+{
   if (GridX <= 0 || GridY <= 0) {
     UVScale = FVector2{1.0f, 1.0f};
     UVOffset = FVector2{0.0f, 0.0f};

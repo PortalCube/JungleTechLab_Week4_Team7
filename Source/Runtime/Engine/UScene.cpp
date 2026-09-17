@@ -12,7 +12,7 @@
 IMPLEMENT_UCLASS(UScene, UObject)
 UCLASS_META(UScene, SerializeName, "Scene")
 
-TArray<UPrimitiveComponent *> UScene::GetRenderComponents() const {
+const TArray<UPrimitiveComponent *> & UScene::GetRenderComponents() const {
   return RenderComponents;
 }
 
@@ -212,7 +212,5 @@ AActor *UScene::SpawnActor(UClass *ClassType) {
   Actor->Register(*this);
 
   Actors.push_back(Actor);
-  // 스폰 즉시 비긴 플레이 호출
-  Actor->BeginPlay();
   return Actor;
 }
