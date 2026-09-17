@@ -111,14 +111,20 @@ project "MyEngine"
     filter "files:**VS.hlsl"
         shadertype "Vertex"
         shadermodel "5.0"
-        shaderentry "main"
+        shaderentry "MainVS"
         shaderobjectfileoutput "%{cfg.targetdir}/Shader/%{file.basename}.cso"
 
     filter "files:**PS.hlsl"
         shadertype "Pixel"
         shadermodel "5.0"
-        shaderentry "main"
+        shaderentry "MainPS"
         shaderobjectfileoutput "%{cfg.targetdir}/Shader/%{file.basename}.cso"
+
+    -- These shaders use a lowercase entry point instead of MainVS/MainPS.
+    filter {
+        "files:Shader/RotationGizmoVS.hlsl or Shader/RotationGizmoPS.hlsl or Shader/UnlightPS.hlsl"
+    }
+        shaderentry "main"
 
     filter "files:**.hlsli"
         buildaction "None"
