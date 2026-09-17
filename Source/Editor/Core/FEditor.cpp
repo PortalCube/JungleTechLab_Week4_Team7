@@ -67,7 +67,7 @@ void FEditor::Process() {
 }
 
 void FEditor::SaveState() {
-  const FEditorViewport* Viewport = GetActiveViewport();
+  const FEditorViewportClient* Viewport = GetActiveViewport();
   if (!Viewport) { return; }
 
   const FCamera& Camera = Viewport->ViewportCamera;
@@ -83,7 +83,7 @@ void FEditor::SaveState() {
 
 void FEditor::LoadState()
 {
-    FEditorViewport* Viewport = GetActiveViewport();
+    FEditorViewportClient* Viewport = GetActiveViewport();
     if (!Viewport) { return; }
 
     FCamera& Camera = Viewport->ViewportCamera;
@@ -120,7 +120,7 @@ bool FEditor::CheckSceneExists() {
   return true;
 }
 
-void FEditor::AddViewport(FEditorViewport Viewport) {
+void FEditor::AddViewport(FEditorViewportClient Viewport) {
   EditorViewports.push_back(Viewport);
 }
 
@@ -128,7 +128,7 @@ void FEditor::DeleteViewport(int32 IndexOfViewport) {
   EditorViewports.erase(EditorViewports.begin() + IndexOfViewport);
 }
 
-FEditorViewport *FEditor::GetActiveViewport() {
+FEditorViewportClient *FEditor::GetActiveViewport() {
   if (EditorViewports.empty()) {
     return nullptr;
   }
