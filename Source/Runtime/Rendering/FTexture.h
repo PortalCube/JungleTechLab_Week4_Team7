@@ -20,6 +20,8 @@ private:
 	uint32 Height = 0u;
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> Texture2D;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> TextureSRV;
+
+	DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN;
 };
 
 struct FTextureDesc

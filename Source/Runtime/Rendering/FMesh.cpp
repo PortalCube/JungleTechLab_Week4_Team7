@@ -1,4 +1,5 @@
 #include "FMesh.h"
+#include "Runtime/CoreUObject/FStatsManager.h"
 
 #include <d3d11.h>
 #include <wrl/client.h>
@@ -32,6 +33,8 @@ bool FMesh::UpdateBuffers(ID3D11Device* Device, ID3D11DeviceContext* Context, co
 	}
 	else
 	{
+		Microsoft::WRL::ComPtr<ID3D11Buffer> NewVertexBuffer;
+
 		D3D11_BUFFER_DESC VbDesc = {
 			.ByteWidth = Desc.VertexDataSize,
 			.Usage = D3D11_USAGE_DYNAMIC,
@@ -39,11 +42,22 @@ bool FMesh::UpdateBuffers(ID3D11Device* Device, ID3D11DeviceContext* Context, co
 			.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
 		};
 		D3D11_SUBRESOURCE_DATA VData = { .pSysMem = Desc.VertexData };
-		if (FAILED(Device->CreateBuffer(&VbDesc, &VData, &VertexBuffer)))
+		if (FAILED(Device->CreateBuffer(&VbDesc, &VData, &NewVertexBuffer)))
 		{
 			return false;
 		}
+
+		const size_t OldSize = VertexBufferSize;
+
+		VertexBuffer = NewVertexBuffer;
 		VertexBufferSize = Desc.VertexDataSize;
+
+		if (OldSize > 0)
+		{
+			FStatsManager::Get().RemoveMemory( EStatMemoryCategory::VertexBuffer, OldSize);
+		}
+
+		FStatsManager::Get().AddMemory( EStatMemoryCategory::VertexBuffer, VertexBufferSize);
 	}
 
 	VertexCount = Desc.VertexCount;
@@ -58,17 +72,30 @@ bool FMesh::UpdateBuffers(ID3D11Device* Device, ID3D11DeviceContext* Context, co
 		}
 		else
 		{
+			Microsoft::WRL::ComPtr<ID3D11Buffer> NewIndexBuffer;
+
 			D3D11_BUFFER_DESC IbDesc = {
 				.ByteWidth = Desc.IndexDataSize,
 				.Usage = D3D11_USAGE_DEFAULT,
 				.BindFlags = D3D11_BIND_INDEX_BUFFER,
 			};
 			D3D11_SUBRESOURCE_DATA IData = { .pSysMem = Desc.IndexData };
-			if (FAILED(Device->CreateBuffer(&IbDesc, &IData, &IndexBuffer)))
+			if (FAILED(Device->CreateBuffer(&IbDesc, &IData, &NewIndexBuffer)))
 			{
 				return false;
 			}
+
+			const size_t OldSize = IndexBufferSize;
+
+			IndexBuffer = NewIndexBuffer;
 			IndexBufferSize = Desc.IndexDataSize;
+
+			if (OldSize > 0)
+			{
+				FStatsManager::Get().RemoveMemory(EStatMemoryCategory::VertexBuffer, OldSize);
+			}
+
+			FStatsManager::Get().AddMemory(EStatMemoryCategory::VertexBuffer, IndexBufferSize);
 		}
 		IndexCount = Desc.IndexCount;
 	}

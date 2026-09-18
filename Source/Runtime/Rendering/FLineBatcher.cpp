@@ -1,6 +1,7 @@
 #include "FLineBatcher.h"
 #include "FRenderer.h"
 #include "ShaderConstants.h"
+#include "Runtime/CoreUObject/FStatsManager.h"
 
 #include <cmath>
 #include <numbers>
@@ -25,6 +26,8 @@ bool FLineBatcher::Initialize(ID3D11Device* Device) {
 
 	LineVertices.reserve(MaxVertices);
 	return true;
+
+	FStatsManager::Get().AddMemory(EStatMemoryCategory::VertexBuffer, VbDesc.ByteWidth);
 }
 
 void FLineBatcher::Shutdown() {
