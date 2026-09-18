@@ -49,8 +49,8 @@ void FRenderView::CollectScenePrimitives(const UScene& Scene, const FSceneView& 
         const FMatrix World = PrimitiveComponent->GetRenderMatrix(View.Camera);
         Data.Constants.MVP   = World * View.ViewProj;
         Data.Constants.World = World;
-        Data.Constants.ColorOverride       = PrimitiveComponent->GetColor();
-        Data.Constants.ColorOverrideAmount = PrimitiveComponent->GetColorAmount();
+        Data.Constants.ColorOverride       = { 1.0f, 1.0f, 1.0f }; //PrimitiveComponent->GetColor();
+        Data.Constants.ColorOverrideAmount = 0.0f; //PrimitiveComponent->GetColorAmount();
         Data.Constants.DisableShading      = View.ViewMode == EViewModeIndex::VMI_Unlit ? 1.0f : 0.0f;
 
         if (bSelected && Data.Constants.ColorOverrideAmount > 0.0f)

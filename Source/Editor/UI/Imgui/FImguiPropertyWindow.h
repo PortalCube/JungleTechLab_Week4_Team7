@@ -3,7 +3,7 @@
 
 class AActor;
 class USceneComponent;
-class UPrimitiveComponent;
+class UStaticMeshComponent;
 class USpotLightComponent;
 class UTextInstanceComponent;
 
@@ -37,10 +37,10 @@ private:
 	// 컴포넌트 타입별 속성
 	void ShowTextSettings(UTextInstanceComponent& TextComp) const;
 	void ShowSpotLightSettings(USpotLightComponent& LightComp) const;
-	void ShowPrimitiveSettings(AActor& Actor, UPrimitiveComponent& PrimComp, bool bIsRoot) const;
+	void ShowStaticMeshSettings(AActor& Actor, UStaticMeshComponent& MeshComp, bool bIsRoot) const;
 
 	// 머티리얼의 텍스처 미리보기 겸 드롭 타깃.
-	void ShowTextureSlot(UPrimitiveComponent& PrimComp) const;
+	void ShowTextureSlot(UStaticMeshComponent& MeshComp) const;
 
 	// 창 하단의 기즈모 모드/공간 선택.
 	void ShowGizmoSettings(FEditor& Editor) const;

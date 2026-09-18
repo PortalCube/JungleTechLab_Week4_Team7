@@ -3,6 +3,7 @@
 #include "Runtime/CoreUObject/UPrimitiveComponent.h"
 #include "Runtime/CoreUObject/USpotLightComponent.h"
 #include "Runtime/CoreUObject/UTextInstanceComponent.h"
+#include "Runtime/CoreUObject/Mesh/UStaticMeshComponent.h"
 #include "Runtime/CoreUObject/UClass.h"
 #include "Runtime/Actors/AActor.h"
 #include "ThirdParty/Imgui/imgui.h"
@@ -116,9 +117,9 @@ void FImguiPropertyWindow::ShowComponentDetails(FEditor& Editor, AActor& Actor,
 	{
 		ShowSpotLightSettings(static_cast<USpotLightComponent&>(Comp));
 	}
-	else if (Comp.IsA<UPrimitiveComponent>())
+	else if (Comp.IsA<UStaticMeshComponent>())
 	{
-		ShowPrimitiveSettings(Actor, static_cast<UPrimitiveComponent&>(Comp), bIsRoot);
+		ShowStaticMeshSettings(Actor, static_cast<UStaticMeshComponent&>(Comp), bIsRoot);
 	}
 }
 
@@ -209,67 +210,56 @@ void FImguiPropertyWindow::ShowSpotLightSettings(USpotLightComponent& LightComp)
 	}
 }
 
-void FImguiPropertyWindow::ShowPrimitiveSettings(AActor& Actor, UPrimitiveComponent& PrimComp,
-	bool bIsRoot) const
+void FImguiPropertyWindow::ShowStaticMeshSettings(AActor& Actor, UStaticMeshComponent& MeshComp, bool bIsRoot) const
 {
 	ImGui::Separator();
-	ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Primitive Settings");
+	ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Static Mesh Settings");
 
-	FVector CurrentColor = PrimComp.GetColor();
-	if (ImGui::ColorEdit3("Color", &CurrentColor.X))
-	{
-		PrimComp.SetColor(CurrentColor);
-		if (bIsRoot)
-		{
-			Actor.SetColor(CurrentColor);
-		}
-	}
-
-	ShowTextureSlot(PrimComp);
+	//ShowTextureSlot(MeshComp);
 }
 
-void FImguiPropertyWindow::ShowTextureSlot(UPrimitiveComponent& PrimComp) const
+void FImguiPropertyWindow::ShowTextureSlot(UStaticMeshComponent& MeshComp) const
 {
-	constexpr float SlotSize = 64.0f;
-	TSharedPtr<FMaterial> Material = FRenderResourceLibrary::Get().GetMaterial(PrimComp.GetPureRenderData().MaterialId);
-	TSharedPtr<FTexture> CurrentTexture = Material ? Material->GetTexture() : nullptr;
+	//constexpr float SlotSize = 64.0f;
+	//TSharedPtr<FMaterial> Material = FRenderResourceLibrary::Get().GetMaterial(MeshComp.GetMaterial());
+	//TSharedPtr<FTexture> CurrentTexture = Material ? Material->GetTexture() : nullptr;
 
-	ImGui::Spacing();
-	ImGui::TextDisabled("Texture");
+	//ImGui::Spacing();
+	//ImGui::TextDisabled("Texture");
 
-	if (CurrentTexture && CurrentTexture->GetSRV())
-	{
-		// ImGui 1.93의 ImTextureID는 ImU64라서 포인터를 정수로 한 번 거친다.
-		const ImTextureID TexId = static_cast<ImTextureID>(
-			reinterpret_cast<intptr_t>(CurrentTexture->GetSRV()));
-		ImGui::Image(TexId, ImVec2(SlotSize, SlotSize));
-	}
-	else
-	{
-		// 비어 있어도 드롭받을 아이템은 있어야 하므로 자리를 만든다.
-		ImGui::Button("No\nTexture", ImVec2(SlotSize, SlotSize));
-	}
+	//if (CurrentTexture && CurrentTexture->GetSRV())
+	//{
+	//	// ImGui 1.93의 ImTextureID는 ImU64라서 포인터를 정수로 한 번 거친다.
+	//	const ImTextureID TexId = static_cast<ImTextureID>(
+	//		reinterpret_cast<intptr_t>(CurrentTexture->GetSRV()));
+	//	ImGui::Image(TexId, ImVec2(SlotSize, SlotSize));
+	//}
+	//else
+	//{
+	//	// 비어 있어도 드롭받을 아이템은 있어야 하므로 자리를 만든다.
+	//	ImGui::Button("No\nTexture", ImVec2(SlotSize, SlotSize));
+	//}
 
-	// 드롭 타깃은 아이템을 그린 직후여야 한다.
-	if (!ImGui::BeginDragDropTarget())
-	{
-		return;
-	}
+	//// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	//if (!ImGui::BeginDragDropTarget())
+	//{
+	//	return;
+	//}
 
-	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
-	{
-		// 타입 이름이 같아도 크기가 다르면 다른 구조체일 수 있다.
-		if (Material && Payload->DataSize == static_cast<int>(sizeof(FContentDragPayload)))
-		{
-			const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+	//if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	//{
+	//	// 타입 이름이 같아도 크기가 다르면 다른 구조체일 수 있다.
+	//	if (Material && Payload->DataSize == static_cast<int>(sizeof(FContentDragPayload)))
+	//	{
+	//		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
 
-			if (Dropped->Kind == FContentDragPayload::EKind::Texture)
-			{
-				Material->SetTextureByName(Dropped->Key);
-			}
-		}
-	}
-	ImGui::EndDragDropTarget();
+	//		if (Dropped->Kind == FContentDragPayload::EKind::Texture)
+	//		{
+	//			Material->SetTextureByName(Dropped->Key);
+	//		}
+	//	}
+	//}
+	//ImGui::EndDragDropTarget();
 }
 
 void FImguiPropertyWindow::ShowGizmoSettings(FEditor& Editor) const

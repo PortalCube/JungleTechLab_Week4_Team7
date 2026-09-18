@@ -33,24 +33,3 @@ void UPrimitiveComponent::Unregister()
     }
     Super::Unregister();
 }
-
-void UPrimitiveComponent::SetRelativeTransform(const FTransform& RelativeTransform)
-{
-    Super::SetRelativeTransform(RelativeTransform);
-}
-
-FAxisAlignedBoundingBox UPrimitiveComponent::CalcLocalBounds()
-{
-    return {};
-}
-
-bool UPrimitiveComponent::SetTextureByName(const FName& InTextureName)
-{
-    RenderData.TextureId = InTextureName;
-    return true;
-}
-
-FMatrix UPrimitiveComponent::GetModelMatrix()
-{
-    return GetGlobalTransform().ToMatrix();
-}

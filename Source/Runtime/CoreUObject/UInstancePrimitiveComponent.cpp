@@ -59,7 +59,7 @@ void UInstancePrimitiveComponent::BuildRenderData()
         // 등록된 인스턴스 없으면 자기 자신 트랜스폼 적용
         Built.push_back(FInstanceData{
             .World    = BaseTransform.ToMatrix(),
-            .Color    = FVector4(GetColor(), 1.0f),
+            .Color    = FVector4(1.0f, 1.0f, 1.0f, 1.0f),
             .UVScale  = {1.0f, 1.0f},
             .UVOffset = {0.0f, 0.0f},
         });
