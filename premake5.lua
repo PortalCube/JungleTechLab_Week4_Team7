@@ -1,6 +1,6 @@
 workspace "MyEngine"
     architecture "x86_64"
-    configurations { "Debug", "Release", "Analysis" }
+    configurations { "Debug", "Release", "Analysis", "ObjViewer" }
     platforms { "x86", "x64" }
     startproject "MyEngine"
     system "windows"
@@ -88,6 +88,9 @@ project "MyEngine"
         defines { "_DEBUG" }
         symbols "On"
         buildoptions { "/analyze" }
+
+    filter "configurations:ObjViewer"
+        defines { "_OBJVIEWER" }
 
     filter { "configurations:Debug", "platforms:x64" }
         forceincludes { "Runtime/Core/Log.h" }
