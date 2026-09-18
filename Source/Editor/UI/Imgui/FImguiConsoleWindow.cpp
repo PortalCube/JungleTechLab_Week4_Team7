@@ -41,10 +41,11 @@ static int   Strnicmp(const char* s1, const char* s2, int n) { int d = 0; while 
 static char* Strdup(const char* s) { IM_ASSERT(s); size_t len = strlen(s) + 1; void* buf = ImGui::MemAlloc(len); IM_ASSERT(buf); return (char*)memcpy(buf, (const void*)s, len); }
 static void  Strtrim(char* s) { char* str_end = s + strlen(s); while (str_end > s && str_end[-1] == ' ') str_end--; *str_end = 0; }
 
-void FImguiConsoleWindow::Process(FEditor& Editor)
+void FImguiConsoleWindow::Process(FEditor& Editor, std::function<void(const char*)> f)
 {
 	ImGui::Begin("Console Window", nullptr, ImGuiWindowFlags_MenuBar);
 
+	ExecuteFunction = f;
 
 	const bool bCopyToClipboard = ShowMenuBar();
 
@@ -322,7 +323,8 @@ void FImguiConsoleWindow::ExecCommand(const char* command_line)
 	}
 	else
 	{
-		UE_LOG("Unknown command: '%s'\n", command_line);
+		// 이외의 커맨드는 EditorApplication의 함수로 전달합니다.
+		ExecuteFunction(command_line);
 	}
 
 	// On command input, we scroll to bottom even if AutoScroll==false

@@ -15,6 +15,11 @@
 #include "Runtime/Rendering/FMesh.h"
 #include <Windows.h>
 
+#include <algorithm>
+#include <cctype>
+
+#include "Runtime/Core/FString.h"
+
 #include "Runtime/Engine/FSceneView.h"
 
 #include "Runtime/Actors/AActor.h"
@@ -56,8 +61,9 @@ void FEditorApplication::Tick(float DeltaTime) {
   WorldOutliner.Process(Editor);
   ControlPanelWindow.Process(Editor);
   PropertyWindow.Process(Editor);
-  ConsoleWindow.Process(Editor);
+  ConsoleWindow.Process(Editor, [this](const char* Command) {ExecuteCommand(Command);});
   ContentsDrawer.Process(Editor);
+  StatsWindow.Process(Editor, DeltaTime); // deltatime 전달 필요
   Editor.Process();
 }
 
@@ -107,4 +113,31 @@ void FEditorApplication::OnWindowSize(UINT Width, UINT Height) {
     auto &Camera = Viewport.ViewportCamera;
     Camera.Projection.Aspect = SizePixels.X / SizePixels.Y;
   }
+}
+
+void FEditorApplication::ExecuteCommand(const char* Command) {
+    if (!Command) return;
+
+    FString lowerCmd = Command;
+    std::transform(lowerCmd.begin(), lowerCmd.end(), lowerCmd.begin(), ::tolower);
+
+    if (lowerCmd.compare("stat memory") == 0) {
+        UE_LOG("Stat Memory Command is executed!");
+        StatsWindow.SetOpen(EStatsWindow::Memory, true);
+    }
+
+    else if (lowerCmd.compare("stat fps") == 0) {
+        UE_LOG("Stat FPS Command is executed!");
+        StatsWindow.SetOpen(EStatsWindow::FPS, true);
+    }
+
+    else if (lowerCmd.compare("stat none") == 0) {
+        UE_LOG("Stat Window is closed!");
+        StatsWindow.SetClose();
+    }
+
+    else {
+        UE_LOG("Unknown command: '%s'\n", Command);
+        return;
+    }
 }
