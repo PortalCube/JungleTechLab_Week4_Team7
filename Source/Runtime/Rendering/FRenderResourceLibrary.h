@@ -153,23 +153,6 @@ private:
   bool CreateOutlinePipeline(FRenderer &Renderer);
   bool CreatePostProcessPipeline(FRenderer &Renderer);
 
-  bool CreateCubeMesh(FRenderer &Renderer);
-  bool CreateCylinderMesh(FRenderer &Renderer, float Height, uint32 SliceCount,
-                          float TopRadius, float BottomRadius);
-  bool CreateConeMesh(FRenderer &Renderer);
-  bool CreateSpotlightConeMesh(FRenderer &Renderer);
-  bool CreateArrowMesh(FRenderer &Renderer);
-  bool CreateCircleMesh(FRenderer &Renderer);
-  bool CreateRotationGizmoMesh(FRenderer &Renderer);
-  bool CreateSquareArrowMesh(FRenderer &Renderer);
-  bool CreateGridMesh(FRenderer &Renderer);
-  bool CreateSphereMesh(FRenderer &Renderer);
-  bool CreateLineMesh(FRenderer &Renderer);
-  bool CreatePlaneMesh(FRenderer &Renderer);
-  bool CreateRectMesh(FRenderer &Renderer);
-  bool CreateMasterYiMesh(FRenderer &Renderer);
-  bool CreateMasteryMesh(FRenderer &Renderer) { return CreateMasterYiMesh(Renderer); }
-
   bool CreateInstancingArrayMap();
   bool CreateOutlinePipeline(); //아웃라인용
 
