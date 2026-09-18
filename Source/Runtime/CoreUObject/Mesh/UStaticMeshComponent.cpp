@@ -31,7 +31,7 @@ void UStaticMeshComponent::SetMaterial(UMaterial* InMaterial, int Index)
 {
 	if (GetMaterialSlotLength() <= Index)
 	{
-		throw EngineUtil::CreateError("Index°¡ ¹üÀ§¸¦ ÃÊ°úÇß½À´Ï´Ù. ½½·Ô °¹¼ö: {}, Index: {}", GetMaterialSlotLength(), Index);
+		throw EngineUtil::CreateError("Indexê°€ ë²”ìœ„ë¥¼ ì´ˆê³¼í–ˆìŠµë‹ˆë‹¤. ìŠ¬ë¡¯ ê°¯ìˆ˜: {}, Index: {}", GetMaterialSlotLength(), Index);
 	}
 
 	MaterialInstances[Index] = FMaterialInstance{ InMaterial };
