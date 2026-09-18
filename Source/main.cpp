@@ -78,18 +78,27 @@ int WINAPI wWinMain(
 	}
 	EditorApp.Initialize_Runtime(&SceneManager, &RenderView);
 
-	// test
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	// test /////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
 	TArray<FVertexData> TestVertices;
 	TArray<uint32> TestIndices;
+	TArray<FMeshSection> TestSections;
 
 	FRawObjData RawData;
 	const char* TestFilePath = "Resources/test.obj";
+	const char* TestBinFilePath = "Resources/test.bin";
 
-	if (FObjParser::LoadObj(TestFilePath, RawData))
-	{
-		FObjParser::ConvertObjToVertex(RawData, TestVertices, TestIndices);
-	}
+	//if (FObjParser::LoadObj(TestFilePath, RawData))
+	//{
+	//	if (FObjParser::ConvertObjToVertex(RawData, TestVertices, TestIndices, TestSections))
+	//	{			
+	//		FObjParser::SaveMeshToBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
+	//	}
+	//}
 
+	// Binary Load Test
+	FObjParser::LoadMeshFromBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
 
 	FMeshDesc TestMeshDesc{
 		.VertexData = TestVertices.data(),
@@ -125,7 +134,8 @@ int WINAPI wWinMain(
 		Transform.Scale3D = FVector(1.0f, 1.0f, 1.0f); // 모델이 너무 작거나 크면 조절
 		MyObjActor->SetTransform(Transform);
 	}
-
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
 
 	bool bQuit = false;

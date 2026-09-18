@@ -10,6 +10,10 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
         return false;
     }
 
+    // Mesh Section
+    FString CurrentMaterialName = "";
+    uint32 CurrentStartindex = 0;  
+
     FString Line;
     while (std::getline(File, Line))
     {
@@ -62,12 +66,48 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
                 OutResult.Faces.push_back({ FaceIndices[0], FaceIndices[i], FaceIndices[i + 1] });
             }
         }
+        else if (Prefix == "usemtl") // Mesh section
+        {
+            FString NewMaterialName;
+            ss >> NewMaterialName;
+
+            uint32 NewStartIndex = static_cast<uint32>(OutResult.Faces.size());
+            uint32 NewIndexCount = NewStartIndex - CurrentStartindex;
+
+            if (NewIndexCount > 0)
+            {
+                FMeshSection NewMeshSection;
+                NewMeshSection.SetMateriaName(CurrentMaterialName);
+                NewMeshSection.StartIndex = CurrentStartindex;
+                NewMeshSection.IndexCount = NewIndexCount;
+
+                OutResult.Sections.push_back(NewMeshSection);
+
+                CurrentStartindex = NewStartIndex;
+            }
+
+            CurrentMaterialName = NewMaterialName;            
+        }
+    }
+
+    // Final mesh section
+    uint32 FinalStartIndex = static_cast<uint32>(OutResult.Faces.size());
+    uint32 FinalndexCount = FinalStartIndex - CurrentStartindex;
+
+    if (FinalndexCount > 0)
+    {
+        FMeshSection FinalMeshSection;
+        FinalMeshSection.SetMateriaName(CurrentMaterialName);
+        FinalMeshSection.StartIndex = CurrentStartindex;
+        FinalMeshSection.IndexCount = FinalndexCount;
+
+        OutResult.Sections.push_back(FinalMeshSection);
     }
 
     return true;
 }
 
-bool FObjParser::ConvertObjToVertex(const FRawObjData& InObjData, TArray<FVertexData>& OutVertices, TArray<uint32>& OutIndices)
+bool FObjParser::ConvertObjToVertex(const FRawObjData& InObjData, TArray<FVertexData>& OutVertices, TArray<uint32>& OutIndices, TArray<FMeshSection>& OutSections)
 {
     for (size_t i = 0; i < InObjData.Faces.size(); i++)
     {
@@ -104,6 +144,65 @@ bool FObjParser::ConvertObjToVertex(const FRawObjData& InObjData, TArray<FVertex
         }
     }
 
+    OutSections = InObjData.Sections;
+
+    return true;
+}
+
+bool FObjParser::SaveMeshToBinary(const char* OutFilePath, const TArray<FVertexData>& InVertices, TArray<uint32>& InIndices, TArray<FMeshSection>& InSections)
+{
+    std::ofstream File;
+    File.open(OutFilePath, std::ios::binary);
+    if (!File.is_open())
+    {
+        return false;
+    }
+
+    FMeshFileHeader Header;
+    Header.VertexCount = static_cast<uint32>(InVertices.size());
+    Header.IndexCount = static_cast<uint32>(InIndices.size());
+    Header.SectionCount = static_cast<uint32>(InSections.size());
+
+    File.write(reinterpret_cast<const char*>(&Header), sizeof(Header));
+
+    const size_t VertexDataSize = sizeof(FVertexData) * InVertices.size();
+    File.write(reinterpret_cast<const char*>(InVertices.data()), VertexDataSize);
+
+    const size_t IndexDataSize = sizeof(uint32) * InIndices.size();
+    File.write(reinterpret_cast<const char*>(InIndices.data()), IndexDataSize);
+
+    const size_t SectionDataSize = sizeof(FMeshSection) * InSections.size();
+    File.write(reinterpret_cast<const char*>(InSections.data()), SectionDataSize);
+
+    File.close();
+    return true;
+}
+
+bool FObjParser::LoadMeshFromBinary(const char* InFilePath, TArray<FVertexData>& OutVertices, TArray<uint32>& OutIndices, TArray<FMeshSection>& OutSections)
+{
+    std::ifstream File;
+    File.open(InFilePath, std::ios::binary);
+    if (!File.is_open())
+    {
+        return false;
+    }
+
+    FMeshFileHeader Header;
+    File.read(reinterpret_cast<char*>(&Header), sizeof(Header));
+
+    OutVertices.resize(Header.VertexCount);
+    const size_t VertexDataSize = sizeof(FVertexData) * Header.VertexCount;
+    File.read(reinterpret_cast<char*>(OutVertices.data()), VertexDataSize);
+
+    OutIndices.resize(Header.IndexCount);
+    const size_t IndexDataSize = sizeof(uint32) * Header.IndexCount;
+    File.read(reinterpret_cast<char*>(OutIndices.data()), IndexDataSize);
+
+    OutSections.resize(Header.SectionCount);
+    const size_t SectionDataSize = sizeof(FMeshSection) * Header.SectionCount;
+    File.read(reinterpret_cast<char*>(OutSections.data()), SectionDataSize);
+
+    File.close();
     return true;
 }
 
