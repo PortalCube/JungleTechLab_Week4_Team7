@@ -1,7 +1,5 @@
 #include "FEditorApplication.h"
 
-#include "Runtime/CoreUObject/FGarbageCollector.h"
-#include "Runtime/CoreUObject/FReferenceCollector.h"
 #include "Runtime/CoreUObject/UAnimatedBillboardComp.h"
 #include "Runtime/CoreUObject/UBillBoardComp.h"
 #include "Runtime/CoreUObject/UCubeComp.h"

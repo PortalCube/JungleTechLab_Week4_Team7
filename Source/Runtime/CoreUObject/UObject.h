@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "UClass.h"
 #include "Runtime/Core/IntTypes.h"
 #include "ThirdParty/Json/json.hpp"
@@ -9,7 +9,6 @@
 
 class UObjectGlobals;
 class UClass;
-class FReferenceCollector;
 class FArchive;
 
 /*
@@ -100,8 +99,6 @@ public:
 
 	virtual void Initialize();
 	virtual void Release();
-
-	virtual void AddReferencedObjects(FReferenceCollector& Collector);
 
 	static void* operator new(std::size_t Size);
 

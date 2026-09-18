@@ -14,7 +14,6 @@
 #include "Runtime/Actors/AInstancingActor.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Math/Random.h"
-#include "Runtime/CoreUObject/FGarbageCollector.h"
 #include <numbers>
 
 
