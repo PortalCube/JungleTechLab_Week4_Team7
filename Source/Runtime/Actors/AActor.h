@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Runtime/CoreUObject/UObject.h"
 #include "Runtime/CoreUObject/USceneComponent.h"
@@ -30,6 +30,8 @@ public:
 	UScene* GetOwner() const { return Owner; }
 
 	void CreateRootComponent(UClass* ClassType);
+
+	void SetRootComponent(USceneComponent* Component);
 	USceneComponent* GetRootComponent() const { return RootComponent; }
 	const TArray<USceneComponent*>& GetAttachedComponents() const { return AttachedComp; }
 
@@ -46,11 +48,6 @@ public:
 
 	[[nodiscard]] bool IsRegistered() const { return Owner != nullptr; }
 	[[nodiscard]] bool HasBegunPlay() const { return bHasBegunPlay; }
-
-	virtual void SetColor(const FVector& InColor);
-	virtual FVector GetColor() const;
-
-	void AddReferencedObjects(FReferenceCollector& Collector) override;
 
 	void Destroy();
 
