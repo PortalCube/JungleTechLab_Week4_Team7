@@ -4,6 +4,29 @@
 #include <d3d11.h>
 #include <wrl/client.h>
 
+FMesh::~FMesh()
+{
+	if (VertexBuffer)
+	{
+		D3D11_BUFFER_DESC Desc{};
+		VertexBuffer->GetDesc(&Desc);
+
+		FStatsManager::Get().RemoveMemory(
+			EStatMemoryCategory::VertexBuffer,
+			Desc.ByteWidth);
+	}
+
+	if (IndexBuffer)
+	{
+		D3D11_BUFFER_DESC Desc{};
+		IndexBuffer->GetDesc(&Desc);
+
+		FStatsManager::Get().RemoveMemory(
+			EStatMemoryCategory::IndexBuffer,
+			Desc.ByteWidth);
+	}
+}
+
 void FMesh::BindResources(ID3D11DeviceContext& Context) const
 {
 	constexpr UINT Offset = 0;
@@ -92,10 +115,10 @@ bool FMesh::UpdateBuffers(ID3D11Device* Device, ID3D11DeviceContext* Context, co
 
 			if (OldSize > 0)
 			{
-				FStatsManager::Get().RemoveMemory(EStatMemoryCategory::VertexBuffer, OldSize);
+				FStatsManager::Get().RemoveMemory(EStatMemoryCategory::IndexBuffer, OldSize);
 			}
 
-			FStatsManager::Get().AddMemory(EStatMemoryCategory::VertexBuffer, IndexBufferSize);
+			FStatsManager::Get().AddMemory(EStatMemoryCategory::IndexBuffer, IndexBufferSize);
 		}
 		IndexCount = Desc.IndexCount;
 	}

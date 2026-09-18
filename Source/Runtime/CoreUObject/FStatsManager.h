@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Runtime/Core/TMap.h"
+#include <dxgi1_4.h>
 
 enum class EStatMemoryCategory
 {
@@ -26,6 +27,8 @@ public:
     FStatsManager& operator=(const FStatsManager&) = delete;
 
 public:
+    void Initialize(ID3D11Device* Device);
+
     void AddMemory( EStatMemoryCategory Category, size_t Size) 
     { 
         MemoryStats[Category] += Size; 
@@ -67,10 +70,18 @@ public:
         return Total;
     }
 
+    size_t GetProcessMemoryUsed() const;
+    size_t GetSystemMemoryUsed() const;
+    size_t GetSystemMemoryAvailable() const;
+
+    size_t GetGPUMemoryUsed() const;
+    size_t GetGPUMemoryBudget() const;
+
 private:
     FStatsManager() = default;
 
 private:
     TMap<EStatMemoryCategory, size_t> MemoryStats;
+    Microsoft::WRL::ComPtr<IDXGIAdapter3> Adapter;
 };
 
