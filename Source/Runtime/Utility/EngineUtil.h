@@ -1,6 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <format>
+#include <stdexcept>
+#include <utility>
+#include "Runtime/Core/FString.h"
 
 namespace EngineUtil
 {
@@ -12,4 +16,10 @@ namespace EngineUtil
 	/// <param name="SecondHash">해시2</param>
 	/// <returns>새로 만든 해시값</returns>
 	size_t HashCombine(size_t FirstHash, size_t SecondHash);
+
+	template <typename... Args>
+	std::runtime_error CreateError(std::format_string<Args...> Format, Args&&... Arguments)
+	{
+		return std::runtime_error(std::format(Format, std::forward<Args>(Arguments)...));
+	}
 }
