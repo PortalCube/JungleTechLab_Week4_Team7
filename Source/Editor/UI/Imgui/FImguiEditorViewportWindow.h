@@ -47,7 +47,7 @@ private:
 
 	// ImGui 창의 실제 사각형을 뷰포트 UV 와 종횡비에 반영한다.
 	// 사용자가 창을 옮기거나 크기를 바꾸면 3D 렌더 영역이 따라간다.
-	void SyncViewportRect(FEditorViewportClient& Viewport, const FVector2& ClientSize) const;
+	void SyncViewportRect(FEditorViewportClient& Viewport, const FRect& Rect, const FVector2& ClientSize) const;
 
 	// 창 전체를 덮는 클릭 판정용 아이템을 만들고 입력 상태를 모은다.
 	FViewportInput GatherInput(const FVector2& ViewportTopLeftPixels,

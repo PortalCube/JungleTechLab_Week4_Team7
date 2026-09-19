@@ -21,7 +21,6 @@
 void FEditor::Initialize(USceneManager *SceneManager) {
   State.ReadFromFile();
   Gizmo.Initialize();
-
   SelectedActorTextComp = NewObject<UTextInstanceComponent>();
   if (SelectedActorTextComp)
   {
@@ -31,7 +30,6 @@ void FEditor::Initialize(USceneManager *SceneManager) {
     SelectedActorTextComp->SetMaterialID(FName("SelectedActor_Text"));
     SelectedActorTextComp->SetFont(FName("bazziotf"));
   }
-
   this->SceneManager = SceneManager;
 }
 
@@ -123,16 +121,21 @@ bool FEditor::CheckSceneExists() {
 void FEditor::AddViewport(FEditorViewportClient Viewport) {
   EditorViewports.push_back(Viewport);
 }
-
+void FEditor::InitMultiViewport(FEditorViewportClient Viewport) {
+  EditorViewports.push_back(Viewport);
+  EditorViewports.push_back(Viewport);
+  EditorViewports.push_back(Viewport);
+  EditorViewports.push_back(Viewport);
+}
 void FEditor::DeleteViewport(int32 IndexOfViewport) {
   EditorViewports.erase(EditorViewports.begin() + IndexOfViewport);
 }
 
-FEditorViewportClient *FEditor::GetActiveViewport() {
+FEditorViewportClient* FEditor::GetActiveViewport() {
   if (EditorViewports.empty()) {
     return nullptr;
   }
-  return &EditorViewports[0];
+  return &EditorViewports[ActiveViewportIndex];
 }
 
 bool FEditor::SelectActor(AActor *Actor) {
@@ -277,3 +280,62 @@ void FEditor::SpawnInstancingToCurrentScene(int Count)
     SelectActor(TargetActor);
 }
 
+void FEditor::ChangeViewRayout(EViewportLayout Layout) 
+{
+    ActiveViewportIndex = 0;
+    //=== 초기화 ===//
+    for (int32 i = 0; i < 4; ++i)
+    {
+        Leaf[i].ViewportIndex = i;
+        Leaf[i].bisActive = false;
+    }
+
+    HorizonSplitter2.bisActive = false;
+    VerticalSplitter.bisActive = false;
+    HorizonSplitter.bisActive = false;
+    //=== 초기화 ===//
+
+    //===람다함수===//
+    auto Connect = [](SSplitter& Splitter, SWindow& LT, SWindow& RB)
+        {
+            Splitter.SideLT = &LT;
+            Splitter.SideRB = &RB;
+
+            Splitter.bisActive = true;
+            LT.bisActive = true;
+            RB.bisActive = true;
+        };
+
+    switch (Layout)
+    {
+    case EViewportLayout::Single:
+        Leaf[0].bisActive = true;
+        Root = &Leaf[0];
+        break;
+
+    case EViewportLayout::LeftRight:
+        Leaf[0].bisActive = true;
+        Leaf[1].bisActive = true;
+        Connect(HorizonSplitter, Leaf[0], Leaf[1]);
+        Root = &HorizonSplitter;
+        break;
+
+    case EViewportLayout::TopBottom:
+        Leaf[0].bisActive = true;
+        Leaf[2].bisActive = true;
+        Connect(VerticalSplitter, Leaf[0], Leaf[2]);
+        Root = &VerticalSplitter;
+        break;
+
+    case EViewportLayout::Four:
+        Leaf[0].bisActive = true;
+        Leaf[1].bisActive = true;
+        Leaf[2].bisActive = true;
+        Leaf[3].bisActive = true;
+        Connect(VerticalSplitter, HorizonSplitter, HorizonSplitter2);
+        Connect(HorizonSplitter, Leaf[0], Leaf[1]);
+        Connect(HorizonSplitter2, Leaf[2], Leaf[3]);
+        Root = &VerticalSplitter;
+        break;
+    }
+}

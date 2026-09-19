@@ -13,6 +13,8 @@
 #include "Runtime/Rendering/ShaderConstants.h"
 #include "Runtime/CoreUObject/UTextInstanceComponent.h"
 
+
+#include "SSplitter.h"
 enum class EEditorPrimitiveType : uint8 {
   Cube,
   Cylinder,
@@ -20,7 +22,13 @@ enum class EEditorPrimitiveType : uint8 {
   Billboard,
   Spotlight,
 };
-
+enum class EViewportLayout
+{
+    Single,
+    TopBottom,
+    LeftRight,
+    Four
+};
 class FEditor {
 public:
   FTransform SelectedTransform;
@@ -44,6 +52,8 @@ public:
   bool CheckSceneExists();
 
   void AddViewport(FEditorViewportClient Viewport);
+  void InitMultiViewport(FEditorViewportClient Viewport);
+  void ChangeViewRayout(EViewportLayout Layout);
   void DeleteViewport(int32 IndexOfViewport);
   FEditorViewportClient* GetActiveViewport(); // 임시로 0번 반환
 
@@ -75,12 +85,18 @@ public:
   void LoadState();
   UTextInstanceComponent* GetTextcomp() { return SelectedActorTextComp; }
 
+ //Viewport관련
+  int32 ActiveViewportIndex = 0;
+  SWindow* Root=nullptr;
+  SWindow Leaf[4];
+  SSplitterH HorizonSplitter; //세로선
+  SSplitterH HorizonSplitter2; //세로선
+  SSplitterV VerticalSplitter; // 가로선
 private:
   USceneManager* SceneManager =
       nullptr; // 씬을 다중으로 가질 수 있도록 구조개선 가능-이경우 에디터쪽에
                // 클래스를 추가해 씬과 FEditorViewportClient들을 연관
   TArray<FEditorViewportClient> EditorViewports;
-
   FGizmo Gizmo;
   FGrid Grid;
   TWeakObjectPtr<AActor> SelectedActor;

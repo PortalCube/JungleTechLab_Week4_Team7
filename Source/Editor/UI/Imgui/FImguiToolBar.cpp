@@ -1,5 +1,6 @@
 ﻿#include "FImguiToolBar.h"
 #include "ThirdParty/Imgui/imgui.h"
+#include "Editor/Core/FEditor.h"
 
 // "표시명\0패턴\0" 이중 널 종료 필요
 constexpr wchar_t SceneFilter[] = L"Scene Files (*.Scene)\0*.Scene\0All Files (*.*)\0*.*\0";
@@ -102,6 +103,31 @@ void FImguiToolbar::ShowViewBar(FEditor& Editor, FImguiConsoleWindow& ConsoleWin
 {
     if (ImGui::BeginMenu("View"))
     {
+        if (ImGui::BeginMenu("ViewPort"))
+        {
+            if (ImGui::MenuItem("Single"))
+            {
+                Editor.ChangeViewRayout(EViewportLayout::Single);
+            }
+            if (ImGui::MenuItem("Top | Bottom"))
+            {
+                Editor.ChangeViewRayout(EViewportLayout::TopBottom);
+
+            }
+            if (ImGui::MenuItem("Left | Right"))
+            {
+                Editor.ChangeViewRayout(EViewportLayout::LeftRight);
+
+            }
+            if (ImGui::MenuItem("2 X 2"))
+            {
+                Editor.ChangeViewRayout(EViewportLayout::Four);
+            }
+            ImGui::EndMenu();
+
+        }
+
+       
         ImGui::EndMenu();
     }
 
