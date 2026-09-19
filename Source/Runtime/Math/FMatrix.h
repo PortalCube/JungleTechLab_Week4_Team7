@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "FVector.h"
 #include <numbers>
@@ -170,6 +170,20 @@ struct FMatrix
 		*this = *this * Other;
 		return *this;
 	}
+
+	inline FMatrix ToD3DMatrix()
+	{
+		static const FMatrix UnrealClipToD3DClip
+		{
+			FVector{ 0.0f, 0.0f, 1.0f },
+			FVector{ 1.0f, 0.0f, 0.0f },
+			FVector{ 0.0f, 1.0f, 0.0f },
+			FVector{ 0.0f, 0.0f, 0.0f }
+		};
+
+		return operator*(UnrealClipToD3DClip);
+	}
+
 
 	[[nodiscard]]
 	static FMatrix MakeRotation(const FVector& Deg);

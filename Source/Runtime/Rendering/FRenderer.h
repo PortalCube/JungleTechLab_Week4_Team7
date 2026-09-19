@@ -193,19 +193,13 @@ private:
     // MVP를 가진 상수 타입에만 적용한다(없는 타입은 그대로 통과).
     TConstants ShaderConstants = Constants;
     if constexpr (requires { ShaderConstants.MVP; }) {
-      static const FMatrix UnrealClipToD3DClip{
-          FVector{0.0f, 0.0f, 1.0f}, FVector{1.0f, 0.0f, 0.0f},
-          FVector{0.0f, 1.0f, 0.0f}, FVector{0.0f, 0.0f, 0.0f}};
-      ShaderConstants.MVP *= UnrealClipToD3DClip;
+        ShaderConstants.MVP = ShaderConstants.MVP.ToD3DMatrix();
     }
 
     // 언리얼 Clip -> D3D Clip 좌표 변환.
     // MVP를 가진 상수 타입에만 적용한다(없는 타입은 그대로 통과).
     if constexpr (requires { ShaderConstants.VP; }) {
-      static const FMatrix UnrealClipToD3DClip{
-          FVector{0.0f, 0.0f, 1.0f}, FVector{1.0f, 0.0f, 0.0f},
-          FVector{0.0f, 1.0f, 0.0f}, FVector{0.0f, 0.0f, 0.0f}};
-      ShaderConstants.VP *= UnrealClipToD3DClip;
+        ShaderConstants.VP = ShaderConstants.VP.ToD3DMatrix();
     }
 
     D3D11_MAPPED_SUBRESOURCE Mapped{};
