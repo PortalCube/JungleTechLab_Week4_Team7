@@ -23,6 +23,11 @@ namespace
 {
     FDrawCommand GetDrawCommand(const FCamera& Camera, const FRenderData& Data)
     {
+        if (!Data.Mesh || Data.Materials.empty())
+        {
+            return {};
+        }
+
         FObjectConstants Constants
         {
             .MVP = Data.ModelMatrix * Camera.CreateViewProjectionMatrix(),
@@ -30,13 +35,18 @@ namespace
             .UVScale = Data.Materials[0].UVScale,
             .UVOffset = Data.Materials[0].UVOffset,
             .World = Data.ModelMatrix,
-            .DisableShading = Data.Materials[0].bDisableShading,
+            .DisableShading = Data.Materials[0].bDisableShading ? 1.0f : 0.0f,
         };
 
         TArray<FMaterial> Materials;
 
         for (const auto& Item : Data.Materials)
         {
+            if (!Item.Pipeline)
+            {
+                continue;
+            }
+
             FMaterial Material{};
             Material.SetPipeLine(Item.Pipeline->Get());
 
@@ -46,6 +56,8 @@ namespace
             }
 
             Material.SetSamplerDesc(Item.SamplerDesc);
+
+            Materials.push_back(Material);
         }
 
         return FDrawCommand
@@ -96,7 +108,7 @@ void FRenderView::CollectScenePrimitives(const UScene& Scene, const FSceneView& 
 
         if (bSelected && DrawCommand.Constants.Color.W > 0.0f)
         {
-            DrawCommand.Constants.Color = DrawCommand.Constants.Color * 0.7f + FVector{ 0.3f, 0.3f, 0.3f, 0.0f };
+            DrawCommand.Constants.Color = DrawCommand.Constants.Color * 0.7f + FVector4{ 0.3f, 0.3f, 0.3f, 0.0f };
         }
         else if (bSelected)
         {
@@ -315,7 +327,7 @@ void FRenderView::DrawStencilMask(const FCamera& Camera,
     if (OutlineMaterial)
     {
         OutlineMaterial->GetPipeline()->SetStencilRef(1);
-        Renderer.Draw(Data, 0, false);
+        Renderer.Draw(DrawCommand, 0, false);
     }
 }
 
@@ -365,11 +377,7 @@ void FRenderView::FlushQueue(const FCamera& Camera)
     // Primitive 큐 처리
     for (const FDrawCommand& Data : RenderQueue.GetPrimRenderQ())
     {
-        FMesh* Mesh = Data.Mesh;
-        TArray<FMaterialInstance>& Materials = Data.Materials;
-
-        if (!Mesh || Materials.size() == 0) continue;
-        Renderer.Draw(*Mesh, Materials, Data.Constants);
+        Renderer.Draw(Data);
     }
 
     // Instancing 큐
@@ -404,7 +412,7 @@ void FRenderView::FlushQueue(const FCamera& Camera)
             // Font에서 미리 계산된 글자별 쿼드 데이터를 그대로 넘김
             Renderer.AddTextInstanceArray(Data);
         }
-        Renderer.DrawTextInstances(Data);
+        Renderer.DrawTextInstances(First);
         Renderer.ClearTextInstances();
     }
 

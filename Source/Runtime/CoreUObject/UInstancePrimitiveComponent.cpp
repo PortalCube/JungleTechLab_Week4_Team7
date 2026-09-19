@@ -28,7 +28,7 @@ void UInstancePrimitiveComponent::ClearInstances()
     InstanceTransforms.clear();
 }
 
-void UInstancePrimitiveComponent::BuildRenderData()
+void UInstancePrimitiveComponent::BuildRenderData() const
 {
     TArray<FInstanceData> Built;
     const FTransform BaseTransform = GetGlobalTransform();
@@ -62,7 +62,7 @@ void UInstancePrimitiveComponent::BuildRenderData()
     RenderData.Instances = std::move(Built);
 }
 
-const FRenderData& UInstancePrimitiveComponent::GetRenderData(const FCamera& Camera)
+const FRenderData& UInstancePrimitiveComponent::GetRenderData(const FCamera& Camera) const
 {
     BuildRenderData();
     return RenderData;

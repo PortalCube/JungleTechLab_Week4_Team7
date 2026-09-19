@@ -17,7 +17,7 @@ public:
     void Unregister() override;
 
 
-    virtual const FRenderData& GetRenderData(const FCamera& Camera) { return RenderData; }
+    virtual const FRenderData& GetRenderData(const FCamera& Camera) const { return RenderData; }
     virtual FMatrix GetRenderMatrix(const FCamera& Camera) const { return GetGlobalTransform().ToMatrix(); }
 
     virtual FAxisAlignedBoundingBox CalcLocalBounds() { return {}; }
@@ -27,7 +27,7 @@ public:
 protected:
     UPrimitiveComponent() = default;
 
-    FRenderData RenderData
+    mutable FRenderData RenderData
     {
        .Mesh = nullptr,
        .Materials = {},

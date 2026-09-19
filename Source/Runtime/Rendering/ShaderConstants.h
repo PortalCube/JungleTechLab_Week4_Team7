@@ -3,6 +3,7 @@
 #include "Runtime/Math/FMatrix.h"
 #include "Runtime/Math/FVector.h"
 #include "Runtime/Math/FVector2.h"
+#include "Runtime/Math/FVector4.h"
 
 
 // b0에 바인딩

@@ -2,6 +2,7 @@
 
 #include "Runtime/Core/IntTypes.h"
 #include "Runtime/Core/FString.h"
+#include "Runtime/Core/FName.h"
 
 class FArchive;
 

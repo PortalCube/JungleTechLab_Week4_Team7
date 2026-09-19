@@ -19,7 +19,7 @@ void FSpotlightVisualizer::Draw(
 
     auto MeshPtr = Component.GetRenderData(Camera).Mesh;
     if (!MeshPtr) return;
-    const FMesh& Mesh = *MeshPtr;
+    const FMesh& Mesh = *MeshPtr->Get();
     const FMatrix ModelMatrix = Component.GetRenderMatrix(Camera);
 
     const auto& Positions = Mesh.GetPositions();

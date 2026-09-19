@@ -30,7 +30,7 @@ public:
 
 private:
 
-	FRenderPipeline* Pipeline;
-	FTexture* Texture;
+	FRenderPipeline* Pipeline = nullptr;
+	FTexture* Texture = nullptr;
 	FTextureSamplerDesc SamplerDesc;
 };

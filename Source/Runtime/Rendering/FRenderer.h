@@ -22,6 +22,7 @@ class FTexture;
 struct FTextureDesc;
 struct FCamera;
 class UTextInstanceComponent;
+struct FDrawCommand;
 
 inline FWString GetExecutableDirectory() {
   wchar_t Buffer[256];
@@ -50,9 +51,6 @@ public:
   TSharedPtr<FMesh> CreateMesh(const FMeshDesc &Desc);
   [[nodiscard]]
   TSharedPtr<FMesh> CreateDynamicMesh(const FMeshDesc &Desc); // 텍스트 렌더링용
-  [[nodiscard]]
-  TSharedPtr<FMaterial> CreateMaterial(const FMaterialDesc &Desc);
-
   void GetDeviceAndContext_ImplDX11(ID3D11Device *&DeviceOut,
                                     ID3D11DeviceContext *&ContextOut);
   [[nodiscard]] ID3D11Device *GetDevice() const { return Device.Get(); }
@@ -75,10 +73,13 @@ public:
   void UpdateLightConstants(const FLightConstants &Constants, const EViewModeIndex InMode);
 
   // 텍스트 인스턴싱
-  void AddTextInstanceArray(const TArray<FInstanceData>& Instances, const FName& MeshId, const FName& MaterialId);
+  void AddTextInstanceArray(const FDrawCommand& Command);
   void DrawInstances(const FCamera& Camera);
-  void DrawTextInstances(const FCamera& Camera, const FName& MeshId, const FName& MaterialId);
+  void DrawTextInstances(const FDrawCommand& Command);
   void ClearTextInstances();
+
+  void Draw(const FDrawCommand& Command, uint32 Slot = 0,
+            bool bApplyViewMode = true);
 
   void RenderOutline();
   ID3D11RenderTargetView* GetBackBuffer() { return BackBufferRTV.Get(); }
@@ -162,9 +163,9 @@ public:
   {
     UpdateBuffer(Constants, Slot);
 
-    TSharedPtr<FRenderPipeline> Pipeline = Material.Pipeline;
+    FRenderPipeline* Pipeline = Material.Pipeline;
     if (bApplyViewMode && CurrentRenderMode == EViewModeIndex::VMI_Wireframe) {
-      Pipeline = GetPipeline(FName("Simple_Wireframe"));
+      Pipeline = GetPipeline(FName("Simple_Wireframe")).get();
     }
     if (Pipeline) {
       Pipeline->Bind(*Context.Get());

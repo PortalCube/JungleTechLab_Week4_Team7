@@ -185,7 +185,7 @@ FMatrix UTextInstanceComponent::GetRenderMatrix(const FCamera &Camera) const {
   return ScaleTransform * ModelMatrix;
 }
 
-const FRenderData& UTextInstanceComponent::GetRenderData(const FCamera &Camera) {
+const FRenderData& UTextInstanceComponent::GetRenderData(const FCamera &Camera) const {
 
   TArray<FInstanceData> Built;
 

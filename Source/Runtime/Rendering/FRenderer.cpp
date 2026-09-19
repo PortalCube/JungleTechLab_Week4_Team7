@@ -293,11 +293,6 @@ TSharedPtr<FMesh> FRenderer::CreateDynamicMesh(const FMeshDesc &Desc) {
   return Mesh;
 }
 
-TSharedPtr<FMaterial> FRenderer::CreateMaterial(const FMaterialDesc &Desc) {
-  TSharedPtr<FMaterial> Material{new FMaterial()};
-  return Material;
-}
-
 void FRenderer::GetDeviceAndContext_ImplDX11(ID3D11Device *&DeviceOut,
                                              ID3D11DeviceContext *&ContextOut) {
   DeviceOut = Device.Get();
@@ -786,28 +781,28 @@ void FRenderer::UpdateLightConstants(const FLightConstants &Constants,
   Context->PSSetConstantBuffers(2, 1, LightConstantBuffer.GetAddressOf());
 }
 
-void FRenderer::AddTextInstanceArray(const TArray<FInstanceData> &Instances,
-                                     const FName &MeshId,
-                                     const FName &MaterialId) {
-  // 빈 데이터 전달 시 조기 반환
-  if (Instances.empty()) {
-    return;
-  }
-  auto &ResLib = FRenderResourceLibrary::Get();
-  // 머티리얼 리소스 존재 여부 확인
-  if (!ResLib.GetMaterial(MaterialId)) {
-    UE_LOG_WARN("[FRenderer] 유효하지 않은 머티리얼 ID 인스턴스 등록 시도");
-    return;
-  }
-  // 메시 리소스 존재 여부 확인
-  if (!ResLib.GetMesh(MeshId)) {
-    UE_LOG_WARN("[FRenderer] 유효하지 않은 메시 ID 인스턴스 등록 시도");
+void FRenderer::Draw(const FDrawCommand &Command, uint32 Slot,
+                     bool bApplyViewMode) {
+  if (!Command.Mesh || Command.Materials.empty()) {
     return;
   }
 
-  auto &TargetArray = ResLib.GetInstancingArray(MaterialId, MeshId);
-  TargetArray.reserve(TargetArray.size() + Instances.size());
-  TargetArray.insert(TargetArray.end(), Instances.begin(), Instances.end());
+  Draw(*Command.Mesh, Command.Materials[0], Command.Constants, Slot,
+       bApplyViewMode);
+}
+
+void FRenderer::AddTextInstanceArray(const FDrawCommand &Command) {
+  // 빈 데이터 전달 시 조기 반환
+  if (!Command.Mesh || Command.Materials.empty() || Command.Instances.empty()) {
+    return;
+  }
+  auto &ResLib = FRenderResourceLibrary::Get();
+
+  auto &TargetArray =
+      ResLib.GetInstancingArray(Command.Mesh, &Command.Materials[0]);
+  TargetArray.reserve(TargetArray.size() + Command.Instances.size());
+  TargetArray.insert(TargetArray.end(), Command.Instances.begin(),
+                     Command.Instances.end());
 }
 
 void FRenderer::DrawInstances(const FCamera &Camera) {
@@ -822,8 +817,7 @@ void FRenderer::DrawInstances(const FCamera &Camera) {
       continue;
 
     SC.DisableShading =
-        CurrentRenderMode == EViewModeIndex::VMI_Unlit ||
-        BatchKey.MaterialID == FName("Instance_Simple") ? 1.0f : 0.0f;
+        CurrentRenderMode == EViewModeIndex::VMI_Unlit ? 1.0f : 0.0f;
     UpdateBuffer(SC);
 
     const UINT InstanceCount = static_cast<UINT>(InstanceData.size());
@@ -852,18 +846,18 @@ void FRenderer::DrawInstances(const FCamera &Camera) {
     Context->Unmap(InstanceBuffer.Get(), 0);
 
     // 머티리얼 및 파이프라인 바인딩
-    auto Material = ResLib.GetMaterial(BatchKey.MaterialID);
+    const FMaterial *Material = BatchKey.Material;
     if (!Material)
       continue;
 
-    TSharedPtr<FRenderPipeline> Pipeline = Material->GetPipeline();
+    FRenderPipeline *Pipeline = Material->GetPipeline();
     if (Pipeline) {
       Pipeline->Bind(*Context.Get());
     }
     Material->BindResources(*Context.Get());
 
     // 메시 조회 및 바인딩
-    auto Mesh = ResLib.GetMesh(BatchKey.MeshID);
+    const FMesh *Mesh = BatchKey.Mesh;
     if (!Mesh)
       continue;
     Mesh->BindResources(*Context.Get());
@@ -884,17 +878,17 @@ void FRenderer::DrawInstances(const FCamera &Camera) {
   }
 }
 
-void FRenderer::DrawTextInstances(const FCamera &Camera, const FName &MeshId,
-                                  const FName &MaterialId) {
+void FRenderer::DrawTextInstances(const FDrawCommand &Command) {
+  if (!Command.Mesh || Command.Materials.empty()) {
+    return;
+  }
+
   auto &ResLib = FRenderResourceLibrary::Get();
 
-  // 상수 버퍼 업데이트
-  FObjectConstants SC{};
-  SC.MVP = Camera.CreateViewProjectionMatrix();
-  UpdateBuffer(SC);
+  UpdateBuffer(Command.Constants);
 
   TArray<FInstanceData> InstanceData =
-      FRenderResourceLibrary::Get().GetInstancingArray(MaterialId, MeshId);
+      ResLib.GetInstancingArray(Command.Mesh, &Command.Materials[0]);
 
   if (InstanceData.empty())
     return;
@@ -925,20 +919,16 @@ void FRenderer::DrawTextInstances(const FCamera &Camera, const FName &MeshId,
   Context->Unmap(InstanceBuffer.Get(), 0);
 
   // 머티리얼 및 파이프라인 바인딩
-  auto Material = ResLib.GetMaterial(MaterialId);
-  if (!Material)
-    return;
+  const FMaterial *Material = &Command.Materials[0];
 
-  TSharedPtr<FRenderPipeline> Pipeline = Material->GetPipeline();
+  FRenderPipeline *Pipeline = Material->GetPipeline();
   if (Pipeline) {
     Pipeline->Bind(*Context.Get());
   }
   Material->BindResources(*Context.Get());
 
   // 메시 조회 및 바인딩
-  auto Mesh = ResLib.GetMesh(MeshId);
-  if (!Mesh)
-    return;
+  const FMesh *Mesh = Command.Mesh;
   Mesh->BindResources(*Context.Get());
 
   // 슬롯 1에 인스턴스 버퍼 바인딩

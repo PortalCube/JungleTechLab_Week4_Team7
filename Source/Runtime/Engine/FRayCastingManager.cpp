@@ -56,7 +56,8 @@ bool FRayCastingManager::RayIntersectsMeshes(
 			continue;
 		}
 
-		auto Mesh = FRenderResourceLibrary::Get().GetMesh(Component->GetRenderData(Camera).MeshId);
+		const UStaticMesh* MeshAsset = Component->GetRenderData(Camera).Mesh;
+		const FMesh* Mesh = MeshAsset ? MeshAsset->Get() : nullptr;
 		if (!Mesh)
 		{
 			continue;
@@ -66,7 +67,7 @@ bool FRayCastingManager::RayIntersectsMeshes(
 
 		float HitDistance;
 		FVector ImpactPoint;
-		if (RayIntersectsMesh(Ray, *Mesh.get(), World, HitDistance, ImpactPoint) &&
+		if (RayIntersectsMesh(Ray, *Mesh, World, HitDistance, ImpactPoint) &&
 			HitDistance < ClosestHit)
 		{
 			ClosestHit = HitDistance;

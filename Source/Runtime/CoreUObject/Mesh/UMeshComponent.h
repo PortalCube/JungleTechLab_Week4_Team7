@@ -9,7 +9,7 @@
 
 class UStaticMesh;
 class UMaterial;
-class FMaterialInstance;
+struct FMaterialInstance;
 
 /// <summary>
 /// 모든 Mesh Component의 부모 컴포넌트입니다.

@@ -1,30 +1,18 @@
 #pragma once
 
+#include "Runtime/Engine/FRenderData.h"
 #include "FMesh.h"
 #include "FMaterial.h"
-#include "FRenderResourceLibrary.h"
 #include "ShaderConstants.h"
 #include "Runtime/Core/TArray.h"
-#include "Runtime/Core/PointerTypes.h"
-#include "Runtime/Material/FMaterialInstance.h"
 
 // 렌더링에 필요한 드로우 정보
 
-enum class ERenderType
-{
-    Primitive,
-    Texture,
-    Text,
-    Instancing,
-    Spotlight,
-    None
-};
-
 struct FDrawCommand
 {
-    FMesh* Mesh;
-    TArray<FMaterial*> Materials;
-    FObjectConstants Constants;
+    FMesh* Mesh = nullptr;
+    TArray<FMaterial> Materials;
+    FObjectConstants Constants{};
     ERenderType Type = ERenderType::Primitive;
     TArray<FInstanceData> Instances;
 };

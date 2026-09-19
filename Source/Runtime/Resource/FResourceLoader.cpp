@@ -234,7 +234,7 @@ void FResourceLoader::LoadAssets()
 		}
 		else
 		{
-			UE_LOG("[FResourceLoader::LoadAssets] 알 수 없는 AssetType %s", AssetID.c_str());
+			UE_LOG("[FResourceLoader::LoadAssets] 알 수 없는 AssetType %s", AssetID.ToString().c_str());
 			continue;
 		}
 	}

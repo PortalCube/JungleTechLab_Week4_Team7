@@ -471,9 +471,9 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
 
 bool FRenderResourceLibrary::InitializePipelines(FRenderer &Renderer) {
   // 솔리드 및 와이어프레임 파이프라인 개별 생성
-  CreateSolidWireframePipeline(Renderer);
-  CreateOutlinePipeline(Renderer);
-  CreatePostProcessPipeline(Renderer);
+  return CreateSolidWireframePipeline(Renderer) &&
+         CreateOutlinePipeline(Renderer) &&
+         CreatePostProcessPipeline(Renderer);
 }
 
 bool FRenderResourceLibrary::Initialize(FRenderer &Renderer) {
@@ -491,12 +491,6 @@ bool FRenderResourceLibrary::Initialize(FRenderer &Renderer) {
 
 bool FRenderResourceLibrary::CreateInstancingArrayMap() {
   AllInstancingArrayMap.clear();
-  // 기본 배치 키 등록
-  AllInstancingArrayMap[{FName("Instance_Text"), FName("Rect")}] = {};
-  AllInstancingArrayMap[{FName("Instance_Simple"), FName("Cube")}] = {};
-  AllInstancingArrayMap[{FName("Instance_Textured"), FName("MasterYi")}] = {};
-  AllInstancingArrayMap[{FName("SelectedActor_Text"), FName("Rect")}] = {};
-  
   return true;
 }
 
@@ -506,11 +500,11 @@ bool FRenderResourceLibrary::InitializeMaterials(FRenderer &Renderer) {
 
     TSharedPtr<FRenderPipeline> Pipeline = GetPipeline(Entry.PipelineID);
     if (Pipeline) {
-      Material->SetPipeLine(Pipeline);
+      Material->SetPipeLine(Pipeline.get());
     }
 
     if (Entry.TextureName) {
-      Material->SetTexture(GetTexture(Entry.TextureName));
+      Material->SetTexture(GetTexture(Entry.TextureName).get());
     }
 
     RegisterMaterial(Entry.Id, Material);
