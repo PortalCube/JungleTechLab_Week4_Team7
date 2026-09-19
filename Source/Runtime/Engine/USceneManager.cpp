@@ -20,7 +20,7 @@ void USceneManager::SaveScene(const FString& path) const
 	int32 UUID = ObjectArray.GetNextUUID();
 
 	FArchive Archive;
-	Archive.SetInt32("Version", 1);
+	Archive.SetInt32("Version", 2);
 	Archive.SetInt32("NextUUID", UUID);
 
 	FArchive SceneArchive;

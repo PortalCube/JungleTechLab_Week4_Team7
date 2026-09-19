@@ -45,12 +45,12 @@ void FAxisAlignedBoundingBox::GetCorner(FVector OutCorner[8]) const
 	OutCorner[0] = FVector{ Min.X, Min.Y, Min.Z };
 	OutCorner[1] = FVector{ Min.X, Max.Y, Min.Z };
 	OutCorner[2] = FVector{ Max.X, Min.Y, Min.Z };
-	OutCorner[3] = FVector{ Max.X, Max.X, Min.Z };
+	OutCorner[3] = FVector{ Max.X, Max.Y, Min.Z };
 	// Top
 	OutCorner[4] = FVector{ Min.X, Min.Y, Max.Z };
 	OutCorner[5] = FVector{ Min.X, Max.Y, Max.Z };
 	OutCorner[6] = FVector{ Max.X, Min.Y, Max.Z };
-	OutCorner[7] = FVector{ Max.X, Max.X, Max.Z };
+	OutCorner[7] = FVector{ Max.X, Max.Y, Max.Z };
 }
 
 //FAxisAlignedBoundingBox::FAxisAlignedBoundingBox(const FMesh& Mesh, const FMatrix& ModelMatrix)
