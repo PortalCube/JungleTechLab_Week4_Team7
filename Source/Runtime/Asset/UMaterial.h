@@ -32,4 +32,8 @@ public:
 
 	void Load(UMaterialDesc& Desc);
 
+	UPipeline* GetPipeline() const { return Pipeline; }
+	UTexture* GetTexture() const { return Texture; }
+	FTextureSamplerDesc GetSamplerDesc() const { return SamplerDesc; }
+
 };

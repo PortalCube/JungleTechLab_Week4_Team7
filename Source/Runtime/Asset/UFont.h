@@ -30,4 +30,5 @@ public:
 
 	void Load(UFontDesc& Desc);
 
+	FFont* Get() const { return Font; }
 };

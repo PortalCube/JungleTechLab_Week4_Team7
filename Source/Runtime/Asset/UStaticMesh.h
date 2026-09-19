@@ -24,4 +24,6 @@ public:
 
 	void Load(UStaticMeshDesc& Desc);
 
+	FMesh* Get() const { return Mesh; }
+
 };

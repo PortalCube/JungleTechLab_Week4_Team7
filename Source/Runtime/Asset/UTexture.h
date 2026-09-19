@@ -20,4 +20,6 @@ private:
 
 public:
 	void Load(UTextureDesc& Desc);
+
+	FTexture* Get() const { return Texture; }
 };

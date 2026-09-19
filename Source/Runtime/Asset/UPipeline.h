@@ -30,4 +30,5 @@ public:
 
 	void Load(UPipelineDesc& Desc);
 
+	FRenderPipeline* Get() const { return Pipeline; }
 };
