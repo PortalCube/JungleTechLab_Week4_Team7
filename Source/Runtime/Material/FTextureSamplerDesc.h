@@ -23,6 +23,6 @@ enum class ETextureSamplerWrapMode : uint8
 
 struct FTextureSamplerDesc
 {
-	ETextureSamplerFilterMode FilterMode;
-	ETextureSamplerWrapMode WrapMode;
+	ETextureSamplerFilterMode FilterMode	= ETextureSamplerFilterMode::Bilinear;
+	ETextureSamplerWrapMode WrapMode		= ETextureSamplerWrapMode::Wrap;
 };

@@ -9,9 +9,9 @@
 
 struct UMaterialDesc : UAssetDesc
 {
-	FRenderPipeline* Pipeline = nullptr;
-	FTexture* Texture = nullptr;
-	FTextureSamplerDesc SamplerDesc{};
+	FName PipelineFilePath;
+	FName TextureFilePath;
+	FTextureSamplerDesc TextureSamplerDesc;
 };
 
 class UMaterial : public UAsset

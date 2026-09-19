@@ -2,13 +2,13 @@
 
 #include "Runtime/Core/FString.h"
 #include "Runtime/Core/TArray.h"
+#include "Runtime/Core/TMap.h"
 #include "Runtime/Core/IntTypes.h"
 #include "Runtime/Math/FVector.h"
 #include "Runtime/Math/FVector2.h"
 #include "ThirdParty/Json/json.hpp"
 
-// 임시...
-#undef GetObject
+#include "Runtime/Utility/EngineUtil.h"
 
 /// <summary>
 /// UObject의 데이터를 직렬화/역직렬화 하는 클래스입니다.
@@ -61,33 +61,72 @@ public:
 	void SetVector2(const FString& Key, const FVector2& Value);
 	
 	template <typename T>
-	TArray<T> GetArray(const FString& Key) const
-	{
-		TArray<T> Array;
-
-		for (const auto& Item : Object.at(Key))
-		{
-			T Value = Item.get<T>();
-			Array.push_back(Value);
-		}
-
-		return Array;
-	}
+	TArray<T> GetArray(const FString& Key) const;
 
 	template <typename T>
-	void SetArray(const FString& Key, const TArray<T>& Value)
-	{
-		Object[Key] = nlohmann::json::array();
-
-		for (int i = 0; i < Value.size(); ++i)
-		{
-			Object[Key].push_back(Value[i]);
-		}
-	}
+	void SetArray(const FString& Key, const TArray<T>& Value);
 
 	TArray<FArchive> GetArchiveArray(const FString& Key) const;
 	void SetArchiveArray(const FString& Key, const TArray<FArchive>& Value);
 
 	FArchive GetArchive(const FString& Key) const;
 	void SetArchive(const FString& Key, const FArchive& Archive);
+
+	template <typename T>
+	T GetEnum(const FString& Key, TMap<FString, T>& EnumMap);
+
+	template <typename T>
+	void SetEnum(const FString& Key, T Value, TMap<T, FString>& EnumMap);
 };
+
+template<typename T>
+inline TArray<T> FArchive::GetArray(const FString& Key) const
+{
+	TArray<T> Array;
+
+	for (const auto& Item : Object.at(Key))
+	{
+		T Value = Item.get<T>();
+		Array.push_back(Value);
+	}
+
+	return Array;
+}
+
+template<typename T>
+inline void FArchive::SetArray(const FString& Key, const TArray<T>& Value)
+{
+	Object[Key] = nlohmann::json::array();
+
+	for (int i = 0; i < Value.size(); ++i)
+	{
+		Object[Key].push_back(Value[i]);
+	}
+}
+
+template<typename T>
+inline T FArchive::GetEnum(const FString& Key, TMap<FString, T>& EnumMap)
+{
+	FString Value = GetString(Key);
+
+	auto& It = EnumMap.find(Key);
+	if (It == EnumMap.end())
+	{
+		throw EngineUtil::CreateError("[FArchive::GetEnum] 키 {}에서 대해서 EnumMap에 없는 값이 있습니다. ({})", Key, Value);
+	}
+
+	return It.second;
+}
+
+template<typename T>
+inline void FArchive::SetEnum(const FString& Key, T Value, TMap<T, FString>& EnumMap)
+{
+	auto& It = EnumMap.find(Key);
+
+	if (It == EnumMap.end())
+	{
+		throw EngineUtil::CreateError("[FArchive::SetEnum] 키 {}에서 대해서 EnumMap에 없는 값이 있습니다. ({})", Key, Value);
+	}
+
+	SetString(Key, It.second);
+}

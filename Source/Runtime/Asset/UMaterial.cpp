@@ -3,7 +3,7 @@
 void UMaterial::Load(UMaterialDesc& Desc)
 {
 	LoadInternal(Desc);
-	Desc.Pipeline = Desc.Pipeline;
-	Desc.Texture = Desc.Texture;
-	Desc.SamplerDesc = Desc.SamplerDesc;
+	Pipeline = Desc.Pipeline;
+	Texture = Desc.Texture;
+	SamplerDesc = Desc.TextureSamplerDesc;
 }

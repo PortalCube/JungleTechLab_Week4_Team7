@@ -180,7 +180,7 @@ void FImguiContentsDrawer::RenderContentView()
 		TSharedPtr<FTexture> DisplayImage = Thumbnail;
 		if (Item.bIsDirectory)
 		{
-			DisplayImage = FRenderResourceLibrary::Get().GetEditTexture("foldericon");
+			DisplayImage = FRenderResourceLibrary::Get().GetTexture("foldericon");
 		}
 
 		if (DisplayImage && DisplayImage->GetSRV())          

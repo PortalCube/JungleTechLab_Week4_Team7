@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EBlendMode.h"
+#include "Runtime/Material/FBlendModeDesc.h"
 #include "Runtime/Core/FString.h"
 #include "Vertices.h"
 #include <d3d11.h>

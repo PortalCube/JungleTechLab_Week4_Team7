@@ -5,6 +5,8 @@
 #include "Runtime/Core/PointerTypes.h"
 #include "FTexture.h"
 
+class FArchive;
+
 struct FCharacterInfo
 {
 	float u;
@@ -23,8 +25,9 @@ struct FCharacterInfo
 class FFont
 {
 public:
+	explicit FFont(const FArchive& Archive);
+
 	void InitializeForASCII(float InNumberOfLine);
-	void Deserialize(const FWString& path);
 	const FCharacterInfo& GetCharInfo(char32_t InCharacter) const;
 	void SetTexture(const TSharedPtr<FTexture>& InName);
 private:

@@ -38,9 +38,6 @@ public:
   // 폰트 보관 맵
   TMap<FName, TSharedPtr<FFont>> AllFontMap;
 
-  // 에디터용 아이콘 텍스쳐 보관 맵
-  TMap<FString, TSharedPtr<FTexture>> AllEditorTextureMap;
-
   // 인스턴싱 배치 배열 맵
   TMap<FInstanceBatchKey, TArray<FInstanceData>> AllInstancingArrayMap;
 
@@ -65,14 +62,6 @@ public:
     return nullptr;
   }
 
-  // 편집용 머티리얼 조회
-  [[nodiscard]] TSharedPtr<FMaterial> GetEditMaterial(const FName& Id) const {
-      auto it = AllMaterialMap.find(Id);
-      if (it != AllMaterialMap.end())
-          return it->second;
-      return nullptr;
-  }
-
   // 메쉬 조회
   TSharedPtr<FMesh> GetMesh(const FName &ID) const {
     auto it = AllMeshMap.find(ID);
@@ -95,21 +84,10 @@ public:
     AllTextureMap[name] = texture;
   }
 
-  void RegisterEditTexture(const FString &name, TSharedPtr<FTexture> texture) {
-    AllEditorTextureMap[name] = texture;
-  }
-
   // 텍스처 조회
   [[nodiscard]] TSharedPtr<FTexture> GetTexture(const FName &name) const {
     auto it = AllTextureMap.find(name);
     if (it != AllTextureMap.end())
-      return it->second;
-    return nullptr;
-  }
-
-  [[nodiscard]] TSharedPtr<FTexture> GetEditTexture(const FString &name) const {
-    auto it = AllEditorTextureMap.find(name);
-    if (it != AllEditorTextureMap.end())
       return it->second;
     return nullptr;
   }
@@ -137,15 +115,12 @@ public:
   TSharedPtr<FMesh> GetOrCreateMesh(const FName &ID,
                                     const TArray<FVertexData> &vertices);
 
-  
-
   [[nodiscard]] TSharedPtr<FFont> GetFont(const FName& InName) const {
       auto it = AllFontMap.find(InName);
       if (it != AllFontMap.end())
           return it->second;
       return nullptr;
   }
-
 
 private:
   bool InitializePipelines(FRenderer &Renderer);
@@ -159,10 +134,6 @@ private:
   // 텍스처 및 머티리얼 일괄 초기화
   bool CreateTextures(FRenderer &Renderer);
   bool InitializeMaterials(FRenderer &Renderer);
-  bool CreateEditTextures(FRenderer &Renderer);
-
-  // 폰트 일괄 초기화
-  bool CreateFonts(FRenderer& Renderer);
 
   FRenderer *RendererRef = nullptr;
 };

@@ -1,15 +1,18 @@
 #include "FRenderResourceLibrary.h"
-#include "Runtime/Mesh/MeshUtil.h"
+#include "Runtime/Resource/FResourceLoader.h"
 
 #include "FRenderer.h"
 #include "FTexture.h"
 #include <d3dcompiler.h>
 #include "Runtime/Core/TArray.h"
 #include "Runtime/Math/FVector.h"
-#include "Runtime/Rendering/FRenderer.h"
+#include "Runtime/Material/FBlendDesc.h"
+#include "Runtime/Engine/FArchive.h"
+#include "ThirdParty/Json/json.hpp"
+
+#include <fstream>
 
 #define STB_IMAGE_IMPLEMENTATION
-
 #include "ThirdParty/stb/stb_image.h"
 
 FRenderResourceLibrary &FRenderResourceLibrary::Get() {
@@ -121,7 +124,6 @@ const FPipelineEntry pipelineTable[] = {
         .bIsInstancing = true,
     },
 };
-
 
 // 머티리얼 정보 엔트리
 struct FMaterialEntry {
@@ -480,45 +482,16 @@ bool FRenderResourceLibrary::InitializePipelines(FRenderer &Renderer) {
 
 bool FRenderResourceLibrary::Initialize(FRenderer &Renderer) {
   RendererRef = &Renderer;
-  if (!InitializePipelines(
-          Renderer) // 파이프라인을 먼저 생성해야 뒤에 material 할당가능
-      || !MeshUtil::CreateCubeMesh(Renderer, *this) ||
-      !MeshUtil::CreateCylinderMesh(Renderer, *this, 1.0f, 24u, 1.0f, 1.0f) ||
-      !MeshUtil::CreateConeMesh(Renderer, *this) ||
-      !MeshUtil::CreateSpotlightConeMesh(Renderer, *this) ||
-      !MeshUtil::CreateArrowMesh(Renderer, *this) ||
-      !MeshUtil::CreateCircleMesh(Renderer, *this) ||
-      !MeshUtil::CreateRotationGizmoMesh(Renderer, *this) ||
-      !MeshUtil::CreateSquareArrowMesh(Renderer, *this) ||
-      !MeshUtil::CreateGridMesh(Renderer, *this) ||
-      !MeshUtil::CreateSphereMesh(Renderer, *this) ||
-      !MeshUtil::CreateLineMesh(Renderer, *this) ||
-      !MeshUtil::CreatePlaneMesh(Renderer, *this) ||
-      !MeshUtil::CreateRectMesh(Renderer, *this) ||
-      !MeshUtil::CreateMasterYiMesh(Renderer, *this) ||
-      !CreateTextures(Renderer) ||
-      !InitializeMaterials(Renderer) || !CreateInstancingArrayMap() ||
-      !CreateEditTextures(Renderer) || !CreateFonts(Renderer)) {
+  if (!InitializePipelines(Renderer)) { // 파이프라인을 먼저 생성해야 뒤에 material 할당가능
+    return false;
+  }
+
+  if (!InitializeMaterials(Renderer) || !CreateInstancingArrayMap()) {
     return false;
   }
 
   return true;
 }
-
-
-
-
-// 스포트라이트 전용 열린 원뿔 메쉬 생성
-
-
-
-
-
-
-
-
-
-
 
 bool FRenderResourceLibrary::CreateInstancingArrayMap() {
   AllInstancingArrayMap.clear();
@@ -547,56 +520,6 @@ bool FRenderResourceLibrary::InitializeMaterials(FRenderer &Renderer) {
     RegisterMaterial(Entry.Id, Material);
   }
   return true;
-}
-
-bool FRenderResourceLibrary::CreateEditTextures(FRenderer& Renderer)
-{
-    const std::filesystem::path ExeDir(GetExecutableDirectory());
-    const std::filesystem::path ProjectRoot =
-        ExeDir.parent_path().parent_path().parent_path();
-
-    TArray<std::filesystem::path> SearchRoots = {
-        ProjectRoot / L"Edit",
-        std::filesystem::current_path() / L"Edit",
-        ExeDir / L"Edit",
-    };
-
-    for (const auto& Root : SearchRoots) {
-        std::error_code Ec;
-        if (!std::filesystem::exists(Root, Ec)) {
-            continue;
-        }
-
-        for (const auto& Entry :
-            std::filesystem::recursive_directory_iterator(Root, Ec)) {
-            if (!Entry.is_regular_file(Ec))
-                continue;
-
-            FWString Ext = Entry.path().extension().wstring();
-            std::transform(Ext.begin(), Ext.end(), Ext.begin(), ::towlower);
-            if (Ext != L".dds" && Ext != L".jpg" && Ext != L".jpeg")
-                continue;
-
-            // 확장자 제거
-            FString KeyWide = Entry.path().stem().string();
-            std::transform(KeyWide.begin(), KeyWide.end(), KeyWide.begin(),
-                ::tolower);
-
-            // 이미 로드된 텍스처 건너뜀
-            if (AllEditorTextureMap.find(KeyWide) != AllEditorTextureMap.end()) {
-                continue;
-            }
-
-            TSharedPtr<FTexture> Texture = Renderer.CreateTexture(Entry.path().wstring().c_str());
-
-            if (!Texture)
-                continue;
-
-            RegisterEditTexture(KeyWide, Texture);
-        }
-    }
-
-    return true;
 }
 
 TSharedPtr<FMaterial> FRenderResourceLibrary::RegisterMaterial(const FName& Id, TSharedPtr<FMaterial> inMaterial) {
@@ -658,9 +581,7 @@ bool FRenderResourceLibrary::CreateTextures(FRenderer &Renderer)
   return true;
 }
 
-TSharedPtr<FMesh>
-FRenderResourceLibrary::GetOrCreateMesh(const FName &ID,
-                                        const TArray<FVertexData> &vertices) {
+TSharedPtr<FMesh> FRenderResourceLibrary::GetOrCreateMesh(const FName &ID, const TArray<FVertexData> &vertices) {
   auto it = AllMeshMap.find(ID);
   if (it != AllMeshMap.end())
     return it->second;
@@ -676,56 +597,4 @@ FRenderResourceLibrary::GetOrCreateMesh(const FName &ID,
     AllMeshMap[ID] = newMesh;
   }
   return newMesh;
-}
-
-bool FRenderResourceLibrary::CreateFonts(FRenderer& Renderer)
-{
-    const std::filesystem::path ExeDir(GetExecutableDirectory());
-    const std::filesystem::path ProjectRoot =
-        ExeDir.parent_path().parent_path().parent_path();
-
-    TArray<std::filesystem::path> SearchRoots = {
-        ProjectRoot / L"Fonts",
-        std::filesystem::current_path() / L"Fonts",
-        ExeDir / L"Fonts",
-    };
-
-    for (const auto& Root : SearchRoots) {
-        std::error_code Ec;
-        if (!std::filesystem::exists(Root, Ec)) {
-            continue;
-        }
-
-        for (const auto& Entry :
-            std::filesystem::recursive_directory_iterator(Root, Ec)) {
-            if (!Entry.is_regular_file(Ec))
-                continue;
-
-            FWString Ext = Entry.path().extension().wstring();
-            std::transform(Ext.begin(), Ext.end(), Ext.begin(), ::towlower);
-            if (Ext != L".json")
-                continue;
-
-            TSharedPtr<FFont>Font = MakeShared<FFont>();
-
-            FWString Path = Entry.path().wstring();
-            Font->Deserialize(Path);
-
-            // 확장자 제거
-            FString KeyWide = Entry.path().stem().string();
-            std::transform(KeyWide.begin(), KeyWide.end(), KeyWide.begin(),
-                ::tolower);
-            FName TextureKey(KeyWide);
-            Font->SetTexture(AllTextureMap[TextureKey]);
-
-            // 이미 로드된 폰트 건너뜀
-            if (AllFontMap.find(TextureKey) != AllFontMap.end()) {
-                continue;
-            }
-
-            AllFontMap[TextureKey] = Font;
-        }
-    }
-
-    return true;
 }
