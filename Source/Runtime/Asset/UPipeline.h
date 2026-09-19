@@ -12,13 +12,8 @@
 
 struct UPipelineDesc : UAssetDesc
 {
-	FName Pipeline;
-	FString VertexShaderFilePath;
-	FString PixelShaderFilePath;
-
-	FBlendDesc Blend;
-	FRasterizerDesc Rasterizer;
-	FDepthStencilDesc DepthStencil;
+	FRenderPipeline* Pipeline;
+	bool bIsInstancing = false;
 };
 
 class UPipeline : public UAsset

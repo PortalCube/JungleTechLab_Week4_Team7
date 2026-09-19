@@ -39,6 +39,11 @@ void FRenderer::Shutdown() {
 
   LineBatcher.Shutdown();
 
+  RasterizerStateMap.clear();
+  DepthStencilStateMap.clear();
+  BlendStateMap.clear();
+  SamplerStateMap.clear();
+
   b0ConstantBuffer.Reset();
   FrameConstantBuffer.Reset();
 
@@ -93,11 +98,11 @@ void FRenderer::SetViewportUV(FVector2 TopLeftUV, FVector2 LengthUV) {
 //   }
 //
 //   if (Pipeline) {
-//     Pipeline->Bind(*Context.Get());
+//     Pipeline->Bind(*Context.GetInstance());
 //   }
 //
-//   Material.BindResources(*Context.Get());
-//   Mesh.BindResources(*Context.Get());
+//   Material.BindResources(*Context.GetInstance());
+//   Mesh.BindResources(*Context.GetInstance());
 //
 //   Context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
 //
@@ -113,9 +118,9 @@ void FRenderer::SetViewportUV(FVector2 TopLeftUV, FVector2 LengthUV) {
 //   UpdateGridConstants(GridConstants);
 //   const auto &Pipeline = Material.Pipeline;
 //
-//   Pipeline->Bind(*Context.Get());
-//   Material.BindResources(*Context.Get());
-//   Mesh.BindResources(*Context.Get());
+//   Pipeline->Bind(*Context.GetInstance());
+//   Material.BindResources(*Context.GetInstance());
+//   Mesh.BindResources(*Context.GetInstance());
 //
 //   Context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
 //
@@ -300,144 +305,254 @@ void FRenderer::GetDeviceAndContext_ImplDX11(ID3D11Device *&DeviceOut,
 }
 
 TSharedPtr<FRenderPipeline>
-FRenderer::CreateRenderPipeline(const FRenderPipelineDesc &Desc,
-                                EViewModeIndex RenderMode) {
-  TSharedPtr<FRenderPipeline> Pipeline{new FRenderPipeline()};
-  Pipeline->desc = Desc;
+FRenderer::CreateRenderPipeline(const FRenderPipelineDesc &Desc, EViewModeIndex RenderMode) {
+  namespace fs = std::filesystem;
+
+  FRenderPipelineDesc ClonedDesc = Desc;
+
+  if (RenderMode == EViewModeIndex::VMI_Wireframe) {
+    ClonedDesc.Rasterizer.FillMode = ERasterizerFillMode::Wireframe;
+  }
 
   Microsoft::WRL::ComPtr<ID3DBlob> Blob;
-  HRESULT Result = D3DReadFileToBlob(Desc.VertexShaderFileName.c_str(), &Blob);
+  const fs::path VertexShaderPath{ ClonedDesc.VertexShaderFilePath };
+  HRESULT Result = D3DReadFileToBlob(VertexShaderPath.wstring().c_str(), &Blob);
   if (FAILED(Result)) {
     return nullptr;
   }
 
+  Microsoft::WRL::ComPtr<ID3D11VertexShader> VertexShader;
   Result = Device->CreateVertexShader(Blob->GetBufferPointer(),
                                       Blob->GetBufferSize(), nullptr,
-                                      &Pipeline->VertexShader);
+                                      &VertexShader);
   if (FAILED(Result)) {
     return nullptr;
   }
 
-  if (Desc.bIsInstancing) {
+  Microsoft::WRL::ComPtr<ID3D11InputLayout> InputLayout;
+  if (ClonedDesc.bIsInstancing) {
     Result = Device->CreateInputLayout(
         FVertexInstanceLayouts::Layout, FVertexInstanceLayouts::NumElements,
         Blob->GetBufferPointer(), Blob->GetBufferSize(),
-        &Pipeline->InputLayout);
+        &InputLayout);
   } else {
     Result = Device->CreateInputLayout(
         FVertexLayouts::Layout, FVertexLayouts::NumElements,
         Blob->GetBufferPointer(), Blob->GetBufferSize(),
-        &Pipeline->InputLayout);
+        &InputLayout);
   }
 
   if (FAILED(Result)) {
     return nullptr;
   }
 
-  Result = D3DReadFileToBlob(Desc.PixelShaderFileName.c_str(), &Blob);
+  const fs::path PixelShaderPath{ ClonedDesc.PixelShaderFilePath };
+  Result = D3DReadFileToBlob(PixelShaderPath.wstring().c_str(), &Blob);
   if (FAILED(Result)) {
     return nullptr;
   }
 
-  Result =
-      Device->CreatePixelShader(Blob->GetBufferPointer(), Blob->GetBufferSize(),
-                                nullptr, &Pipeline->PixelShader);
+  Microsoft::WRL::ComPtr<ID3D11PixelShader> PixelShader;
+  Result = Device->CreatePixelShader(Blob->GetBufferPointer(), Blob->GetBufferSize(), nullptr, &PixelShader);
   if (FAILED(Result)) {
     return nullptr;
   }
 
-  D3D11_RASTERIZER_DESC RasterizerDesc{
-      .FillMode = (RenderMode == EViewModeIndex::VMI_Wireframe)
-                      ? D3D11_FILL_WIREFRAME
-                      : D3D11_FILL_SOLID,
-      .CullMode = Desc.CullMode,
-      .FrontCounterClockwise = false,
+  auto RasterizerState = GetOrCreateRasterizerState(ClonedDesc.Rasterizer);
+  auto DepthStencilState = GetOrCreateDepthStencilState(ClonedDesc.DepthStencil);
+  auto BlendState = GetOrCreateBlendState(ClonedDesc.Blend);
+  auto SamplerState = GetOrCreateSamplerState(FTextureSamplerDesc{});
+
+  if (
+      !RasterizerState ||
+      !DepthStencilState ||
+      !BlendState ||
+      !SamplerState
+      ) {
+    return nullptr;
+  }
+
+  FRenderPipelineCreateInfo CreateInfo{
+      .Desc                 = std::move(ClonedDesc),
+      .VertexShader         = std::move(VertexShader),
+      .PixelShader          = std::move(PixelShader),
+      .InputLayout          = std::move(InputLayout),
+      .RasterizerState      = std::move(RasterizerState),
+      .DepthStencilState    = std::move(DepthStencilState),
+      .SamplerState         = std::move(SamplerState),
+      .BlendState           = std::move(BlendState),
   };
 
-  Result = Device->CreateRasterizerState(&RasterizerDesc,
-                                         &Pipeline->RasterizerState);
-  if (FAILED(Result)) {
-    return nullptr;
+  return MakeShared<FRenderPipeline>(std::move(CreateInfo));
+}
+
+Microsoft::WRL::ComPtr<ID3D11RasterizerState>
+FRenderer::GetOrCreateRasterizerState(const FRasterizerDesc& Desc) {
+  if (const auto It = RasterizerStateMap.find(Desc); It != RasterizerStateMap.end()) {
+    return It->second;
   }
 
-  D3D11_DEPTH_STENCIL_DESC DepthStencilDesc{
-      .DepthEnable = Desc.bEnableDepthTest,
-      .DepthWriteMask = Desc.bEnableDepthWrite ? D3D11_DEPTH_WRITE_MASK_ALL
-                                               : D3D11_DEPTH_WRITE_MASK_ZERO,
-      .DepthFunc = D3D11_COMPARISON_LESS,
+  static const TMap<ERasterizerFillMode, D3D11_FILL_MODE> FillModeMap{
+      {ERasterizerFillMode::Solid, D3D11_FILL_SOLID},
+      {ERasterizerFillMode::Wireframe, D3D11_FILL_WIREFRAME},
   };
 
-  Result = Device->CreateDepthStencilState(&DepthStencilDesc,
-                                           &Pipeline->DepthStencilState);
-  if (FAILED(Result)) {
+  static const TMap<ERasterizerCullMode, D3D11_CULL_MODE> CullModeMap{
+      {ERasterizerCullMode::None, D3D11_CULL_NONE},
+      {ERasterizerCullMode::Front, D3D11_CULL_FRONT},
+      {ERasterizerCullMode::Back, D3D11_CULL_BACK},
+  };
+  static const TMap<ERasterizerFrontFaceMode, BOOL> FrontFaceMap{
+      {ERasterizerFrontFaceMode::CounterClockwise, TRUE},
+      {ERasterizerFrontFaceMode::Clockwise, FALSE},
+  };
+
+  const D3D11_RASTERIZER_DESC NativeDesc{
+      .FillMode = FillModeMap.at(Desc.FillMode),
+      .CullMode = CullModeMap.at(Desc.CullMode),
+      .FrontCounterClockwise = FrontFaceMap.at(Desc.FrontFace),
+      .MultisampleEnable = Desc.bUseMultisample,
+      .AntialiasedLineEnable = Desc.bUseAntialiasedLine,
+  };
+
+  Microsoft::WRL::ComPtr<ID3D11RasterizerState> State;
+  if (FAILED(Device->CreateRasterizerState(&NativeDesc, &State))) {
+    return nullptr;
+  }
+  RasterizerStateMap.emplace(Desc, State);
+  return State;
+}
+
+Microsoft::WRL::ComPtr<ID3D11DepthStencilState>
+FRenderer::GetOrCreateDepthStencilState(const FDepthStencilDesc& Desc) {
+  if (const auto It = DepthStencilStateMap.find(Desc); It != DepthStencilStateMap.end()) {
+    return It->second;
+  }
+
+  static const TMap<EDepthWriteMode, D3D11_DEPTH_WRITE_MASK> DepthWriteMap{
+      {EDepthWriteMode::Disable, D3D11_DEPTH_WRITE_MASK_ZERO},
+      {EDepthWriteMode::Enable, D3D11_DEPTH_WRITE_MASK_ALL},
+  };
+
+  D3D11_DEPTH_STENCIL_DESC NativeDesc{};
+  NativeDesc.DepthEnable = Desc.bDepthEnable;
+  NativeDesc.DepthWriteMask = DepthWriteMap.at(Desc.DepthWrite);
+  NativeDesc.DepthFunc = D3D11_COMPARISON_LESS;
+  NativeDesc.StencilEnable = Desc.bStencilEnable;
+  NativeDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+  NativeDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+  NativeDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+  NativeDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+  NativeDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+  NativeDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+  NativeDesc.BackFace = NativeDesc.FrontFace;
+
+  Microsoft::WRL::ComPtr<ID3D11DepthStencilState> State;
+  if (FAILED(Device->CreateDepthStencilState(&NativeDesc, &State))) {
+    return nullptr;
+  }
+  DepthStencilStateMap.emplace(Desc, State);
+  return State;
+}
+
+Microsoft::WRL::ComPtr<ID3D11BlendState>
+FRenderer::GetOrCreateBlendState(const FBlendDesc& Desc) {
+  if (const auto It = BlendStateMap.find(Desc); It != BlendStateMap.end()) {
+    return It->second;
+  }
+
+  static const TMap<EBlendMode, D3D11_RENDER_TARGET_BLEND_DESC> BlendModeMap{
+      {EBlendMode::Opaque,
+       {.BlendEnable = FALSE,
+        .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL}},
+      {EBlendMode::Masked,
+       {.BlendEnable = FALSE,
+        .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL}},
+      {EBlendMode::Translucent,
+       {.BlendEnable = TRUE,
+        .SrcBlend = D3D11_BLEND_SRC_ALPHA,
+        .DestBlend = D3D11_BLEND_INV_SRC_ALPHA,
+        .BlendOp = D3D11_BLEND_OP_ADD,
+        .SrcBlendAlpha = D3D11_BLEND_ONE,
+        .DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA,
+        .BlendOpAlpha = D3D11_BLEND_OP_ADD,
+        .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL}},
+      {EBlendMode::Additive,
+       {.BlendEnable = TRUE,
+        .SrcBlend = D3D11_BLEND_ONE,
+        .DestBlend = D3D11_BLEND_ONE,
+        .BlendOp = D3D11_BLEND_OP_ADD,
+        .SrcBlendAlpha = D3D11_BLEND_ONE,
+        .DestBlendAlpha = D3D11_BLEND_ZERO,
+        .BlendOpAlpha = D3D11_BLEND_OP_ADD,
+        .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL}},
+      {EBlendMode::PremultipliedAlpha,
+       {.BlendEnable = TRUE,
+        .SrcBlend = D3D11_BLEND_ONE,
+        .DestBlend = D3D11_BLEND_INV_SRC_ALPHA,
+        .BlendOp = D3D11_BLEND_OP_ADD,
+        .SrcBlendAlpha = D3D11_BLEND_ONE,
+        .DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA,
+        .BlendOpAlpha = D3D11_BLEND_OP_ADD,
+        .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL}},
+  };
+
+  D3D11_BLEND_DESC NativeDesc{};
+  NativeDesc.RenderTarget[0] = BlendModeMap.at(Desc.BlendMode);
+
+  Microsoft::WRL::ComPtr<ID3D11BlendState> State;
+
+  if (FAILED(Device->CreateBlendState(&NativeDesc, &State))) {
     return nullptr;
   }
 
-  // 블렌드 상태 생성
-  D3D11_BLEND_DESC BlendDesc{};
-  BlendDesc.AlphaToCoverageEnable = false;
-  BlendDesc.IndependentBlendEnable = false;
-  auto &RenderTargetBlend = BlendDesc.RenderTarget[0];
+  BlendStateMap.emplace(Desc, State);
+  return State;
+}
 
-  switch (Desc.BlendMode) {
-  case EBlendMode::Opaque:
-  case EBlendMode::Masked:
-    RenderTargetBlend.BlendEnable = false;
-    break;
-
-  case EBlendMode::Translucent:
-    RenderTargetBlend.BlendEnable = true;
-    RenderTargetBlend.SrcBlend = D3D11_BLEND_SRC_ALPHA;
-    RenderTargetBlend.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-    RenderTargetBlend.BlendOp = D3D11_BLEND_OP_ADD;
-    RenderTargetBlend.SrcBlendAlpha = D3D11_BLEND_ONE;
-    RenderTargetBlend.DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
-    RenderTargetBlend.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    break;
-
-  case EBlendMode::Additive:
-    RenderTargetBlend.BlendEnable = true;
-    RenderTargetBlend.SrcBlend = D3D11_BLEND_ONE;
-    RenderTargetBlend.DestBlend = D3D11_BLEND_ONE;
-    RenderTargetBlend.BlendOp = D3D11_BLEND_OP_ADD;
-    RenderTargetBlend.SrcBlendAlpha = D3D11_BLEND_ONE;
-    RenderTargetBlend.DestBlendAlpha = D3D11_BLEND_ZERO;
-    RenderTargetBlend.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    break;
-
-  case EBlendMode::PremultipliedAlpha:
-    RenderTargetBlend.BlendEnable = true;
-    RenderTargetBlend.SrcBlend = D3D11_BLEND_ONE;
-    RenderTargetBlend.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-    RenderTargetBlend.BlendOp = D3D11_BLEND_OP_ADD;
-    RenderTargetBlend.SrcBlendAlpha = D3D11_BLEND_ONE;
-    RenderTargetBlend.DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
-    RenderTargetBlend.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    break;
+Microsoft::WRL::ComPtr<ID3D11SamplerState>
+FRenderer::GetOrCreateSamplerState(const FTextureSamplerDesc& Desc) {
+  if (const auto It = SamplerStateMap.find(Desc); It != SamplerStateMap.end()) {
+    return It->second;
   }
 
-  RenderTargetBlend.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+  static const TMap<ETextureSamplerFilterMode, D3D11_FILTER> FilterModeMap{
+      {ETextureSamplerFilterMode::Point, D3D11_FILTER_MIN_MAG_MIP_POINT},
+      {ETextureSamplerFilterMode::Bilinear,
+       D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT},
+      {ETextureSamplerFilterMode::Trilinear, D3D11_FILTER_MIN_MAG_MIP_LINEAR},
+      {ETextureSamplerFilterMode::Anisotropic, D3D11_FILTER_ANISOTROPIC},
+  };
+  static const TMap<ETextureSamplerWrapMode, D3D11_TEXTURE_ADDRESS_MODE>
+      WrapModeMap{
+          {ETextureSamplerWrapMode::Wrap, D3D11_TEXTURE_ADDRESS_WRAP},
+          {ETextureSamplerWrapMode::Mirror, D3D11_TEXTURE_ADDRESS_MIRROR},
+          {ETextureSamplerWrapMode::Clamp, D3D11_TEXTURE_ADDRESS_CLAMP},
+      };
+  static const TMap<ETextureSamplerFilterMode, UINT> MaxAnisotropyMap{
+      {ETextureSamplerFilterMode::Point, 1u},
+      {ETextureSamplerFilterMode::Bilinear, 1u},
+      {ETextureSamplerFilterMode::Trilinear, 1u},
+      {ETextureSamplerFilterMode::Anisotropic, 16u},
+  };
 
-  Result = Device->CreateBlendState(&BlendDesc, &Pipeline->BlendState);
-  if (FAILED(Result)) {
-    return nullptr;
-  }
-
-  D3D11_SAMPLER_DESC SamplerDesc{
-      .Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
-      .AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
-      .AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
-      .AddressW = D3D11_TEXTURE_ADDRESS_WRAP,
+  const D3D11_TEXTURE_ADDRESS_MODE Address = WrapModeMap.at(Desc.WrapMode);
+  const D3D11_SAMPLER_DESC NativeDesc{
+      .Filter = FilterModeMap.at(Desc.FilterMode),
+      .AddressU = Address,
+      .AddressV = Address,
+      .AddressW = Address,
+      .MaxAnisotropy = MaxAnisotropyMap.at(Desc.FilterMode),
       .ComparisonFunc = D3D11_COMPARISON_NEVER,
       .MaxLOD = D3D11_FLOAT32_MAX,
   };
 
-  Result = Device->CreateSamplerState(&SamplerDesc, &Pipeline->SamplerState);
-  if (FAILED(Result)) {
+  Microsoft::WRL::ComPtr<ID3D11SamplerState> State;
+  if (FAILED(Device->CreateSamplerState(&NativeDesc, &State))) {
     return nullptr;
   }
-
-  return Pipeline;
+  SamplerStateMap.emplace(Desc, State);
+  return State;
 }
 
 TSharedPtr<FTexture> FRenderer::CreateTexture(const wchar_t *path) {

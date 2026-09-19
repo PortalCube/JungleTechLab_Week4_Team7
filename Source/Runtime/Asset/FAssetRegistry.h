@@ -26,12 +26,12 @@ public:
 	void Clear();
 	
 	template <typename T>
-	T Get(const FName& Name);
+	T* Get(const FName& Name);
 	
 };
 
 template<typename T>
-inline T FAssetRegistry::Get(const FName& Name)
+inline T* FAssetRegistry::Get(const FName& Name)
 {
 	auto It = AssetMap.find(Name);
 
@@ -41,11 +41,5 @@ inline T FAssetRegistry::Get(const FName& Name)
 	}
 
 	UAsset* Asset = It->second;
-
-	if (!Asset->IsA<T>())
-	{
-		return nullptr;
-	}
-	
-	return Asset;
+	return Asset->Cast<T>();
 }

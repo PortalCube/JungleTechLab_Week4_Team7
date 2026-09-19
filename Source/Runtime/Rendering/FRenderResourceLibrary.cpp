@@ -210,9 +210,8 @@ bool FRenderResourceLibrary::CreateSolidWireframePipeline(FRenderer &Renderer) {
   }
 
   FRenderPipelineDesc Desc = {
-      .VertexShaderFileName = VsPath,
-      .PixelShaderFileName = PsPath,
-      .bEnableDepthTest = true,
+      .VertexShaderFilePath = std::filesystem::path(VsPath).string(),
+      .PixelShaderFilePath = std::filesystem::path(PsPath).string(),
   };
 
   // 솔리드 파이프라인 생성 및 등록
@@ -246,7 +245,13 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
     return false;
   }
 
-  auto Pipeline = std::make_shared<FRenderPipeline>();
+  Microsoft::WRL::ComPtr<ID3D11VertexShader> VertexShader;
+  Microsoft::WRL::ComPtr<ID3D11PixelShader> PixelShader;
+  Microsoft::WRL::ComPtr<ID3D11InputLayout> InputLayout;
+  Microsoft::WRL::ComPtr<ID3D11RasterizerState> RasterizerState;
+  Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DepthStencilState;
+  Microsoft::WRL::ComPtr<ID3D11SamplerState> SamplerState;
+  Microsoft::WRL::ComPtr<ID3D11BlendState> BlendState;
 
   // 버텍스 셰이더 로드 및 생성
   Microsoft::WRL::ComPtr<ID3DBlob> Blob;
@@ -257,7 +262,7 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
 
   Result = Device->CreateVertexShader(Blob->GetBufferPointer(),
                                       Blob->GetBufferSize(), nullptr,
-                                      &Pipeline->VertexShader);
+                                      &VertexShader);
   if (FAILED(Result)) {
     return false;
   }
@@ -267,7 +272,7 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
                                      FVertexLayouts::NumElements,
                                      Blob->GetBufferPointer(),
                                      Blob->GetBufferSize(),
-                                     &Pipeline->InputLayout);
+                                     &InputLayout);
   if (FAILED(Result)) {
     return false;
   }
@@ -280,7 +285,7 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
 
   Result = Device->CreatePixelShader(Blob->GetBufferPointer(),
                                      Blob->GetBufferSize(), nullptr,
-                                     &Pipeline->PixelShader);
+                                     &PixelShader);
   if (FAILED(Result)) {
     return false;
   }
@@ -291,8 +296,7 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
       .CullMode = D3D11_CULL_NONE,
       .FrontCounterClockwise = false,
   };
-  Result = Device->CreateRasterizerState(&RasterizerDesc,
-                                         &Pipeline->RasterizerState);
+  Result = Device->CreateRasterizerState(&RasterizerDesc, &RasterizerState);
   if (FAILED(Result)) {
     return false;
   }
@@ -311,7 +315,7 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
   DepthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
   DepthStencilDesc.BackFace = DepthStencilDesc.FrontFace;
   Result = Device->CreateDepthStencilState(&DepthStencilDesc,
-                                           &Pipeline->DepthStencilState);
+                                           &DepthStencilState);
   if (FAILED(Result)) {
     return false;
   }
@@ -320,7 +324,7 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
   D3D11_BLEND_DESC BlendDesc{};
   BlendDesc.RenderTarget[0].BlendEnable = FALSE;
   BlendDesc.RenderTarget[0].RenderTargetWriteMask = 0;
-  Result = Device->CreateBlendState(&BlendDesc, &Pipeline->BlendState);
+  Result = Device->CreateBlendState(&BlendDesc, &BlendState);
   if (FAILED(Result)) {
     return false;
   }
@@ -334,12 +338,22 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
       .ComparisonFunc = D3D11_COMPARISON_NEVER,
       .MaxLOD = D3D11_FLOAT32_MAX,
   };
-  Result = Device->CreateSamplerState(&SamplerDesc, &Pipeline->SamplerState);
+  Result = Device->CreateSamplerState(&SamplerDesc, &SamplerState);
   if (FAILED(Result)) {
     return false;
   }
 
-  AllPipelineMap[FName("Outline")] = Pipeline;
+  FRenderPipelineCreateInfo CreateInfo{
+      .VertexShader         = std::move(VertexShader),
+      .PixelShader          = std::move(PixelShader),
+      .InputLayout          = std::move(InputLayout),
+      .RasterizerState      = std::move(RasterizerState),
+      .DepthStencilState    = std::move(DepthStencilState),
+      .SamplerState         = std::move(SamplerState),
+      .BlendState           = std::move(BlendState),
+  };
+
+  AllPipelineMap[FName("Outline")] = std::make_shared<FRenderPipeline>(std::move(CreateInfo));
   return true;
 }
 
@@ -357,7 +371,12 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
     return false;
   }
 
-  auto Pipeline = std::make_shared<FRenderPipeline>();
+  Microsoft::WRL::ComPtr<ID3D11VertexShader> VertexShader;
+  Microsoft::WRL::ComPtr<ID3D11PixelShader> PixelShader;
+  Microsoft::WRL::ComPtr<ID3D11RasterizerState> RasterizerState;
+  Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DepthStencilState;
+  Microsoft::WRL::ComPtr<ID3D11SamplerState> SamplerState;
+  Microsoft::WRL::ComPtr<ID3D11BlendState> BlendState;
 
   // 버텍스 셰이더 로드 및 생성
   Microsoft::WRL::ComPtr<ID3DBlob> Blob;
@@ -368,7 +387,7 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
 
   Result = Device->CreateVertexShader(Blob->GetBufferPointer(),
                                       Blob->GetBufferSize(), nullptr,
-                                      &Pipeline->VertexShader);
+                                      &VertexShader);
   if (FAILED(Result)) {
     return false;
   }
@@ -381,7 +400,7 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
 
   Result = Device->CreatePixelShader(Blob->GetBufferPointer(),
                                      Blob->GetBufferSize(), nullptr,
-                                     &Pipeline->PixelShader);
+                                     &PixelShader);
   if (FAILED(Result)) {
     return false;
   }
@@ -392,8 +411,7 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
       .CullMode = D3D11_CULL_NONE,
       .FrontCounterClockwise = false,
   };
-  Result = Device->CreateRasterizerState(&RasterizerDesc,
-                                         &Pipeline->RasterizerState);
+  Result = Device->CreateRasterizerState(&RasterizerDesc, &RasterizerState);
   if (FAILED(Result)) {
     return false;
   }
@@ -406,7 +424,7 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
       .StencilEnable = FALSE,
   };
   Result = Device->CreateDepthStencilState(&DepthStencilDesc,
-                                           &Pipeline->DepthStencilState);
+                                           &DepthStencilState);
   if (FAILED(Result)) {
     return false;
   }
@@ -416,7 +434,7 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
   BlendDesc.RenderTarget[0].BlendEnable = FALSE;
   BlendDesc.RenderTarget[0].RenderTargetWriteMask =
       D3D11_COLOR_WRITE_ENABLE_ALL;
-  Result = Device->CreateBlendState(&BlendDesc, &Pipeline->BlendState);
+  Result = Device->CreateBlendState(&BlendDesc, &BlendState);
   if (FAILED(Result)) {
     return false;
   }
@@ -430,12 +448,23 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
       .ComparisonFunc = D3D11_COMPARISON_NEVER,
       .MaxLOD = D3D11_FLOAT32_MAX,
   };
-  Result = Device->CreateSamplerState(&SamplerDesc, &Pipeline->SamplerState);
+
+  Result = Device->CreateSamplerState(&SamplerDesc, &SamplerState);
+
   if (FAILED(Result)) {
     return false;
   }
 
-  AllPipelineMap[FName("PostProcess")] = Pipeline;
+  FRenderPipelineCreateInfo CreateInfo{
+      .VertexShader         = std::move(VertexShader),
+      .PixelShader          = std::move(PixelShader),
+      .RasterizerState      = std::move(RasterizerState),
+      .DepthStencilState    = std::move(DepthStencilState),
+      .SamplerState         = std::move(SamplerState),
+      .BlendState           = std::move(BlendState),
+  };
+
+  AllPipelineMap[FName("PostProcess")] = std::make_shared<FRenderPipeline>(std::move(CreateInfo));
   return true;
 }
 
@@ -444,6 +473,7 @@ bool FRenderResourceLibrary::InitializePipelines(FRenderer &Renderer) {
   CreateSolidWireframePipeline(Renderer);
   CreateOutlinePipeline(Renderer);
   CreatePostProcessPipeline(Renderer);
+  return true;
 
   const FWString Path = GetExecutableDirectory();
 
@@ -460,14 +490,18 @@ bool FRenderResourceLibrary::InitializePipelines(FRenderer &Renderer) {
     }
 
     FRenderPipelineDesc PipelineDesc = {
-        .VertexShaderFileName = VsPath,
-        .PixelShaderFileName = PsPath,
-        .bEnableDepthTest = true,
-        .bEnableDepthWrite = Entry.bDepthWrite,
-        .CullMode = Entry.CullMode,
-        .BlendMode = Entry.BlendMode,
+        .VertexShaderFilePath = std::filesystem::path(VsPath).string(),
+        .PixelShaderFilePath = std::filesystem::path(PsPath).string(),
         .bIsInstancing = Entry.bIsInstancing,
     };
+    PipelineDesc.DepthStencil.bDepthEnable = true;
+    PipelineDesc.DepthStencil.DepthWrite = Entry.bDepthWrite
+        ? EDepthWriteMode::Enable : EDepthWriteMode::Disable;
+    PipelineDesc.Rasterizer.CullMode = Entry.CullMode == D3D11_CULL_NONE
+        ? ERasterizerCullMode::None
+        : Entry.CullMode == D3D11_CULL_FRONT
+            ? ERasterizerCullMode::Front : ERasterizerCullMode::Back;
+    PipelineDesc.Blend.BlendMode = Entry.BlendMode;
 
     TSharedPtr<FRenderPipeline> Pipeline =
         Renderer.CreateRenderPipeline(PipelineDesc, EViewModeIndex::VMI_Lit);
@@ -486,7 +520,7 @@ bool FRenderResourceLibrary::Initialize(FRenderer &Renderer) {
     return false;
   }
 
-  if (!InitializeMaterials(Renderer) || !CreateInstancingArrayMap()) {
+  if (!CreateInstancingArrayMap()) {
     return false;
   }
 

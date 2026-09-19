@@ -7,7 +7,6 @@
 
 struct UTextureDesc : UAssetDesc
 {
-	FName RawTextureFilePath; // png, jpg, dds file path
 	FTexture* Texture = nullptr;
 };
 

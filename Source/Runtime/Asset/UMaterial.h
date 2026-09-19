@@ -3,14 +3,16 @@
 #include "Runtime/CoreUObject/UObject.h"
 #include "Runtime/CoreUObject/FUObjectArray.h"
 #include "Runtime/Asset/UAsset.h"
+#include "Runtime/Asset/UTexture.h"
+#include "Runtime/Asset/UPipeline.h"
 #include "Runtime/Rendering/FRenderPipeline.h"
 #include "Runtime/Rendering/FTexture.h"
 #include "Runtime/Material/FTextureSamplerDesc.h"
 
 struct UMaterialDesc : UAssetDesc
 {
-	FName PipelineFilePath;
-	FName TextureFilePath;
+	UPipeline* Pipeline;
+	UTexture* Texture;
 	FTextureSamplerDesc TextureSamplerDesc;
 };
 
@@ -22,8 +24,8 @@ class UMaterial : public UAsset
 
 private:
 
-	FRenderPipeline* Pipeline = nullptr;
-	FTexture* Texture = nullptr;
+	UPipeline* Pipeline = nullptr;
+	UTexture* Texture = nullptr;
 	FTextureSamplerDesc SamplerDesc{};
 
 public:

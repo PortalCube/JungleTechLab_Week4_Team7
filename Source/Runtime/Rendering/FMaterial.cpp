@@ -10,12 +10,10 @@ void FMaterial::SetPipeLine(const TSharedPtr<FRenderPipeline>& InPipeline)
     Pipeline = InPipeline;
 }
 
-
 void FMaterial::SetTexture(const TSharedPtr<FTexture>& InTexture)
 {
     Texture = InTexture;
 }
-
 
 bool FMaterial::SetTextureByName(const FName& InTextureName)
 {

@@ -7,9 +7,9 @@
 #include "Runtime/Core/IntTypes.h"
 #include "Runtime/Core/PointerTypes.h"
 #include "Runtime/Core/TMap.h"
+#include "Runtime/Material/FTextureSamplerDesc.h"
 #include "Runtime/Math/FVector2.h"
 #include "Runtime/Rendering/FLineBatcher.h"
-#include "Runtime/Core/IntTypes.h"
 #include "ShaderConstants.h"
 #include "Vertices.h"
 
@@ -89,6 +89,15 @@ private:
   bool InitializeBackBufferAndDepthStencil();
   bool InitializeConstantBuffers();
 
+  Microsoft::WRL::ComPtr<ID3D11RasterizerState>
+  GetOrCreateRasterizerState(const FRasterizerDesc& Desc);
+  Microsoft::WRL::ComPtr<ID3D11DepthStencilState>
+  GetOrCreateDepthStencilState(const FDepthStencilDesc& Desc);
+  Microsoft::WRL::ComPtr<ID3D11BlendState>
+  GetOrCreateBlendState(const FBlendDesc& Desc);
+  Microsoft::WRL::ComPtr<ID3D11SamplerState>
+  GetOrCreateSamplerState(const FTextureSamplerDesc& Desc);
+
 private:
   FLineBatcher LineBatcher;
   Microsoft::WRL::ComPtr<ID3D11Device> Device;
@@ -116,6 +125,11 @@ private:
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> EditorViewPortSRV;
   Microsoft::WRL::ComPtr<ID3D11Texture2D> renderTexture;
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> DepthStencilSRV;
+
+  TMap<FRasterizerDesc, Microsoft::WRL::ComPtr<ID3D11RasterizerState>> RasterizerStateMap;
+  TMap<FDepthStencilDesc, Microsoft::WRL::ComPtr<ID3D11DepthStencilState>> DepthStencilStateMap;
+  TMap<FBlendDesc, Microsoft::WRL::ComPtr<ID3D11BlendState>> BlendStateMap;
+  TMap<FTextureSamplerDesc, Microsoft::WRL::ComPtr<ID3D11SamplerState>> SamplerStateMap;
 
   bool InitializeEditorViewportRenderTarget();
 

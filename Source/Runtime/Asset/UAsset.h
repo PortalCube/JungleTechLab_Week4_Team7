@@ -9,6 +9,7 @@
 struct UAssetDesc
 {
 	FName ID			= "";
+	FName Name			= "";
 	FString AssetPath	= "";
 	uint64 AssetSize	= 0;
 };
@@ -22,6 +23,7 @@ class UAsset : public UObject
 protected:
 
 	FName ID			= "";
+	FName Name			= "";
 	FString AssetPath	= "";
 	uint64 AssetSize	= 0;
 

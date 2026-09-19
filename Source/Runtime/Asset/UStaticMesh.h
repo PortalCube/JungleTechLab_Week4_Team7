@@ -7,7 +7,6 @@
 
 struct UStaticMeshDesc : UAssetDesc
 {
-	FName MeshFilePath; // obj file path
 	FMesh* Mesh = nullptr;
 };
 

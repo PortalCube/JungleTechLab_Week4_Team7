@@ -13,17 +13,19 @@ private:
 	static constexpr int32 CurrentSchemaVersion = 1;
 	static constexpr FStringView AssetDirectoryPath = "Assets";
 
-	static void LoadPipelineAsset(FArchive& Archive);
-	static void LoadMaterialAsset(FArchive& Archive);
-	static void LoadStaticMeshAsset(FArchive& Archive);
-	static void LoadFontAsset(FArchive& Archive);
-	static void LoadTextureAsset(FArchive& Archive);
+	static void LoadPipelineAsset(const FArchive& Archive, const FName& ID);
+	static void LoadMaterialAsset(const FArchive& Archive, const FName& ID);
+	static void LoadStaticMeshAsset(const FArchive& Archive, const FName& ID);
+	static void LoadFontAsset(const FArchive& Archive, const FName& ID);
+	static void LoadTextureAsset(const FArchive& Archive, const FName& ID);
 
-public:
 	/// <summary>
-	/// 엔진에서 기본으로 사용하는 메쉬를 생성하고 UStaticMesh 애셋으로 등록합니다.
+	/// MeshUtil을 사용하여 엔진에서 기본으로 사용하는 메쉬를 생성하고 UStaticMesh 애셋으로 등록합니다.
 	/// </summary>
 	static void LoadDefaultStaticMeshAssets();
+
+public:
+
 
 	/// <summary>
 	/// AssetPath의 모든 애셋을 로드합니다. 

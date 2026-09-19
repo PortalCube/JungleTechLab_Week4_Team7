@@ -54,6 +54,10 @@ public:
     return nullptr;
   }
 
+  void RegisterPipeline(const FName& Id, TSharedPtr<FRenderPipeline> Pipeline) {
+    AllPipelineMap[Id] = std::move(Pipeline);
+  }
+
   // 머티리얼 조회
   [[nodiscard]] TSharedPtr<FMaterial> GetMaterial(const FName& Id) const {
     auto it = AllMaterialMap.find(Id);

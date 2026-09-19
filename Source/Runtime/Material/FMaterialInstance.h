@@ -4,12 +4,15 @@
 
 class UMaterial;
 class UTexture;
+class UPipeline;
 
 class FMaterialInstance
 {
 private:
 	
 	UMaterial* Material;
+
+	UPipeline* Pipeline;
 	UTexture* Texture;
 	FTextureSamplerDesc SamplerDesc;
 

@@ -3,6 +3,7 @@
 #include "Runtime/CoreUObject/UObject.h"
 #include "Runtime/CoreUObject/FUObjectArray.h"
 #include "Runtime/Asset/UAsset.h"
+#include "Runtime/Asset/UTexture.h"
 #include "Runtime/Rendering/FRenderPipeline.h"
 #include "Runtime/Rendering/FTexture.h"
 #include "Runtime/Rendering/FFont.h"
@@ -10,7 +11,7 @@
 
 struct UFontDesc : UAssetDesc
 {
-	FName TextureFilePath; // dds, png file path
+	UTexture* Texture = nullptr;
 	FFont* Font = nullptr;
 };
 
@@ -22,6 +23,7 @@ class UFont : public UAsset
 
 private:
 
+	UTexture* Texture = nullptr;
 	FFont* Font = nullptr;
 
 public:
