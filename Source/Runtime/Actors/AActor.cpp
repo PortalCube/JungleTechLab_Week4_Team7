@@ -131,7 +131,7 @@ void AActor::CreateRootComponent(UClass* ClassType)
 		return;
 	}
 
-	SetRootComponent(Component)
+	SetRootComponent(Component);
 }
 
 void AActor::SetRootComponent(USceneComponent* Component)

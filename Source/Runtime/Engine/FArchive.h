@@ -109,13 +109,13 @@ inline T FArchive::GetEnum(const FString& Key, TMap<FString, T>& EnumMap)
 {
 	FString Value = GetString(Key);
 
-	auto& It = EnumMap.find(Key);
+	auto It = EnumMap.find(Value);
 	if (It == EnumMap.end())
 	{
 		throw EngineUtil::CreateError("[FArchive::GetEnum] 키 {}에서 대해서 EnumMap에 없는 값이 있습니다. ({})", Key, Value);
 	}
 
-	return It.second;
+	return It->second;
 }
 
 template<typename T>

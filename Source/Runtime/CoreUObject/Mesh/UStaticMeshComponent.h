@@ -5,6 +5,7 @@
 #include "Runtime/Engine/UScene.h"
 #include "Runtime/Engine/ShowFlags.h"
 #include "Runtime/Core/TArray.h"
+#include "Runtime/Material/FMaterialInstance.h"
 
 class UStaticMeshComponent : public UMeshComponent {
     GENERATED_BODY()
