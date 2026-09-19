@@ -111,6 +111,14 @@ public:
     return AllMaterialMap;
   }
 
+  const TMap<FName, TSharedPtr<FRenderPipeline>>& GetAllPipelines() const {
+    return AllPipelineMap;
+  }
+
+  const TMap<FName, TSharedPtr<FTexture>>& GetAllTextures() const {
+    return AllTextureMap;
+  }
+
   // 렌더러 참조 조회
   FRenderer *GetRenderer() const { return RendererRef; }
 

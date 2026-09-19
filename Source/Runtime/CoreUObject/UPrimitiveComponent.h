@@ -16,6 +16,11 @@ public:
     void Register(UScene& InScene) override;
     void Unregister() override;
 
+    void SetMesh(UStaticMesh* Mesh) { RenderData.Mesh = Mesh; }
+    void SetMaterial(UMaterial* Material, int32 Index = 0);
+    void SetTexture(UTexture* Texture, int32 Index = 0);
+    void SetRenderType(ERenderType Type) { RenderData.Type = Type; }
+    void SetColor(const FVector4& Color, int32 Index = 0);
 
     virtual const FRenderData& GetRenderData(const FCamera& Camera) const { return RenderData; }
     virtual FMatrix GetRenderMatrix(const FCamera& Camera) const { return GetGlobalTransform().ToMatrix(); }

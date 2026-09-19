@@ -15,13 +15,13 @@ class FMaterial final {
 
 public:
 
-	void SetPipeLine(const FRenderPipeline* InPipeline);
+	void SetPipeLine(FRenderPipeline* InPipeline) { Pipeline = InPipeline; }
 	FRenderPipeline* GetPipeline() const { return Pipeline; }
 
-	void SetTexture(const FTexture* InTexture);
+	void SetTexture(FTexture* InTexture) { Texture = InTexture; }
 	FTexture* GetTexture() const { return Texture; }
 
-	void SetSamplerDesc(const FTextureSamplerDesc InSamplerDesc);
+	void SetSamplerDesc(FTextureSamplerDesc InSamplerDesc) { SamplerDesc = InSamplerDesc; }
 	FTextureSamplerDesc GetSamplerDesc() const { return SamplerDesc; }
 
 	FName MaterialId{ "None" };

@@ -1,5 +1,6 @@
 #include "Editor/Application/FEditorApplication.h"
 #include "Runtime/Core/Log.h"
+#include "Runtime/Utility/EngineUtil.h"
 #include "Runtime/Engine/UScene.h"
 #include "Runtime/Engine/FRenderView.h"
 #include "Runtime/Input/FInputManager.h"
@@ -10,6 +11,9 @@
 #include "Runtime/Resource/FResourceLoader.h"
 #include "Runtime/Math/FVector2.h"
 #include "Runtime/CoreUObject/UClass.h"
+#include "Runtime/CoreUObject/UObjectGlobals.h"
+#include "Runtime/Asset/FAssetRegistry.h"
+#include "Runtime/Asset/UStaticMesh.h"
 #include "ThirdParty/Imgui/imgui.h"
 #include "ThirdParty/Imgui/imgui_internal.h"
 #include <Windows.h>
@@ -42,6 +46,8 @@ int WINAPI wWinMain(
 	_In_ LPWSTR lpCmdLine,
 	_In_ int nShowCmd) 
 {
+	try
+	{
 	HWND Window = CreateWindowHandle(hInstance);
 	if (!Window)
 	{
@@ -55,14 +61,14 @@ int WINAPI wWinMain(
 	FRenderer Renderer;
 	if (!Renderer.Initialize(Window))
 	{
-		return -1;
+		throw EngineUtil::CreateError("FRenderer 초기화에 실패했습니다.");
 	}
 	FRenderView RenderView{ Renderer };
 
 	FRenderResourceLibrary& RenderResources = FRenderResourceLibrary::Get();
 	if (!RenderResources.Initialize(Renderer))
 	{
-		return -1;
+		throw EngineUtil::CreateError("FRenderResourceLibrary 초기화에 실패했습니다.");
 	}
 
 	// 애셋 로드
@@ -116,7 +122,16 @@ int WINAPI wWinMain(
 	};
 
 
-	RenderResources.RegisterMesh(FName("MyTestMesh"), Renderer.CreateMesh(TestMeshDesc));
+	TSharedPtr<FMesh> TestMesh = Renderer.CreateMesh(TestMeshDesc);
+	RenderResources.RegisterMesh(FName("MyTestMesh"), TestMesh);
+
+	UStaticMesh* TestMeshAsset = NewObject<UStaticMesh>();
+	UStaticMeshDesc TestMeshAssetDesc{};
+	TestMeshAssetDesc.ID = FName("MyTestMesh");
+	TestMeshAssetDesc.Name = "MyTestMesh";
+	TestMeshAssetDesc.Mesh = TestMesh.get();
+	TestMeshAsset->Load(TestMeshAssetDesc);
+	FAssetRegistry::GetInstance().Register(FName("MyTestMesh"), TestMeshAsset);
 
 	UScene* ActiveScene = SceneManager.CurrentScene;
 	if (ActiveScene)
@@ -128,10 +143,10 @@ int WINAPI wWinMain(
 		MyObjActor->CreateRootComponent(UPrimitiveComponent::StaticClass());
 		if (auto* PrimComp = MyObjActor->GetRootComponent()->Cast<UPrimitiveComponent>())
 		{
-			PrimComp->SetMeshID(FName("MyTestMesh"));         // 등록하신 Mesh 이름!
-			PrimComp->SetMaterialID(FName("Simple"));       // 기본 단색 셰이더
+			PrimComp->SetMesh(TestMeshAsset);
+			PrimComp->SetMaterial(FAssetRegistry::GetInstance().Get<UMaterial>("Simple"));
 			PrimComp->SetRenderType(ERenderType::Primitive);   // Simple 렌더 타입
-			PrimComp->SetColor(FVector(0.8f, 0.8f, 0.8f));  // 물체 색상 (밝은 회색)
+			PrimComp->SetColor(FVector4(0.8f, 0.8f, 0.8f, 1.0f));
 		}
 		// 3. 크기(Scale) 및 위치(Location) 설정
 		FTransform Transform;
@@ -178,6 +193,26 @@ int WINAPI wWinMain(
 	Renderer.Shutdown();
 
 	return 0;
+	}
+	catch (const std::exception& Error)
+	{
+		UE_LOG_ERROR("[Fatal] %s", Error.what());
+		OutputDebugStringA(Error.what());
+		OutputDebugStringA("\n");
+		MessageBoxA(nullptr, Error.what(), "MyEngine Fatal Error",
+		            MB_OK | MB_ICONERROR);
+		return -1;
+	}
+	catch (...)
+	{
+		constexpr const char* Message = "알 수 없는 치명적인 오류가 발생했습니다.";
+		UE_LOG_ERROR("[Fatal] %s", Message);
+		OutputDebugStringA(Message);
+		OutputDebugStringA("\n");
+		MessageBoxA(nullptr, Message, "MyEngine Fatal Error",
+		            MB_OK | MB_ICONERROR);
+		return -1;
+	}
 }
 
 namespace

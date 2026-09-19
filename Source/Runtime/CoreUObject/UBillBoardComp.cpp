@@ -6,6 +6,7 @@
 #include "Runtime/Core/Log.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Engine/FSceneView.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 #include "UClass.h"
 #include <algorithm>
 #include <cctype>
@@ -16,8 +17,10 @@ UCLASS_META(UBillBoardComp, MeshName, "BillBoard")
 
 void UBillBoardComp::Initialize() {
   Super::Initialize();
-  SetMeshID(FName("Rect"));
-  SetMaterialID(FName("Billboard"));
+
+  FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+  SetMesh(Registry.Get<UStaticMesh>("Rect"));
+  SetMaterial(Registry.Get<UMaterial>("Billboard"));
 
   RenderData.Type = ERenderType::Texture;
 }

@@ -134,12 +134,97 @@ void FResourceLoader::LoadDefaultStaticMeshAssets()
 	RegisterStaticMeshAsset("MasterYi", MeshUtil::CreateMasterYiMesh(*Renderer, ResourceLibrary));
 }
 
+void FResourceLoader::LoadDefaultRenderAssets()
+{
+	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+	FRenderResourceLibrary& Library = FRenderResourceLibrary::Get();
+
+	for (const auto& [ID, Pipeline] : Library.GetAllPipelines())
+	{
+		const FName AssetID{ FString("Pipeline/") + ID.ToString() };
+		if (!Pipeline || Registry.Get<UPipeline>(AssetID)) { continue; }
+
+		UPipeline* Asset = NewObject<UPipeline>();
+		UPipelineDesc Desc{};
+		Desc.ID = AssetID;
+		Desc.Name = ID.ToString();
+		Desc.Pipeline = Pipeline.get();
+		Asset->Load(Desc);
+		Registry.Register(AssetID, Asset);
+	}
+
+	for (const auto& [ID, Texture] : Library.GetAllTextures())
+	{
+		if (!Texture || Registry.Get<UTexture>(ID)) { continue; }
+
+		UTexture* Asset = NewObject<UTexture>();
+		UTextureDesc Desc{};
+		Desc.ID = ID;
+		Desc.Name = ID.ToString();
+		Desc.Texture = Texture.get();
+		Asset->Load(Desc);
+		Registry.Register(ID, Asset);
+	}
+
+	auto FindPipelineAsset = [&](const FRenderPipeline* Pipeline) -> UPipeline*
+	{
+		for (const auto& [ID, Resource] : Library.GetAllPipelines())
+		{
+			if (Resource.get() == Pipeline)
+			{
+				return Registry.Get<UPipeline>(FName{ FString("Pipeline/") + ID.ToString() });
+			}
+		}
+		return nullptr;
+	};
+
+	auto FindTextureAsset = [&](const FTexture* Texture) -> UTexture*
+	{
+		for (const auto& [ID, Resource] : Library.GetAllTextures())
+		{
+			if (Resource.get() == Texture) { return Registry.Get<UTexture>(ID); }
+		}
+		return nullptr;
+	};
+
+	for (const auto& [ID, Material] : Library.GetAllMaterials())
+	{
+		if (!Material || Registry.Get<UMaterial>(ID)) { continue; }
+
+		UMaterial* Asset = NewObject<UMaterial>();
+		UMaterialDesc Desc{};
+		Desc.ID = ID;
+		Desc.Name = ID.ToString();
+		Desc.Pipeline = FindPipelineAsset(Material->GetPipeline());
+		Desc.Texture = FindTextureAsset(Material->GetTexture());
+		Desc.TextureSamplerDesc = Material->GetSamplerDesc();
+
+		if (!Desc.Pipeline)
+		{
+			throw EngineUtil::CreateError(
+				"[FResourceLoader::LoadDefaultRenderAssets] Pipeline Asset을 찾을 수 없습니다. Material: {}",
+				ID.ToString());
+		}
+
+		Asset->Load(Desc);
+		Registry.Register(ID, Asset);
+	}
+
+	if (!Registry.Get<UPipeline>("Pipeline/Outline") ||
+		!Registry.Get<UMaterial>("Outline"))
+	{
+		throw EngineUtil::CreateError(
+			"[FResourceLoader::LoadDefaultRenderAssets] Outline Asset 등록에 실패했습니다.");
+	}
+}
+
 void FResourceLoader::LoadAssets()
 {
 	namespace fs = std::filesystem;
 	using json = nlohmann::json;
 
 	// 엔진 애셋을 먼저 로드
+	LoadDefaultRenderAssets();
 	LoadDefaultStaticMeshAssets();
 
 	fs::path AssetPath{ FResourceLoader::AssetDirectoryPath };
@@ -174,7 +259,7 @@ void FResourceLoader::LoadAssets()
 		{
 			data = json::parse(File);
 		}
-		catch (const json::parse_error& e)
+		catch (const json::parse_error&)
 		{
 			UE_LOG("[FResourceLoader::LoadAssets] JSON 파일을 파싱하는데 실패했습니다. %s", Entry.path().c_str());
 			continue;

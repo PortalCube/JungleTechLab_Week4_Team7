@@ -2,6 +2,7 @@
 #include "Runtime/CoreUObject/UClass.h"
 #include "Runtime/CoreUObject/UObjectGlobals.h"
 #include "Runtime/CoreUObject/UBillboardComp.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 
 IMPLEMENT_UCLASS(ABillboardActor, AActor)
 UCLASS_META(ABillboardActor, DisplayName, "Billboard Actor")
@@ -13,7 +14,7 @@ ABillboardActor::ABillboardActor()
 	
 	if (auto* PrimComp = GetRootComponent()->Cast<UBillBoardComp>())
 	{
-		PrimComp->SetTextureID(FName("masteryi"));
+		PrimComp->SetTexture(FAssetRegistry::GetInstance().Get<UTexture>("masteryi_head"));
 	}
 }
 

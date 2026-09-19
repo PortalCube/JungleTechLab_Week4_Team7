@@ -1,6 +1,7 @@
 #include "AMasterYi.h"
 #include "Runtime/CoreUObject/UClass.h"
 #include "Runtime/CoreUObject/UObjectGlobals.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 
 IMPLEMENT_UCLASS(AMasterYi, AActor)
 UCLASS_META(AMasterYi, DisplayName, "MasterYi Actor")
@@ -12,9 +13,9 @@ AMasterYi::AMasterYi()
 
 	if (auto* PrimComp = GetPrimitiveComponent())
 	{
-		PrimComp->SetMeshID(FName("MasterYi"));
-		PrimComp->SetMaterialID(FName("Textured"));
-		PrimComp->SetTextureID(FName("MasterYi_Head"));
+		FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+		PrimComp->SetMesh(Registry.Get<UStaticMesh>("MasterYi"));
+		PrimComp->SetMaterial(Registry.Get<UMaterial>("Textured"));
 		PrimComp->SetRenderType(ERenderType::Texture);
 	}
 

@@ -18,7 +18,7 @@ AAnimatedBillboardActor::AAnimatedBillboardActor()
 		UTexture* ExplosionTexture = Registry.Get<UTexture>("Explosion");
 
 		// 폭발 스프라이트 텍스처 지정
-		Comp->SetTexture()
+		Comp->SetTexture(ExplosionTexture);
 		// 시트 분할 및 루프 재생 설정
 		Comp->SetSpriteSheet(6, 6, 20.0f, 36);
 		Comp->SetLooping(true);

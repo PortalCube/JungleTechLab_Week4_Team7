@@ -14,6 +14,7 @@
 #include "FImguiDragDrop.h"
 #include "Runtime/Rendering/FMaterial.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 
 void FImguiPropertyWindow::Process(FEditor& Editor)
 {
@@ -163,7 +164,7 @@ void FImguiPropertyWindow::ShowTextSettings(UTextInstanceComponent& TextComp) co
 	{
 		const FName Materials[] = { FName("Instance_Text_Bazzi"), FName("Instance_Text_DNF"), FName("Instance_Text_Maple") };
 		const char* selectedFont = fontItems[currFontIndex];
-		TextComp.SetMaterialID((Materials[currFontIndex]));
+		TextComp.SetMaterial(FAssetRegistry::GetInstance().Get<UMaterial>(Materials[currFontIndex]));
 		TextComp.SetFont(FName(selectedFont));
 	}
 

@@ -13,12 +13,33 @@ void UPrimitiveComponent::Initialize()
     RenderData.Type = ERenderType::Primitive;
 
     FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-    FMaterialInstance DefaultMaterial
-    {
-        Registry.Get<UMaterial>("Material/Default_Material.json")
-    };
+    FMaterialInstance DefaultMaterial{ Registry.Get<UMaterial>("Simple") };
 
     RenderData.Materials.push_back(DefaultMaterial);
+}
+
+void UPrimitiveComponent::SetMaterial(UMaterial* Material, int32 Index)
+{
+    if (!Material || Index < 0) { return; }
+
+    const size_t TargetIndex = static_cast<size_t>(Index);
+    if (RenderData.Materials.size() <= TargetIndex)
+    {
+        RenderData.Materials.resize(TargetIndex + 1, FMaterialInstance{ Material });
+    }
+    RenderData.Materials[TargetIndex] = FMaterialInstance{ Material };
+}
+
+void UPrimitiveComponent::SetTexture(UTexture* Texture, int32 Index)
+{
+    if (Index < 0 || static_cast<size_t>(Index) >= RenderData.Materials.size()) { return; }
+    RenderData.Materials[static_cast<size_t>(Index)].Texture = Texture;
+}
+
+void UPrimitiveComponent::SetColor(const FVector4& Color, int32 Index)
+{
+    if (Index < 0 || static_cast<size_t>(Index) >= RenderData.Materials.size()) { return; }
+    RenderData.Materials[static_cast<size_t>(Index)].Color = Color;
 }
 
 void UPrimitiveComponent::Register(UScene& InScene)

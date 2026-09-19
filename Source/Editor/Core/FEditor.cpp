@@ -11,6 +11,7 @@
 #include "Runtime/Actors/AInstancingActor.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Math/Random.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 #include <numbers>
 
 
@@ -23,8 +24,9 @@ void FEditor::Initialize(USceneManager *SceneManager) {
   {
     SelectedActorTextComp->Initialize();
     SelectedActorTextComp->SetInheritRotation(false);
-    SelectedActorTextComp->SetMeshID(FName("Rect"));
-    SelectedActorTextComp->SetMaterialID(FName("SelectedActor_Text"));
+    FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+    SelectedActorTextComp->SetMesh(Registry.Get<UStaticMesh>("Rect"));
+    SelectedActorTextComp->SetMaterial(Registry.Get<UMaterial>("SelectedActor_Text"));
     SelectedActorTextComp->SetFont(FName("bazziotf"));
   }
 

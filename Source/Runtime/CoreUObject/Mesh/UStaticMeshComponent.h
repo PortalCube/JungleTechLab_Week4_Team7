@@ -14,18 +14,15 @@ class UStaticMeshComponent : public UMeshComponent {
 public:
 
     virtual const UStaticMesh* GetMesh() override { return RenderData.Mesh; }
-    virtual const UMaterial* GetMaterial(int Index = 0) const override { return RenderData.Materials[Index].Material; }
-    virtual const FMaterialInstance* GetMaterialInstance(int Index = 0) const override { return &RenderData.Materials[Index]; }
+    virtual const UMaterial* GetMaterial(int Index = 0) const override;
+    virtual const FMaterialInstance* GetMaterialInstance(int Index = 0) const override;
     virtual const TArray<FMaterialInstance>* GetAllMaterialInstance() const override { return &RenderData.Materials; }
 
     virtual const FRenderData& GetRenderData(const FCamera& Camera) const override;
 
-    void SetMesh(UStaticMesh* InMesh);
-    void SetMaterial(UMaterial* InMaterial, int Index = 0);
     void ClearMaterial();
 
-    // TODO
-    int GetMaterialSlotLength() const { return 0; }
+    int32 GetMaterialSlotLength() const { return static_cast<int32>(RenderData.Materials.size()); }
 
     virtual EEngineShowFlags GetShowFlag() const { return EEngineShowFlags::SF_Mesh; }
 

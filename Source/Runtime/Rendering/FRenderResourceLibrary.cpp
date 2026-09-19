@@ -5,6 +5,7 @@
 #include "FTexture.h"
 #include <d3dcompiler.h>
 #include "Runtime/Core/TArray.h"
+#include "Runtime/Core/Log.h"
 #include "Runtime/Math/FVector.h"
 #include "Runtime/Material/FBlendDesc.h"
 #include "Runtime/Engine/FArchive.h"
@@ -354,7 +355,6 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
   };
 
   AllPipelineMap[FName("Outline")] = std::make_shared<FRenderPipeline>(std::move(CreateInfo));
-  AllMaterialMap[FName("Outline")] = std::make_shared<FMaterial>();
   return true;
 }
 
@@ -470,15 +470,62 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
 }
 
 bool FRenderResourceLibrary::InitializePipelines(FRenderer &Renderer) {
-  // 솔리드 및 와이어프레임 파이프라인 개별 생성
-  return CreateSolidWireframePipeline(Renderer) &&
-         CreateOutlinePipeline(Renderer) &&
-         CreatePostProcessPipeline(Renderer);
+  if (!CreateSolidWireframePipeline(Renderer) ||
+      !CreateOutlinePipeline(Renderer) ||
+      !CreatePostProcessPipeline(Renderer)) {
+    return false;
+  }
+
+  const FWString Path = GetExecutableDirectory();
+
+  for (const FPipelineEntry &Entry : pipelineTable) {
+    if (AllPipelineMap.find(Entry.Id) != AllPipelineMap.end()) {
+      continue;
+    }
+
+    const FWString VsPath = Path + L"/Shader/" + Entry.VertexShader;
+    const FWString PsPath = Path + L"/Shader/" + Entry.PixelShader;
+    if (!std::filesystem::exists(VsPath) || !std::filesystem::exists(PsPath)) {
+      UE_LOG_ERROR("[FRenderResourceLibrary::InitializePipelines] Shader를 찾을 수 없습니다. Pipeline: %s",
+                   Entry.Id.ToString().c_str());
+      return false;
+    }
+
+    FRenderPipelineDesc PipelineDesc{
+        .VertexShaderFilePath = std::filesystem::path(VsPath).string(),
+        .PixelShaderFilePath = std::filesystem::path(PsPath).string(),
+        .bIsInstancing = Entry.bIsInstancing,
+    };
+    PipelineDesc.DepthStencil.bDepthEnable = true;
+    PipelineDesc.DepthStencil.DepthWrite = Entry.bDepthWrite
+        ? EDepthWriteMode::Enable : EDepthWriteMode::Disable;
+    PipelineDesc.Rasterizer.CullMode = Entry.CullMode == D3D11_CULL_NONE
+        ? ERasterizerCullMode::None
+        : Entry.CullMode == D3D11_CULL_FRONT
+            ? ERasterizerCullMode::Front : ERasterizerCullMode::Back;
+    PipelineDesc.Blend.BlendMode = Entry.BlendMode;
+
+    TSharedPtr<FRenderPipeline> Pipeline =
+        Renderer.CreateRenderPipeline(PipelineDesc, EViewModeIndex::VMI_Lit);
+    if (!Pipeline) {
+      UE_LOG_ERROR("[FRenderResourceLibrary::InitializePipelines] Pipeline 생성에 실패했습니다. Pipeline: %s",
+                   Entry.Id.ToString().c_str());
+      return false;
+    }
+
+    AllPipelineMap[Entry.Id] = Pipeline;
+  }
+
+  return true;
 }
 
 bool FRenderResourceLibrary::Initialize(FRenderer &Renderer) {
   RendererRef = &Renderer;
   if (!InitializePipelines(Renderer)) { // 파이프라인을 먼저 생성해야 뒤에 material 할당가능
+    return false;
+  }
+
+  if (!CreateTextures(Renderer) || !InitializeMaterials(Renderer)) {
     return false;
   }
 

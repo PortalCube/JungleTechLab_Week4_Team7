@@ -4,6 +4,7 @@
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Rendering/FRenderer.h"
 #include "Runtime/Rendering/ShaderConstants.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 #include "UClass.h"
 #include <algorithm>
 #include <limits>
@@ -35,16 +36,16 @@ FMatrix GetRenderMatrix(const FTransform &Transform, const FCamera &Camera) {
 } // namespace
 
 void UTextInstanceComponent::Initialize() {
-  
+  Super::Initialize();
+
+  FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+  SetMesh(Registry.Get<UStaticMesh>("Rect"));
+  SetMaterial(Registry.Get<UMaterial>("Instance_Text_Bazzi"));
   SetFont("bazziotf");
 
-  RenderData.MeshId = FName("Rect");
-  RenderData.MaterialId = FName("Instance_Text_Bazzi");
-  RenderData.TextureId = FName("bazziotf");
   RenderData.Type = ERenderType::Text;
 
   RebuildTextMesh();
-  Super::Initialize();
 }
 
 void UTextInstanceComponent::Update(float delta) {}
