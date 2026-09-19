@@ -2,7 +2,6 @@
 
 #include "Editor/EditorViewport/FEditorViewportClient.h"
 #include "Editor/Gizmo/FGizmo.h"
-#include "Editor/Grid/FGrid.h"
 #include "Editor/Core/FEditorState.h"
 #include "Runtime/Core/IntTypes.h"
 #include "Runtime/Core/TArray.h"
@@ -76,7 +75,6 @@ public:
   // 피킹 등에서 현재 씬의 렌더링 대상 컴포넌트가 필요할 때 사용
   [[nodiscard]] TArray<UPrimitiveComponent *> GetPrimitiveComponents() const;
   FGizmo &GetGizmo() { return Gizmo; }
-  FGrid &GetGrid() { return Grid; }
   FRenderResourceLibrary *GetRendererLibrary();
 
   void ClearSelectionForGC();
@@ -98,7 +96,6 @@ private:
                // 클래스를 추가해 씬과 FEditorViewportClient들을 연관
   TArray<FEditorViewportClient> EditorViewports;
   FGizmo Gizmo;
-  FGrid Grid;
   TWeakObjectPtr<AActor> SelectedActor;
   TWeakObjectPtr<UTextInstanceComponent> SelectedActorTextComp;
 };

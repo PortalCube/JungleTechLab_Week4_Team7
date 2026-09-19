@@ -1,7 +1,7 @@
 ﻿#include "FImguiToolBar.h"
 #include "ThirdParty/Imgui/imgui.h"
 #include "Editor/Core/FEditor.h"
-
+#include "FImguiEditorViewportWindow.h"
 // "표시명\0패턴\0" 이중 널 종료 필요
 constexpr wchar_t SceneFilter[] = L"Scene Files (*.Scene)\0*.Scene\0All Files (*.*)\0*.*\0";
 
@@ -108,21 +108,33 @@ void FImguiToolbar::ShowViewBar(FEditor& Editor, FImguiConsoleWindow& ConsoleWin
             if (ImGui::MenuItem("Single"))
             {
                 Editor.ChangeViewRayout(EViewportLayout::Single);
+                Editor.VerticalSplitter.bisActive = false;
+                Editor.HorizonSplitter.bisActive = false;
+                Editor.HorizonSplitter2.bisActive = false;
             }
             if (ImGui::MenuItem("Top | Bottom"))
             {
                 Editor.ChangeViewRayout(EViewportLayout::TopBottom);
+                Editor.VerticalSplitter.bisActive = true;
+                Editor.HorizonSplitter.bisActive = false;
+                Editor.HorizonSplitter2.bisActive = false;
 
             }
             if (ImGui::MenuItem("Left | Right"))
             {
                 Editor.ChangeViewRayout(EViewportLayout::LeftRight);
-
+                Editor.VerticalSplitter.bisActive = false;
+                Editor.HorizonSplitter.bisActive = true;
+                Editor.HorizonSplitter2.bisActive = false;
             }
             if (ImGui::MenuItem("2 X 2"))
             {
                 Editor.ChangeViewRayout(EViewportLayout::Four);
+                Editor.VerticalSplitter.bisActive = true;
+                Editor.HorizonSplitter.bisActive = true;
+                Editor.HorizonSplitter2.bisActive = true;
             }
+
             ImGui::EndMenu();
 
         }

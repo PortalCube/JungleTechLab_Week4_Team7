@@ -73,7 +73,7 @@ void FEditor::SaveState() {
   State.SetCameraPitch(Camera.Pitch);
   State.SetCameraYaw(Camera.Yaw);
   State.SetCameraFOV(Camera.Projection.FOV);
-  State.SetGridCellSize(Grid.GetCellSize());
+  State.SetGridCellSize(Viewport->GetGrid().GetCellSize());
   State.SetGizmoMode(static_cast<uint8>(Gizmo.Mode));
   State.SetGizmoSpace(static_cast<uint8>(Gizmo.GetSpace()));
   State.SetSelectedActor(SelectedActor ? SelectedActor->GetUUID() : static_cast<uint32>(-1));
@@ -90,7 +90,7 @@ void FEditor::LoadState()
     Camera.Pitch = State.GetCameraPitch();
     Camera.Yaw = State.GetCameraYaw();
     Camera.Projection.FOV = State.GetCameraFOV();
-    Grid.SetCellSize(State.GetGridCellSize());
+    Viewport->GetGrid().SetCellSize(State.GetGridCellSize());
     Gizmo.Mode = static_cast<EGizmoMode>(State.GetGizmoMode());
     Gizmo.SetGizmoSpace(static_cast<EGizmoSpace>(State.GetGizmoSpace()));
 }
