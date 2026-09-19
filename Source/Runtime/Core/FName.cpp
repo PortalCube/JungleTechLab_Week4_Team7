@@ -14,6 +14,7 @@ FName::FName(const char* CharPtr)
 
 FName::FName(const FString& Str)
 	: Entry{ FNamePool::AddEntry(Str) }
+	, Name{ Str }
 {
 }
 

@@ -15,7 +15,7 @@ AAnimatedBillboardActor::AAnimatedBillboardActor()
 	if (Comp)
 	{
 		FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-		UTexture* ExplosionTexture = Registry.Get<UTexture>("Explosion");
+		UTexture* ExplosionTexture = Registry.Get<UTexture>("Texture/Explosion.json");
 
 		// 폭발 스프라이트 텍스처 지정
 		Comp->SetTexture(ExplosionTexture);

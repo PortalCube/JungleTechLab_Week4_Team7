@@ -14,7 +14,7 @@ ABillboardActor::ABillboardActor()
 	
 	if (auto* PrimComp = GetRootComponent()->Cast<UBillBoardComp>())
 	{
-		PrimComp->SetTexture(FAssetRegistry::GetInstance().Get<UTexture>("masteryi_head"));
+		PrimComp->SetTexture(FAssetRegistry::GetInstance().Get<UTexture>("Texture/MasterYi_Head.json"));
 	}
 }
 

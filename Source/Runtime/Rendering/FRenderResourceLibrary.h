@@ -135,16 +135,10 @@ public:
 
 private:
   bool InitializePipelines(FRenderer &Renderer);
-  bool CreateSolidWireframePipeline(FRenderer &Renderer);
+  bool CreateWireframePipeline(FRenderer &Renderer);
   bool CreateOutlinePipeline(FRenderer &Renderer);
   bool CreatePostProcessPipeline(FRenderer &Renderer);
 
   bool CreateInstancingArrayMap();
-  bool CreateOutlinePipeline(); //아웃라인용
-
-  // 텍스처 및 머티리얼 일괄 초기화
-  bool CreateTextures(FRenderer &Renderer);
-  bool InitializeMaterials(FRenderer &Renderer);
-
   FRenderer *RendererRef = nullptr;
 };

@@ -15,7 +15,7 @@ AInstancingActor::AInstancingActor()
 	{
 		FAssetRegistry& Registry = FAssetRegistry::GetInstance();
 		PrimComp->SetMesh(Registry.Get<UStaticMesh>("MasterYi"));
-		PrimComp->SetMaterial(Registry.Get<UMaterial>("Instance_Textured"));
+		PrimComp->SetMaterial(Registry.Get<UMaterial>("Material/Instance_Textured.json"));
 	}
 
 	FTransform DefaultTransform;

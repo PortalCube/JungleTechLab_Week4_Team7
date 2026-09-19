@@ -1,7 +1,6 @@
 #include "FResourceLoader.h"
 #include "Runtime/Utility/EngineUtil.h"
 #include "Runtime/Core/TArray.h"
-#include "Runtime/Core/TDeque.h"
 #include "Runtime/Core/Log.h"
 #include "Runtime/Engine/FArchive.h"
 #include "Runtime/Asset/FAssetRegistry.h"
@@ -134,88 +133,36 @@ void FResourceLoader::LoadDefaultStaticMeshAssets()
 	RegisterStaticMeshAsset("MasterYi", MeshUtil::CreateMasterYiMesh(*Renderer, ResourceLibrary));
 }
 
-void FResourceLoader::LoadDefaultRenderAssets()
+void FResourceLoader::LoadCodeGeneratedRenderAssets()
 {
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
 	FRenderResourceLibrary& Library = FRenderResourceLibrary::Get();
-
-	for (const auto& [ID, Pipeline] : Library.GetAllPipelines())
-	{
-		const FName AssetID{ FString("Pipeline/") + ID.ToString() };
-		if (!Pipeline || Registry.Get<UPipeline>(AssetID)) { continue; }
-
-		UPipeline* Asset = NewObject<UPipeline>();
-		UPipelineDesc Desc{};
-		Desc.ID = AssetID;
-		Desc.Name = ID.ToString();
-		Desc.Pipeline = Pipeline.get();
-		Asset->Load(Desc);
-		Registry.Register(AssetID, Asset);
-	}
-
-	for (const auto& [ID, Texture] : Library.GetAllTextures())
-	{
-		if (!Texture || Registry.Get<UTexture>(ID)) { continue; }
-
-		UTexture* Asset = NewObject<UTexture>();
-		UTextureDesc Desc{};
-		Desc.ID = ID;
-		Desc.Name = ID.ToString();
-		Desc.Texture = Texture.get();
-		Asset->Load(Desc);
-		Registry.Register(ID, Asset);
-	}
-
-	auto FindPipelineAsset = [&](const FRenderPipeline* Pipeline) -> UPipeline*
-	{
-		for (const auto& [ID, Resource] : Library.GetAllPipelines())
-		{
-			if (Resource.get() == Pipeline)
-			{
-				return Registry.Get<UPipeline>(FName{ FString("Pipeline/") + ID.ToString() });
-			}
-		}
-		return nullptr;
-	};
-
-	auto FindTextureAsset = [&](const FTexture* Texture) -> UTexture*
-	{
-		for (const auto& [ID, Resource] : Library.GetAllTextures())
-		{
-			if (Resource.get() == Texture) { return Registry.Get<UTexture>(ID); }
-		}
-		return nullptr;
-	};
-
-	for (const auto& [ID, Material] : Library.GetAllMaterials())
-	{
-		if (!Material || Registry.Get<UMaterial>(ID)) { continue; }
-
-		UMaterial* Asset = NewObject<UMaterial>();
-		UMaterialDesc Desc{};
-		Desc.ID = ID;
-		Desc.Name = ID.ToString();
-		Desc.Pipeline = FindPipelineAsset(Material->GetPipeline());
-		Desc.Texture = FindTextureAsset(Material->GetTexture());
-		Desc.TextureSamplerDesc = Material->GetSamplerDesc();
-
-		if (!Desc.Pipeline)
-		{
-			throw EngineUtil::CreateError(
-				"[FResourceLoader::LoadDefaultRenderAssets] Pipeline Asset을 찾을 수 없습니다. Material: {}",
-				ID.ToString());
-		}
-
-		Asset->Load(Desc);
-		Registry.Register(ID, Asset);
-	}
-
-	if (!Registry.Get<UPipeline>("Pipeline/Outline") ||
-		!Registry.Get<UMaterial>("Outline"))
+	TSharedPtr<FRenderPipeline> Pipeline = Library.GetPipeline("Outline");
+	if (!Pipeline)
 	{
 		throw EngineUtil::CreateError(
-			"[FResourceLoader::LoadDefaultRenderAssets] Outline Asset 등록에 실패했습니다.");
+			"[FResourceLoader::LoadCodeGeneratedRenderAssets] Outline Pipeline 생성에 실패했습니다.");
 	}
+
+	UPipeline* PipelineAsset = NewObject<UPipeline>();
+	UPipelineDesc PipelineDesc{};
+	PipelineDesc.ID = "Pipeline/Outline";
+	PipelineDesc.Name = "Outline";
+	PipelineDesc.Pipeline = Pipeline.get();
+	PipelineAsset->Load(PipelineDesc);
+	Registry.Register(PipelineDesc.ID, PipelineAsset);
+
+	UMaterial* MaterialAsset = NewObject<UMaterial>();
+	UMaterialDesc MaterialDesc{};
+	MaterialDesc.ID = "Material/Outline";
+	MaterialDesc.Name = "Outline";
+	MaterialDesc.Pipeline = PipelineAsset;
+	MaterialAsset->Load(MaterialDesc);
+	Registry.Register(MaterialDesc.ID, MaterialAsset);
+
+	TSharedPtr<FMaterial> Material = MakeShared<FMaterial>();
+	Material->SetPipeLine(Pipeline.get());
+	Library.RegisterMaterial("Outline", Material);
 }
 
 void FResourceLoader::LoadAssets()
@@ -224,7 +171,7 @@ void FResourceLoader::LoadAssets()
 	using json = nlohmann::json;
 
 	// 엔진 애셋을 먼저 로드
-	LoadDefaultRenderAssets();
+	LoadCodeGeneratedRenderAssets();
 	LoadDefaultStaticMeshAssets();
 
 	fs::path AssetPath{ FResourceLoader::AssetDirectoryPath };
@@ -239,7 +186,11 @@ void FResourceLoader::LoadAssets()
 
 	const auto& Iterator = fs::recursive_directory_iterator(AssetPath);
 
-	TDeque<std::pair<FName, FArchive>> Deque;
+	TArray<std::pair<FName, FArchive>> PipelineAssets;
+	TArray<std::pair<FName, FArchive>> TextureAssets;
+	TArray<std::pair<FName, FArchive>> MaterialAssets;
+	TArray<std::pair<FName, FArchive>> FontAssets;
+	TArray<std::pair<FName, FArchive>> StaticMeshAssets;
 
 	for (const auto& Entry : Iterator)
 	{
@@ -279,48 +230,29 @@ void FResourceLoader::LoadAssets()
 
 		FString Type = Archive.GetString("AssetType");
 		
-		// TODO: 현재는 텍스쳐/파이프라인에 의존하는 애셋이 있어서 이렇게...
-		// 나중에 약한 참조를 넣던 다른 로직을 쓰건 해결할 것
-		if (Type == "Texture" || Type == "Pipeline")
-		{
-			Deque.emplace_front(Type, Archive);
-		}
-		else
-		{
-			Deque.emplace_back(Type, Archive);
-		}
+		if (Type == "Pipeline") { PipelineAssets.emplace_back(Type, Archive); }
+		else if (Type == "Texture") { TextureAssets.emplace_back(Type, Archive); }
+		else if (Type == "Material") { MaterialAssets.emplace_back(Type, Archive); }
+		else if (Type == "Font") { FontAssets.emplace_back(Type, Archive); }
+		else if (Type == "StaticMesh") { StaticMeshAssets.emplace_back(Type, Archive); }
+		else { UE_LOG("[FResourceLoader::LoadAssets] 알 수 없는 AssetType %s", AssetID.c_str()); }
 	}
 
-	for (const auto& Item : Deque)
+	const TArray<TArray<std::pair<FName, FArchive>>*> LoadOrder = {
+		&PipelineAssets, &TextureAssets, &MaterialAssets, &FontAssets, &StaticMeshAssets
+	};
+	for (const auto* Assets : LoadOrder)
 	{
-		const FName& Type = Item.first;
-		const FArchive& Archive = Item.second;
-		const FName AssetID = Archive.GetString("AssetID");
-
-		if (Type == "Pipeline")
+		for (const auto& Item : *Assets)
 		{
-			LoadPipelineAsset(Archive, AssetID);
-		}
-		else if (Type == "Material")
-		{
-			LoadMaterialAsset(Archive, AssetID);
-		}
-		else if (Type == "StaticMesh")
-		{
-			LoadStaticMeshAsset(Archive, AssetID);
-		}
-		else if (Type == "Font")
-		{
-			LoadFontAsset(Archive, AssetID);
-		}
-		else if (Type == "Texture")
-		{
-			LoadTextureAsset(Archive, AssetID);
-		}
-		else
-		{
-			UE_LOG("[FResourceLoader::LoadAssets] 알 수 없는 AssetType %s", AssetID.ToString().c_str());
-			continue;
+			const FName& Type = Item.first;
+			const FArchive& Archive = Item.second;
+			const FName AssetID = Archive.GetString("AssetID");
+			if (Type == "Pipeline") { LoadPipelineAsset(Archive, AssetID); }
+			else if (Type == "Texture") { LoadTextureAsset(Archive, AssetID); }
+			else if (Type == "Material") { LoadMaterialAsset(Archive, AssetID); }
+			else if (Type == "Font") { LoadFontAsset(Archive, AssetID); }
+			else if (Type == "StaticMesh") { LoadStaticMeshAsset(Archive, AssetID); }
 		}
 	}
 }
@@ -339,10 +271,12 @@ void FResourceLoader::LoadPipelineAsset(const FArchive& Archive, const FName& ID
 	PipelineDesc.bIsInstancing = Archive.GetBool("Instancing");
 
 	// FRenderPipelineDesc 생성
-	const FString VertexShaderFilePath = Archive.GetString("VertexShaderFilePath");
-	const FString PixelShaderFilePath = Archive.GetString("PixelShaderFilePath");
-	RenderPipelineDesc.VertexShaderFilePath = VertexShaderFilePath;
-	RenderPipelineDesc.PixelShaderFilePath = PixelShaderFilePath;
+	const std::filesystem::path VertexShaderFilePath =
+		std::filesystem::path(AssetDirectoryPath) / Archive.GetString("VertexShaderFilePath");
+	const std::filesystem::path PixelShaderFilePath =
+		std::filesystem::path(AssetDirectoryPath) / Archive.GetString("PixelShaderFilePath");
+	RenderPipelineDesc.VertexShaderFilePath = VertexShaderFilePath.string();
+	RenderPipelineDesc.PixelShaderFilePath = PixelShaderFilePath.string();
 	RenderPipelineDesc.bIsInstancing = PipelineDesc.bIsInstancing;
 
 	if (Archive.IsNull("Rasterizer"))
@@ -392,7 +326,7 @@ void FResourceLoader::LoadPipelineAsset(const FArchive& Archive, const FName& ID
 			ID.ToString());
 	}
 
-	ResourceLibrary.RegisterPipeline(ID, Pipeline);
+	ResourceLibrary.RegisterPipeline(PipelineDesc.Name, Pipeline);
 	PipelineDesc.Pipeline = Pipeline.get();
 
 	PipelineAsset->Load(PipelineDesc);
@@ -444,6 +378,12 @@ void FResourceLoader::LoadMaterialAsset(const FArchive& Archive, const FName& ID
 
 	Material->Load(MaterialDesc);
 	Registry.Register(ID, Material);
+
+	TSharedPtr<FMaterial> RenderMaterial = MakeShared<FMaterial>();
+	RenderMaterial->SetPipeLine(MaterialDesc.Pipeline->Get());
+	if (MaterialDesc.Texture) { RenderMaterial->SetTexture(MaterialDesc.Texture->Get()); }
+	RenderMaterial->SetSamplerDesc(MaterialDesc.TextureSamplerDesc);
+	FRenderResourceLibrary::Get().RegisterMaterial(MaterialDesc.Name, RenderMaterial);
 }
 
 void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& ID)
@@ -455,7 +395,8 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 
 	StaticMeshDesc.ID = ID;
 	StaticMeshDesc.Name = Archive.GetString("Name");
-	FString MeshFilePath = Archive.GetString("MeshFilePath");
+	FString MeshFilePath = (std::filesystem::path(AssetDirectoryPath) /
+		Archive.GetString("MeshFilePath")).string();
 
 	FRawObjData RawObjData{};
 	if (!FObjParser::LoadObj(MeshFilePath.c_str(), RawObjData))
@@ -537,7 +478,8 @@ void FResourceLoader::LoadFontAsset(const FArchive& Archive, const FName& ID)
 	}
 
 	// TODO: Setter 지정
-	FRenderResourceLibrary::Get().AllFontMap[ID] = Font;
+	FRenderResourceLibrary::Get().AllFontMap[
+		std::filesystem::path(ID.ToString()).stem().string()] = Font;
 
 	FontAsset->Load(FontDesc);
 	Registry.Register(ID, FontAsset);
@@ -553,7 +495,9 @@ void FResourceLoader::LoadTextureAsset(const FArchive& Archive, const FName& ID)
 
 	TextureDesc.ID = ID;
 	TextureDesc.Name = Archive.GetString("Name");
-	FString RawTextureFilePath = Archive.GetString("RawTextureFilePath");
+	std::filesystem::path RawTexturePath = std::filesystem::path(AssetDirectoryPath) /
+		Archive.GetString("RawTextureFilePath");
+	if (RawTexturePath.extension() != ".dds") { RawTexturePath.replace_extension(".dds"); }
 
 	FRenderResourceLibrary& ResourceLibrary = FRenderResourceLibrary::Get();
 	FRenderer* Renderer = ResourceLibrary.GetRenderer();
@@ -564,17 +508,17 @@ void FResourceLoader::LoadTextureAsset(const FArchive& Archive, const FName& ID)
 			ID.ToString());
 	}
 
-	const std::filesystem::path RawTexturePath{ RawTextureFilePath };
 	TSharedPtr<FTexture> Texture = Renderer->CreateTexture(RawTexturePath.wstring().c_str());
 	if (Texture == nullptr)
 	{
 		throw EngineUtil::CreateError(
 			"[FResourceLoader::LoadTextureAsset] FTexture 생성에 실패했습니다. ID: {}, Path: {}",
 			ID.ToString(),
-			RawTextureFilePath);
+			RawTexturePath.string());
 	}
 
-	ResourceLibrary.RegisterTexture(ID, Texture);
+	ResourceLibrary.RegisterTexture(
+		std::filesystem::path(ID.ToString()).stem().string(), Texture);
 	TextureDesc.Texture = Texture.get();
 
 	TextureAsset->Load(TextureDesc);

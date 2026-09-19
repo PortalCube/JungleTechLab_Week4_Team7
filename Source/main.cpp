@@ -14,6 +14,7 @@
 #include "Runtime/CoreUObject/UObjectGlobals.h"
 #include "Runtime/Asset/FAssetRegistry.h"
 #include "Runtime/Asset/UStaticMesh.h"
+#include "Runtime/Utility/WindowsUtil.h"
 #include "ThirdParty/Imgui/imgui.h"
 #include "ThirdParty/Imgui/imgui_internal.h"
 #include <Windows.h>
@@ -71,11 +72,10 @@ int WINAPI wWinMain(
 		throw EngineUtil::CreateError("FRenderResourceLibrary 초기화에 실패했습니다.");
 	}
 
+	UClass::ResolveTypeBitsets();
+
 	// 애셋 로드
 	FResourceLoader::LoadAssets();
-
-	//RTTI를 위한 UClass 초기화
-	UClass::ResolveTypeBitsets();
 
 	//새씬 생성
 	USceneManager SceneManager;
@@ -199,7 +199,7 @@ int WINAPI wWinMain(
 		UE_LOG_ERROR("[Fatal] %s", Error.what());
 		OutputDebugStringA(Error.what());
 		OutputDebugStringA("\n");
-		MessageBoxA(nullptr, Error.what(), "MyEngine Fatal Error",
+		MessageBox(nullptr, WindowsUtil::ToWString(Error.what()).c_str(), L"MyEngine Fatal Error",
 		            MB_OK | MB_ICONERROR);
 		return -1;
 	}
@@ -209,7 +209,7 @@ int WINAPI wWinMain(
 		UE_LOG_ERROR("[Fatal] %s", Message);
 		OutputDebugStringA(Message);
 		OutputDebugStringA("\n");
-		MessageBoxA(nullptr, Message, "MyEngine Fatal Error",
+		MessageBox(nullptr, WindowsUtil::ToWString(Message).c_str(), L"MyEngine Fatal Error",
 		            MB_OK | MB_ICONERROR);
 		return -1;
 	}

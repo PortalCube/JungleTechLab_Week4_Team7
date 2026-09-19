@@ -20,7 +20,7 @@ void UBillBoardComp::Initialize() {
 
   FAssetRegistry& Registry = FAssetRegistry::GetInstance();
   SetMesh(Registry.Get<UStaticMesh>("Rect"));
-  SetMaterial(Registry.Get<UMaterial>("Billboard"));
+  SetMaterial(Registry.Get<UMaterial>("Material/Billboard.json"));
 
   RenderData.Type = ERenderType::Texture;
 }

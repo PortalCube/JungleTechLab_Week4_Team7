@@ -21,187 +21,7 @@ FRenderResourceLibrary &FRenderResourceLibrary::Get() {
   return Instance;
 }
 
-// 파이프라인 정보 엔트리
-struct FPipelineEntry {
-  FName Id;
-  const wchar_t *VertexShader;
-  const wchar_t *PixelShader;
-  bool bDepthWrite = true;
-  D3D11_CULL_MODE CullMode = D3D11_CULL_BACK;
-  EBlendMode BlendMode = EBlendMode::Opaque;
-  bool bIsInstancing = false;
-};
-
-// 기본 파이프라인 테이블
-const FPipelineEntry pipelineTable[] = {
-    {
-        .Id = FName("Simple_Solid"),
-        .VertexShader = L"ExampleVS.cso",
-        .PixelShader = L"ExamplePS.cso",
-        .BlendMode = EBlendMode::Opaque,
-    },
-    {
-        .Id = FName("Simple_Line"),
-        .VertexShader = L"ExampleVS.cso",
-        .PixelShader = L"ExamplePS.cso",
-        .BlendMode = EBlendMode::Opaque,
-    },
-    {
-        .Id = FName("Grid"),
-        .VertexShader = L"GridVS.cso",
-        .PixelShader = L"GridPS.cso",
-        .bDepthWrite = false,
-        .CullMode = D3D11_CULL_NONE,
-        .BlendMode = EBlendMode::Translucent,
-    },
-    {
-        .Id = FName("Textured"),
-        .VertexShader = L"ExampleVS.cso",
-        .PixelShader = L"TexturedPS.cso",
-        .BlendMode = EBlendMode::Translucent,
-    },
-    {
-        .Id = FName("Billboard"),
-        .VertexShader = L"ExampleVS.cso",
-        .PixelShader = L"TexturedPS.cso",
-        .bDepthWrite = true,
-        //.CullMode = D3D11_CULL_NONE,
-        .BlendMode = EBlendMode::Translucent,
-    },
-    {
-        .Id = FName("RotationGizmo"),
-        .VertexShader = L"RotationGizmoVS.cso",
-        .PixelShader = L"RotationGizmoPS.cso",
-        .BlendMode = EBlendMode::Opaque,
-    },
-    {
-        .Id = FName("Spotlight"),
-        .VertexShader = L"ExampleVS.cso",
-        .PixelShader = L"SpotlightPS.cso",
-        .bDepthWrite = false,
-        .CullMode = D3D11_CULL_NONE,
-        .BlendMode = EBlendMode::Additive,
-    },
-    {
-        .Id = FName("Text"),
-        .VertexShader = L"ExampleVS.cso",
-        .PixelShader = L"MsdfTextPS.cso",
-        .BlendMode = EBlendMode::Translucent,
-    },
-    {
-        .Id = FName("Instance_Text"),
-        .VertexShader = L"InstanceVS.cso",
-        .PixelShader = L"MsdfTextPS.cso",
-        .BlendMode = EBlendMode::Translucent,
-        .bIsInstancing = true,
-    },
-    {
-        .Id = FName("Instance_Simple"),
-        .VertexShader = L"InstanceVS.cso",
-        .PixelShader = L"ExamplePS.cso",
-        .BlendMode = EBlendMode::Opaque,
-        .bIsInstancing = true,
-    },
-    {
-        .Id = FName("Instance_Textured"),
-        .VertexShader = L"InstanceVS.cso",
-        .PixelShader = L"TexturedPS.cso",
-        .CullMode = D3D11_CULL_NONE,
-        .BlendMode = EBlendMode::Translucent,
-        .bIsInstancing = true,
-    },
-    {
-        .Id = FName("Gizmo"),
-        .VertexShader = L"ExampleVS.cso",
-        .PixelShader = L"ExamplePS.cso",
-        .BlendMode = EBlendMode::Opaque,
-    },
-    {
-        .Id = FName("SelectedActor_Text"),
-        .VertexShader = L"InstanceVS.cso",
-        .PixelShader = L"MsdfTextPS.cso",
-        .bDepthWrite = false,
-        .BlendMode = EBlendMode::Translucent,
-        .bIsInstancing = true,
-    },
-};
-
-// 머티리얼 정보 엔트리
-struct FMaterialEntry {
-  FName Id;
-  FName PipelineID;
-  const char *TextureName = nullptr;
-};
-
-// 기본 머티리얼 테이블
-const FMaterialEntry materialTable[] = {
-    {
-        .Id = FName("Simple"),
-        .PipelineID = FName("Simple_Solid"),
-    },
-    {
-        .Id = FName("RotGizmo"),
-        .PipelineID = FName("RotationGizmo"),
-    },
-    {
-        .Id = FName("Spotlight"),
-        .PipelineID = FName("Spotlight"),
-    },
-    {
-        .Id = FName("Text"),
-        .PipelineID = FName("Text"),
-        .TextureName = "bazziotf",
-    },
-    {
-        .Id = FName("Textured"),
-        .PipelineID = FName("Textured"),
-        .TextureName = "masteryi_head",
-    },
-    {
-        .Id = FName("Billboard"),
-        .PipelineID = FName("Billboard"),
-        .TextureName = "uv-test",
-    },
-    {
-        .Id = FName("Instance_Text_Bazzi"),
-        .PipelineID = FName("Instance_Text"),
-        .TextureName = "bazziotf",
-    },
-    {
-        .Id = FName("Instance_Text_DNF"),
-        .PipelineID = FName("Instance_Text"),
-        .TextureName = "dnfbitbitv2",
-    },
-    {
-        .Id = FName("Instance_Text_Maple"),
-        .PipelineID = FName("Instance_Text"),
-        .TextureName = "maplestorybold",
-    },
-    {
-        .Id = FName("Instance_Simple"),
-        .PipelineID = FName("Instance_Simple"),
-    },
-    {
-        .Id = FName("Instance_Textured"),
-        .PipelineID = FName("Instance_Textured"),
-        .TextureName = "masteryi_head",
-    },
-    {
-        .Id = FName("Gizmo"),
-        .PipelineID = FName("Gizmo"),
-    },
-    {
-        .Id = FName("Outline"),
-        .PipelineID = FName("Outline"),
-    },
-    {
-        .Id = FName("SelectedActor_Text"),
-        .PipelineID = FName("SelectedActor_Text"),
-        .TextureName = "bazziotf",
-    },
-};
-
-bool FRenderResourceLibrary::CreateSolidWireframePipeline(FRenderer &Renderer) {
+bool FRenderResourceLibrary::CreateWireframePipeline(FRenderer &Renderer) {
   const FWString Path = GetExecutableDirectory();
   const FWString VsPath = Path + L"/Shader/ExampleVS.cso";
   const FWString PsPath = Path + L"/Shader/ExamplePS.cso";
@@ -215,21 +35,13 @@ bool FRenderResourceLibrary::CreateSolidWireframePipeline(FRenderer &Renderer) {
       .PixelShaderFilePath = std::filesystem::path(PsPath).string(),
   };
 
-  // 솔리드 파이프라인 생성 및 등록
-  TSharedPtr<FRenderPipeline> SolidPipeline =
-      Renderer.CreateRenderPipeline(Desc, EViewModeIndex::VMI_Lit);
-  if (SolidPipeline) {
-    AllPipelineMap[FName("Simple_Solid")] = SolidPipeline;
-  }
-
-  // 와이어프레임 파이프라인 생성 및 등록
   TSharedPtr<FRenderPipeline> WireframePipeline =
       Renderer.CreateRenderPipeline(Desc, EViewModeIndex::VMI_Wireframe);
   if (WireframePipeline) {
     AllPipelineMap[FName("Simple_Wireframe")] = WireframePipeline;
   }
 
-  return SolidPipeline != nullptr && WireframePipeline != nullptr;
+  return WireframePipeline != nullptr;
 }
 
 bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
@@ -470,62 +282,14 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
 }
 
 bool FRenderResourceLibrary::InitializePipelines(FRenderer &Renderer) {
-  if (!CreateSolidWireframePipeline(Renderer) ||
-      !CreateOutlinePipeline(Renderer) ||
-      !CreatePostProcessPipeline(Renderer)) {
-    return false;
-  }
-
-  const FWString Path = GetExecutableDirectory();
-
-  for (const FPipelineEntry &Entry : pipelineTable) {
-    if (AllPipelineMap.find(Entry.Id) != AllPipelineMap.end()) {
-      continue;
-    }
-
-    const FWString VsPath = Path + L"/Shader/" + Entry.VertexShader;
-    const FWString PsPath = Path + L"/Shader/" + Entry.PixelShader;
-    if (!std::filesystem::exists(VsPath) || !std::filesystem::exists(PsPath)) {
-      UE_LOG_ERROR("[FRenderResourceLibrary::InitializePipelines] Shader를 찾을 수 없습니다. Pipeline: %s",
-                   Entry.Id.ToString().c_str());
-      return false;
-    }
-
-    FRenderPipelineDesc PipelineDesc{
-        .VertexShaderFilePath = std::filesystem::path(VsPath).string(),
-        .PixelShaderFilePath = std::filesystem::path(PsPath).string(),
-        .bIsInstancing = Entry.bIsInstancing,
-    };
-    PipelineDesc.DepthStencil.bDepthEnable = true;
-    PipelineDesc.DepthStencil.DepthWrite = Entry.bDepthWrite
-        ? EDepthWriteMode::Enable : EDepthWriteMode::Disable;
-    PipelineDesc.Rasterizer.CullMode = Entry.CullMode == D3D11_CULL_NONE
-        ? ERasterizerCullMode::None
-        : Entry.CullMode == D3D11_CULL_FRONT
-            ? ERasterizerCullMode::Front : ERasterizerCullMode::Back;
-    PipelineDesc.Blend.BlendMode = Entry.BlendMode;
-
-    TSharedPtr<FRenderPipeline> Pipeline =
-        Renderer.CreateRenderPipeline(PipelineDesc, EViewModeIndex::VMI_Lit);
-    if (!Pipeline) {
-      UE_LOG_ERROR("[FRenderResourceLibrary::InitializePipelines] Pipeline 생성에 실패했습니다. Pipeline: %s",
-                   Entry.Id.ToString().c_str());
-      return false;
-    }
-
-    AllPipelineMap[Entry.Id] = Pipeline;
-  }
-
-  return true;
+  return CreateWireframePipeline(Renderer) &&
+         CreateOutlinePipeline(Renderer) &&
+         CreatePostProcessPipeline(Renderer);
 }
 
 bool FRenderResourceLibrary::Initialize(FRenderer &Renderer) {
   RendererRef = &Renderer;
   if (!InitializePipelines(Renderer)) { // 파이프라인을 먼저 생성해야 뒤에 material 할당가능
-    return false;
-  }
-
-  if (!CreateTextures(Renderer) || !InitializeMaterials(Renderer)) {
     return false;
   }
 
@@ -541,81 +305,12 @@ bool FRenderResourceLibrary::CreateInstancingArrayMap() {
   return true;
 }
 
-bool FRenderResourceLibrary::InitializeMaterials(FRenderer &Renderer) {
-  for (const auto &Entry : materialTable) {
-    TSharedPtr<FMaterial> Material = std::make_shared<FMaterial>();
-
-    TSharedPtr<FRenderPipeline> Pipeline = GetPipeline(Entry.PipelineID);
-    if (Pipeline) {
-      Material->SetPipeLine(Pipeline.get());
-    }
-
-    if (Entry.TextureName) {
-      Material->SetTexture(GetTexture(Entry.TextureName).get());
-    }
-
-    RegisterMaterial(Entry.Id, Material);
-  }
-  return true;
-}
-
 TSharedPtr<FMaterial> FRenderResourceLibrary::RegisterMaterial(const FName& Id, TSharedPtr<FMaterial> inMaterial) {
   if (inMaterial) {
     inMaterial->MaterialId = Id;
   }
   AllMaterialMap[Id] = inMaterial;
   return inMaterial;
-}
-
-bool FRenderResourceLibrary::CreateTextures(FRenderer &Renderer) 
-{
-  const std::filesystem::path ExeDir(GetExecutableDirectory());
-  const std::filesystem::path ProjectRoot =
-      ExeDir.parent_path().parent_path().parent_path();
-
-  TArray<std::filesystem::path> SearchRoots = {
-      ProjectRoot / L"Textures",
-      std::filesystem::current_path() / L"Textures",
-      ExeDir / L"Textures",
-  };
-
-  for (const auto &Root : SearchRoots) {
-    std::error_code Ec;
-    if (!std::filesystem::exists(Root, Ec)) {
-      continue;
-    }
-
-    for (const auto &Entry :
-         std::filesystem::recursive_directory_iterator(Root, Ec)) {
-      if (!Entry.is_regular_file(Ec))
-        continue;
-
-      FWString Ext = Entry.path().extension().wstring();
-      std::transform(Ext.begin(), Ext.end(), Ext.begin(), ::towlower);
-      if (Ext != L".dds" && Ext != L".jpg" && Ext != L".jpeg")
-        continue;
-
-      // 확장자 제거
-      FString KeyWide = Entry.path().stem().string();
-      std::transform(KeyWide.begin(), KeyWide.end(), KeyWide.begin(),
-                     ::tolower);
-      FName TextureKey(KeyWide);
-
-      // 이미 로드된 텍스처 건너뜀
-      if (AllTextureMap.find(TextureKey) != AllTextureMap.end()) {
-        continue;
-      }
-  
-      TSharedPtr<FTexture> Texture = Renderer.CreateTexture(Entry.path().wstring().c_str());
-
-      if (!Texture)
-        continue;
-
-      RegisterTexture(TextureKey, Texture);
-    }
-  }
-
-  return true;
 }
 
 TSharedPtr<FMesh> FRenderResourceLibrary::GetOrCreateMesh(const FName &ID, const TArray<FVertexData> &vertices) {

@@ -85,7 +85,7 @@ TSharedPtr<FTexture> FImguiContentsDrawer::GetOrLoadThumbnail(const FContentEntr
 		return nullptr;
 	}
 
-	// 라이브러리 키는 소문자 stem이다. (FRenderResourceLibrary::CreateTextures와 동일)
+	// 라이브러리 키는 에셋 파일명의 stem이다. (FResourceLoader와 동일)
 	FString Key = Item.Path.stem().string();
 	std::transform(Key.begin(), Key.end(), Key.begin(),
 		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });

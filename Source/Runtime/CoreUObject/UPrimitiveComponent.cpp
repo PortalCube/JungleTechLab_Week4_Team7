@@ -13,7 +13,7 @@ void UPrimitiveComponent::Initialize()
     RenderData.Type = ERenderType::Primitive;
 
     FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-    FMaterialInstance DefaultMaterial{ Registry.Get<UMaterial>("Simple") };
+    FMaterialInstance DefaultMaterial{ Registry.Get<UMaterial>("Material/Simple.json") };
 
     RenderData.Materials.push_back(DefaultMaterial);
 }

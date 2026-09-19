@@ -162,7 +162,7 @@ void FImguiPropertyWindow::ShowTextSettings(UTextInstanceComponent& TextComp) co
 	static int currFontIndex = 0;
 	if (ImGui::Combo("Font", &currFontIndex, fontItems, IM_ARRAYSIZE(fontItems)))
 	{
-		const FName Materials[] = { FName("Instance_Text_Bazzi"), FName("Instance_Text_DNF"), FName("Instance_Text_Maple") };
+		const FName Materials[] = { FName("Material/Instance_Text_Bazzi.json"), FName("Material/Instance_Text_DNF.json"), FName("Material/Instance_Text_Maple.json") };
 		const char* selectedFont = fontItems[currFontIndex];
 		TextComp.SetMaterial(FAssetRegistry::GetInstance().Get<UMaterial>(Materials[currFontIndex]));
 		TextComp.SetFont(FName(selectedFont));

@@ -15,7 +15,7 @@ void USpotLightComponent::Initialize()
 	// 스포트라이트 메쉬 및 머티리얼 장착
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
 	SetMesh(Registry.Get<UStaticMesh>("SpotlightCone"));
-	SetMaterial(Registry.Get<UMaterial>("Spotlight"));
+	SetMaterial(Registry.Get<UMaterial>("Material/Spotlight.json"));
 	RenderData.Type = ERenderType::Spotlight;
 }
 
