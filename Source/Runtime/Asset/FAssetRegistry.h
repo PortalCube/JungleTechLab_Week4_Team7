@@ -16,38 +16,36 @@ class FAssetRegistry
 {
 private:
 
-	TMap<FName, UPipeline*> PipelineMap;
-	TMap<FName, UStaticMesh*> StaticMeshMap;
-	TMap<FName, UMaterial*> MaterialMap;
-	TMap<FName, UFont*> FontMap;
+	TMap<FName, UAsset*> AssetMap;
 
 public:
 
-	// TODO: 4개의 맵과 4개의 Register, Get, Clear 함수...
-	// 리팩토링이 필요할 것
+	static FAssetRegistry& GetInstance();
 
-	static FAssetRegistry& Get();
-
-	// StaticMesh
-	void RegisterPipeline(FName& Name, UPipeline* Pipeline);
-	UPipeline* GetPipeline(FName& Name);
-	void ClearPipeline();
-
-	// StaticMesh
-	void RegisterStaticMesh(FName& Name, UStaticMesh* StaticMesh);
-	UStaticMesh* GetStaticMesh(FName& Name);
-	void ClearStaticMesh();
+	void Register(const FName& Name, UAsset* Pipeline);
+	void Clear();
 	
-	// Material
-	void RegisterMaterial(FName& Name, UMaterial* Material);
-	UMaterial* GetMaterial(FName& Name);
-	void ClearMaterial();
-
-	// Font
-	void RegisterFont(FName& Name, UFont* Font);
-	UFont* GetFont(FName& Name);
-	void ClearFont();
-
-	void ClearAll();
+	template <typename T>
+	T Get(const FName& Name);
 	
 };
+
+template<typename T>
+inline T FAssetRegistry::Get(const FName& Name)
+{
+	auto It = AssetMap.find(Name);
+
+	if (It == AssetMap.end())
+	{
+		return nullptr;
+	}
+
+	UAsset* Asset = It->second;
+
+	if (!Asset->IsA<T>())
+	{
+		return nullptr;
+	}
+	
+	return Asset;
+}

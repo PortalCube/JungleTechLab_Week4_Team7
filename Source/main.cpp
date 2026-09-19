@@ -7,6 +7,7 @@
 #include "Runtime/Engine/USceneManager.h"
 #include "Runtime/Rendering/FRenderer.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
+#include "Runtime/Resource/FResourceLoader.h"
 #include "Runtime/Math/FVector2.h"
 #include "Runtime/CoreUObject/UClass.h"
 #include "ThirdParty/Imgui/imgui.h"
@@ -56,7 +57,7 @@ int WINAPI wWinMain(
 	{
 		return -1;
 	}
-	FRenderView RenderView(Renderer);
+	FRenderView RenderView{ Renderer };
 
 	FRenderResourceLibrary& RenderResources = FRenderResourceLibrary::Get();
 	if (!RenderResources.Initialize(Renderer))
@@ -64,8 +65,12 @@ int WINAPI wWinMain(
 		return -1;
 	}
 
+	// 애셋 로드
+	FResourceLoader::LoadAssets();
+
 	//RTTI를 위한 UClass 초기화
 	UClass::ResolveTypeBitsets();
+
 	//새씬 생성
 	USceneManager SceneManager;
 	SceneManager.SetScene(NewObject<UScene>());
