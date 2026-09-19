@@ -25,4 +25,19 @@ struct FTextureSamplerDesc
 {
 	ETextureSamplerFilterMode FilterMode	= ETextureSamplerFilterMode::Bilinear;
 	ETextureSamplerWrapMode WrapMode		= ETextureSamplerWrapMode::Wrap;
+
+	bool operator==(const FTextureSamplerDesc&) const = default;
 };
+
+namespace std
+{
+	template <>
+	struct hash<FTextureSamplerDesc>
+	{
+		size_t operator()(const FTextureSamplerDesc& Desc) const noexcept
+		{
+			return static_cast<size_t>(Desc.FilterMode)
+				| (static_cast<size_t>(Desc.WrapMode) << 8);
+		}
+	};
+}
