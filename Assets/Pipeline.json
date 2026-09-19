@@ -1,0 +1,23 @@
+{
+    "Version": 1,
+    "Name": "MyPipeline",
+    "AssetType": "Pipeline",
+    "VertexShaderFilePath": "vertexshader.cso",
+    "PixelShaderFilePath": "pixelshader.cso",
+    "Rasterizer": {
+        "FillMode": "Solid",
+        "CullMode": "Front",
+        "FrontFaceMode": "CounterClockwise",
+        "Multisample": false,
+        "AntialiasedLine": false
+    },
+    "Blend": {
+        "BlendMode": "Opaque"
+    },
+    "DepthStencil": {
+        "DepthEnable": false,
+        "StencilEnable": false,
+        "DepthWriteMode": "Enable"
+    },
+    "Instancing": false
+}

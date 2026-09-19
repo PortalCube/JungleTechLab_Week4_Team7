@@ -1,0 +1,11 @@
+{
+    "Version": 1,
+    "Name": "MyMaterial",
+    "AssetType": "Material",
+    "UPipelineID": "Pipeline.json",
+    "UTextureID": "Texture.json",
+    "TextureSampler": {
+        "FilterMode": "Point",
+        "WrapMode": "Wrap"
+    }
+}
