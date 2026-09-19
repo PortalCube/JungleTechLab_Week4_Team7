@@ -10,37 +10,27 @@
 #include "Vertices.h"
 #include <d3d11.h>
 
-class FRenderer;
-class FRenderResourceLibrary;
-
 class FMaterial final {
-  friend class FRenderer;
+	friend class FRenderer;
 
 public:
-  
-  void SetPipeLine(const TSharedPtr<FRenderPipeline>& InPipeline);
-  //void SetWireframePipeLine(const TSharedPtr<FRenderPipeline>& InPipeline);
 
-  [[nodiscard]] TSharedPtr<FRenderPipeline> GetPipeline() const { return Pipeline; }
+	void SetPipeLine(const FRenderPipeline* InPipeline);
+	FRenderPipeline* GetPipeline() const { return Pipeline; }
 
-  void SetTexture(const TSharedPtr<FTexture>& InTexture);
-  [[nodiscard]] TSharedPtr<FTexture> GetTexture() const { return Texture; }
+	void SetTexture(const FTexture* InTexture);
+	FTexture* GetTexture() const { return Texture; }
 
-  // 원본 머터리얼에서 텍스처 교체 함수
-  bool SetTextureByName(const FName& InTextureName);
+	void SetSamplerDesc(const FTextureSamplerDesc InSamplerDesc);
+	FTextureSamplerDesc GetSamplerDesc() const { return SamplerDesc; }
 
+	FName MaterialId{ "None" };
 
-  FName MaterialId{"None"};
+	void BindResources(ID3D11DeviceContext& Context) const;
+
 private:
-  void BindResources(ID3D11DeviceContext &Context) const;
 
-  TSharedPtr<FRenderPipeline> Pipeline;
-  TSharedPtr<FTexture> Texture;
-  FTextureSamplerDesc SamplerDesc;
-};
-
-struct FMaterialDesc {
-  FWString VertexShaderFileName;
-  FWString PixelShaderFileName;
-  bool bEnableDepthTest = true;
+	FRenderPipeline* Pipeline;
+	FTexture* Texture;
+	FTextureSamplerDesc SamplerDesc;
 };

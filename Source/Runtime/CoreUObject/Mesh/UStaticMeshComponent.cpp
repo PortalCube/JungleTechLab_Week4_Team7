@@ -1,30 +1,20 @@
-#include "UMeshComponent.h"
-#include "Runtime/CoreUObject/UObjectGlobals.h"
 #include "UStaticMeshComponent.h"
+#include "Runtime/CoreUObject/UObjectGlobals.h"
 #include "Runtime/Material/FMaterialInstance.h"
+#include "Runtime/Asset/UStaticMesh.h"
 
 #include <stdexcept>
 
 IMPLEMENT_UCLASS(UStaticMeshComponent, UMeshComponent)
 
-void UStaticMeshComponent::Initialize()
+const FRenderData& UStaticMeshComponent::GetRenderData(const FCamera& Camera) const
 {
-	Super::Initialize();
+	return RenderData;
 }
 
-void UStaticMeshComponent::Register(UScene& InScene)
+void UStaticMeshComponent::SetMesh(UStaticMesh* InMesh)
 {
-	Super::Register(InScene);
-}
-
-void UStaticMeshComponent::Unregister()
-{
-	Super::Unregister();
-}
-
-void UStaticMeshComponent::SetMesh(UMesh* InMesh)
-{
-	Mesh = InMesh;
+	RenderData.Mesh = InMesh;
 }
 
 void UStaticMeshComponent::SetMaterial(UMaterial* InMaterial, int Index)
@@ -34,5 +24,10 @@ void UStaticMeshComponent::SetMaterial(UMaterial* InMaterial, int Index)
 		throw EngineUtil::CreateError("Index가 범위를 초과했습니다. 슬롯 갯수: {}, Index: {}", GetMaterialSlotLength(), Index);
 	}
 
-	MaterialInstances[Index] = FMaterialInstance{ InMaterial };
+	RenderData.Materials[Index] = FMaterialInstance{ InMaterial };
+}
+
+void UStaticMeshComponent::ClearMaterial()
+{
+	RenderData.Materials.clear();
 }

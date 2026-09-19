@@ -59,8 +59,7 @@ project "MyEngine"
         "DirectXTK_Desktop_2026",
         "user32",
         "d3d11",
-        "dxgi",
-        "d3dcompiler"
+        "dxgi"
     }
 
     -- 미리 컴파일된 헤더로 컴파일 시간 최적화

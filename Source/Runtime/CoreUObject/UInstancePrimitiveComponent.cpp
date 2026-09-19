@@ -1,6 +1,7 @@
 #include "UInstancePrimitiveComponent.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Rendering/ShaderConstants.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 #include "Runtime/Engine/UScene.h"
 #include "UClass.h"
 
@@ -10,32 +11,10 @@ void UInstancePrimitiveComponent::Initialize()
 {
     Super::Initialize();
 
-    //SetMeshID(FName("Cube"));
+    FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+    RenderData.Materials[0] = Registry.Get<UMaterial>("Instance_Textured");
     
-	if (GetMaterialID().IsNone())
-	{
-		SetMaterialID(FName("Instance_Simple"));
-	}
-	else if (GetMaterialID() == FName("Textured"))
-	{
-		SetMaterialID(FName("Instance_Textured"));
-	}
-    
-    RenderData.type = ERenderType::Instancing;
-
-    // 텍스처 ID가 지정되어 있고 머티리얼이 있는 경우 텍스처 설정
-    if (!GetTextureID().IsNone() && GetTextureID() != FName("None"))
-    {
-        auto Mat = FRenderResourceLibrary::Get().GetMaterial(GetMaterialID());
-        if (Mat)
-        {
-            auto Tex = FRenderResourceLibrary::Get().GetTexture(GetTextureID());
-            if (Tex)
-            {
-                Mat->SetTexture(Tex);
-            }
-        }
-    }
+    RenderData.Type = ERenderType::Instancing;
 
 }
 

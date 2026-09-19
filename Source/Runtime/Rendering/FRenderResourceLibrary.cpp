@@ -354,6 +354,7 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
   };
 
   AllPipelineMap[FName("Outline")] = std::make_shared<FRenderPipeline>(std::move(CreateInfo));
+  AllMaterialMap[FName("Outline")] = std::make_shared<FMaterial>();
   return true;
 }
 
@@ -473,45 +474,6 @@ bool FRenderResourceLibrary::InitializePipelines(FRenderer &Renderer) {
   CreateSolidWireframePipeline(Renderer);
   CreateOutlinePipeline(Renderer);
   CreatePostProcessPipeline(Renderer);
-  return true;
-
-  const FWString Path = GetExecutableDirectory();
-
-  for (const FPipelineEntry &Entry : pipelineTable) {
-    if (AllPipelineMap.find(Entry.Id) != AllPipelineMap.end()) {
-      continue;
-    }
-
-    const FWString VsPath = Path + L"/Shader/" + Entry.VertexShader;
-    const FWString PsPath = Path + L"/Shader/" + Entry.PixelShader;
-
-    if (!std::filesystem::exists(VsPath) || !std::filesystem::exists(PsPath)) {
-      continue;
-    }
-
-    FRenderPipelineDesc PipelineDesc = {
-        .VertexShaderFilePath = std::filesystem::path(VsPath).string(),
-        .PixelShaderFilePath = std::filesystem::path(PsPath).string(),
-        .bIsInstancing = Entry.bIsInstancing,
-    };
-    PipelineDesc.DepthStencil.bDepthEnable = true;
-    PipelineDesc.DepthStencil.DepthWrite = Entry.bDepthWrite
-        ? EDepthWriteMode::Enable : EDepthWriteMode::Disable;
-    PipelineDesc.Rasterizer.CullMode = Entry.CullMode == D3D11_CULL_NONE
-        ? ERasterizerCullMode::None
-        : Entry.CullMode == D3D11_CULL_FRONT
-            ? ERasterizerCullMode::Front : ERasterizerCullMode::Back;
-    PipelineDesc.Blend.BlendMode = Entry.BlendMode;
-
-    TSharedPtr<FRenderPipeline> Pipeline =
-        Renderer.CreateRenderPipeline(PipelineDesc, EViewModeIndex::VMI_Lit);
-    if (!Pipeline) {
-      return false;
-    }
-
-    AllPipelineMap[Entry.Id] = Pipeline;
-  }
-  return true;
 }
 
 bool FRenderResourceLibrary::Initialize(FRenderer &Renderer) {

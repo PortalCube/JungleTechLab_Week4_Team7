@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Runtime/Engine/FCamera.h"
-#include "Runtime/Geometry/FAxisAlignedBoundingBox.h"
-#include "Runtime/Rendering/FRenderQueue.h"
+#include "Runtime/Engine/FRenderData.h"
 #include "Runtime/Engine/ShowFlags.h"
+#include "Runtime/Math/FMatrix.h"
+#include "Runtime/Geometry/FAxisAlignedBoundingBox.h"
 #include "USceneComponent.h"
 
 class UPrimitiveComponent : public USceneComponent {
@@ -15,10 +16,9 @@ public:
     void Register(UScene& InScene) override;
     void Unregister() override;
 
-    virtual FMatrix GetRenderMatrix(const FCamera& Camera) const { return GetGlobalTransform().ToMatrix(); }
 
-    virtual const FRenderData& GetRenderData(const FCamera& Camera){ return RenderData; }
-    const FRenderData& GetPureRenderData() const { return RenderData; }
+    virtual const FRenderData& GetRenderData(const FCamera& Camera) { return RenderData; }
+    virtual FMatrix GetRenderMatrix(const FCamera& Camera) const { return GetGlobalTransform().ToMatrix(); }
 
     virtual FAxisAlignedBoundingBox CalcLocalBounds() { return {}; }
 
@@ -29,11 +29,10 @@ protected:
 
     FRenderData RenderData
     {
-       .MeshId = FName("None"),
-       .MaterialId = FName("None"),
-       .TextureId = FName("None"),
-       .type = ERenderType::None,
-       .bSelected = false,
+       .Mesh = nullptr,
+       .Materials = {},
+       .ModelMatrix = FMatrix::Identity,
+       .Type = ERenderType::None,
     };
 
     FVector Color{1.0f, 1.0f, 1.0f};

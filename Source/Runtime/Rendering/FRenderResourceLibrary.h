@@ -11,7 +11,6 @@
 #include "Runtime/Core/TArray.h"
 #include "Runtime/Core/TMap.h"
 #include "Vertices.h"
-#include "FFont.h"
 
 class FRenderer;
 class FTexture;
@@ -42,8 +41,8 @@ public:
   TMap<FInstanceBatchKey, TArray<FInstanceData>> AllInstancingArrayMap;
 
   // 인스턴싱 배열 조회
-  TArray<FInstanceData>& GetInstancingArray(const FName& MatId, const FName& MeshId) {
-    return AllInstancingArrayMap[{MatId, MeshId}];
+  TArray<FInstanceData>& GetInstancingArray(const FMesh* Mesh, const FMaterial* Material) {
+    return AllInstancingArrayMap[{Mesh, Material}];
   }
 
   // 파이프라인 조회

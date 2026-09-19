@@ -152,7 +152,7 @@ void FResourceLoader::LoadAssets()
 		return;
 	}
 
-	const auto& Iterator = fs::directory_iterator(AssetPath);
+	const auto& Iterator = fs::recursive_directory_iterator(AssetPath);
 
 	TDeque<std::pair<FName, FArchive>> Deque;
 
@@ -325,8 +325,6 @@ void FResourceLoader::LoadMaterialAsset(const FArchive& Archive, const FName& ID
 	MaterialDesc.ID = ID;
 	MaterialDesc.Name = Archive.GetString("Name");
 
-	const FName UPipelineID = Archive.GetString("UPipelineID");
-	const FName UTextureID = Archive.GetString("UTextureID");
 	if (Archive.IsNull("TextureSampler"))
 	{
 		throw EngineUtil::CreateError("[FResourceLoader::LoadMaterialAsset] 'TextureSampler' 필드가 없습니다. {}", ID.ToString());
@@ -336,20 +334,27 @@ void FResourceLoader::LoadMaterialAsset(const FArchive& Archive, const FName& ID
 	MaterialDesc.TextureSamplerDesc.FilterMode = TextureSamplerArchive.GetEnum("FilterMode", TextureSamplerFilterModeMap);
 	MaterialDesc.TextureSamplerDesc.WrapMode = TextureSamplerArchive.GetEnum("WrapMode", TextureSamplerWrapModeMap);
 
+
+	const FName UPipelineID = Archive.GetString("UPipelineID");
 	MaterialDesc.Pipeline = Registry.Get<UPipeline>(UPipelineID);
 	if (MaterialDesc.Pipeline == nullptr)
 	{
 		throw EngineUtil::CreateError(
 			"[FResourceLoader::LoadMaterialAsset] Pipeline을 찾을 수 없습니다. ID: {}, Pipeline: {}",
-			ID.ToString(), UPipelineID);
+			ID.ToString(), UPipelineID.ToString());
 	}
 
-	MaterialDesc.Texture = Registry.Get<UTexture>(UTextureID);
-	if (MaterialDesc.Texture == nullptr)
+
+	if (!Archive.IsNull("UTextureID"))
 	{
-		throw EngineUtil::CreateError(
-			"[FResourceLoader::LoadMaterialAsset] Texture을 찾을 수 없습니다. ID: {}, Texture: {}",
-			ID.ToString(), UTextureID);
+		const FName UTextureID = Archive.GetString("UTextureID");
+		MaterialDesc.Texture = Registry.Get<UTexture>(UTextureID);
+		if (MaterialDesc.Texture == nullptr)
+		{
+			throw EngineUtil::CreateError(
+				"[FResourceLoader::LoadMaterialAsset] Texture을 찾을 수 없습니다. ID: {}, Texture: {}",
+				ID.ToString(), UTextureID.ToString());
+		}
 	}
 
 	Material->Load(MaterialDesc);
@@ -443,7 +448,7 @@ void FResourceLoader::LoadFontAsset(const FArchive& Archive, const FName& ID)
 	{
 		throw EngineUtil::CreateError(
 			"[FResourceLoader::LoadFontAsset] Texture을 찾을 수 없습니다. ID: {}, Texture: {}",
-			ID.ToString(), UTextureID);
+			ID.ToString(), UTextureID.ToString());
 	}
 
 	// TODO: Setter 지정

@@ -25,11 +25,10 @@ void FTextVisualizer::Draw(
   float Width = TextComponent.GetWidth();
   float Height = TextComponent.GetHeight();
 
-  auto MeshPtr = FRenderResourceLibrary::Get().GetMesh(
-      TextComponent.GetPureRenderData().MeshId);
+  UStaticMesh* MeshPtr = TextComponent.GetRenderData(Camera).Mesh;
   if (!MeshPtr)
     return;
-  const FMesh &Mesh = *MeshPtr;
+  const FMesh &Mesh = *MeshPtr->GetMesh();
   const FMatrix ModelMatrix = TextComponent.GetRenderMatrix(Camera);
 
   if (Mesh.GetPositions().size() != 4) {

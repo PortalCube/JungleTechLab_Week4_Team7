@@ -12,26 +12,23 @@ class UStaticMeshComponent : public UMeshComponent {
     DECLARE_UCLASS(UStaticMeshComponent, UMeshComponent)
 
 public:
-    void Initialize() override;
-    void Register(UScene& InScene) override;
-    void Unregister() override;
 
-    virtual const UMesh* GetMesh() override { return Mesh; }
-    virtual const UMaterial* GetMaterial(int Index = 0) const override { return MaterialInstances[Index].GetMaterial(); }
-    virtual const FMaterialInstance* GetMaterialInstance(int Index = 0) const override { return &MaterialInstances[Index]; }
-    virtual const TArray<FMaterialInstance>* GetAllMaterialInstance() const override { return &MaterialInstances; }
+    virtual const UStaticMesh* GetMesh() override { return RenderData.Mesh; }
+    virtual const UMaterial* GetMaterial(int Index = 0) const override { return RenderData.Materials[Index].Material; }
+    virtual const FMaterialInstance* GetMaterialInstance(int Index = 0) const override { return &RenderData.Materials[Index]; }
+    virtual const TArray<FMaterialInstance>* GetAllMaterialInstance() const override { return &RenderData.Materials; }
 
-    void SetMesh(UMesh* InMesh);
+    virtual const FRenderData& GetRenderData(const FCamera& Camera) const override;
+
+    void SetMesh(UStaticMesh* InMesh);
     void SetMaterial(UMaterial* InMaterial, int Index = 0);
     void ClearMaterial();
 
-    int GetMaterialSlotLength() const;
+    // TODO
+    int GetMaterialSlotLength() const { return 0; }
 
     virtual EEngineShowFlags GetShowFlag() const { return EEngineShowFlags::SF_Mesh; }
 
 protected:
     UStaticMeshComponent() = default;
-
-    UMesh* Mesh = nullptr;
-    TArray<FMaterialInstance> MaterialInstances;
 };

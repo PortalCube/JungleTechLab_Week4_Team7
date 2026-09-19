@@ -2,30 +2,29 @@
 
 
 #include "Runtime/CoreUObject/UPrimitiveComponent.h"
-#include "Runtime/Engine/FCamera.h"
-#include "Runtime/Geometry/FAxisAlignedBoundingBox.h"
 #include "Runtime/Rendering/FRenderQueue.h"
+#include "Runtime/Engine/FCamera.h"
 #include "Runtime/Engine/ShowFlags.h"
+#include "Runtime/Geometry/FAxisAlignedBoundingBox.h"
 
-class UMesh;
+class UStaticMesh;
 class UMaterial;
 class FMaterialInstance;
 
+/// <summary>
+/// 모든 Mesh Component의 부모 컴포넌트입니다.
+/// </summary>
 class UMeshComponent : public UPrimitiveComponent {
     GENERATED_BODY()
     DECLARE_UCLASS(UMeshComponent, UPrimitiveComponent)
 
 public:
-    void Initialize() override;
-    void Register(UScene& InScene) override;
-    void Unregister() override;
 
-    virtual const UMesh* GetMesh() { return nullptr; }
+    // 의도적으로 nullptr 반환
+    virtual const UStaticMesh* GetMesh() { return nullptr; }
     virtual const UMaterial* GetMaterial(int Index = 0) const { return nullptr; }
     virtual const FMaterialInstance* GetMaterialInstance(int Index = 0) const { return nullptr; }
     virtual const TArray<FMaterialInstance>* GetAllMaterialInstance() const { return nullptr; }
-
-    virtual const FRenderData& GetRenderData(const FCamera& Camera) { return RenderData; }
 
     virtual EEngineShowFlags GetShowFlag() const override { return EEngineShowFlags::SF_Mesh; }
 

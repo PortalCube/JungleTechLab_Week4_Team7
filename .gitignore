@@ -23,3 +23,6 @@ editor.ini
 compile_flags.txt
 compile_commands.json
 .cache/
+
+# 임시
+Assets/
