@@ -10,6 +10,4 @@ class ACylinderActor : public AActor
 
 public:
 	explicit ACylinderActor();
-
-	UCylinderComp* GetCylinderComponent() const;
 };
