@@ -12,7 +12,5 @@ enum class EViewModeIndex : uint8 {
 // 렌더링 쇼 플래그
 enum class EEngineShowFlags : uint64 {
   SF_Primitives		= 1 << 0,
-  SF_Mesh			= 1 << 1,
-  SF_StaticMesh		= 1 << 2,
-  SF_BillboardText	= 1 << 3,
+  SF_BillboardText	= 1 << 1,
 };

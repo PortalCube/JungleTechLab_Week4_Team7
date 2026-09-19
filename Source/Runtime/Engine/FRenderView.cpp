@@ -322,11 +322,14 @@ void FRenderView::DrawStencilMask(const FCamera& Camera,
     FDrawCommand DrawCommand = GetDrawCommand(Camera, Data);
 
     DrawCommand.Constants.DisableShading = true;
+    DrawCommand.Constants.MVP = ModelMatrix * Camera.CreateViewProjectionMatrix();
+    DrawCommand.Constants.World = ModelMatrix;
 
     auto OutlineMaterial = FRenderResourceLibrary::Get().GetMaterial("Outline");
     if (OutlineMaterial)
     {
         OutlineMaterial->GetPipeline()->SetStencilRef(1);
+        DrawCommand.Materials = { *OutlineMaterial };
         Renderer.Draw(DrawCommand, 0, false);
     }
 }
@@ -406,13 +409,18 @@ void FRenderView::FlushQueue(const FCamera& Camera)
     // Text 큐: BuildRenderData()에서 이미 계산된 Instances 배열 사용
     if (!RenderQueue.IsTextRQEmpty())
     {
-        const FDrawCommand& First = RenderQueue.GetTextRenderQ()[0];
         for (const FDrawCommand& Data : RenderQueue.GetTextRenderQ())
         {
             // Font에서 미리 계산된 글자별 쿼드 데이터를 그대로 넘김
             Renderer.AddTextInstanceArray(Data);
         }
-        Renderer.DrawTextInstances(First);
+
+        // 각 DrawCommand의 머티리얼 주소가 인스턴스 배치 키에 포함되므로,
+        // 첫 번째 명령만 그리면 나머지 Text 배치는 렌더링되지 않는다.
+        for (const FDrawCommand& Data : RenderQueue.GetTextRenderQ())
+        {
+            Renderer.DrawTextInstances(Data);
+        }
         Renderer.ClearTextInstances();
     }
 

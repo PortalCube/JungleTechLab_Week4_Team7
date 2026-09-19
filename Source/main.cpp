@@ -89,74 +89,74 @@ int WINAPI wWinMain(
 	}
 	EditorApp.Initialize_Runtime(&SceneManager, &RenderView);
 
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	// test /////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	TArray<FVertexData> TestVertices;
-	TArray<uint32> TestIndices;
-	TArray<FMeshSection> TestSections;
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	//// test /////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	//TArray<FVertexData> TestVertices;
+	//TArray<uint32> TestIndices;
+	//TArray<FMeshSection> TestSections;
 
-	FRawObjData RawData;
-	const char* TestFilePath = "Resources/test.obj";
-	const char* TestBinFilePath = "Resources/test.bin";
+	//FRawObjData RawData;
+	//const char* TestFilePath = "Resources/test.obj";
+	//const char* TestBinFilePath = "Resources/test.bin";
 
-	//if (FObjParser::LoadObj(TestFilePath, RawData))
+	////if (FObjParser::LoadObj(TestFilePath, RawData))
+	////{
+	////	if (FObjParser::ConvertObjToVertex(RawData, TestVertices, TestIndices, TestSections))
+	////	{			
+	////		FObjParser::SaveMeshToBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
+	////	}
+	////}
+
+	//// Binary Load Test
+	//FObjParser::LoadMeshFromBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
+
+	//FMeshDesc TestMeshDesc{
+	//	.VertexData = TestVertices.data(),
+	//	.VertexDataSize = static_cast<uint32>(sizeof(FVertexData) * TestVertices.size()),
+	//	.VertexStride = static_cast<uint32>(sizeof(FVertexData)),
+	//	.VertexCount = static_cast<uint32>(TestVertices.size()),
+	//	.IndexData = TestIndices.data(),
+	//	.IndexDataSize = static_cast<uint32>(sizeof(uint32) * TestIndices.size()),
+	//	.IndexCount = static_cast<uint32>(TestIndices.size()),
+	//};
+
+
+	//TSharedPtr<FMesh> TestMesh = Renderer.CreateMesh(TestMeshDesc);
+	//RenderResources.RegisterMesh(FName("MyTestMesh"), TestMesh);
+
+	//UStaticMesh* TestMeshAsset = NewObject<UStaticMesh>();
+	//UStaticMeshDesc TestMeshAssetDesc{};
+	//TestMeshAssetDesc.ID = FName("MyTestMesh");
+	//TestMeshAssetDesc.Name = "MyTestMesh";
+	//TestMeshAssetDesc.Mesh = TestMesh.get();
+	//TestMeshAsset->Load(TestMeshAssetDesc);
+	//FAssetRegistry::GetInstance().Register(FName("MyTestMesh"), TestMeshAsset);
+
+	//UScene* ActiveScene = SceneManager.CurrentScene;
+	//if (ActiveScene)
 	//{
-	//	if (FObjParser::ConvertObjToVertex(RawData, TestVertices, TestIndices, TestSections))
-	//	{			
-	//		FObjParser::SaveMeshToBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
+	//	// 1. 기본 액터 스폰
+	//	AActor* MyObjActor = ActiveScene->SpawnActor<AActor>();
+
+	//	// 2. 렌더링을 담당하는 프리미티브 컴포넌트 생성 및 루트 장착
+	//	MyObjActor->CreateRootComponent(UPrimitiveComponent::StaticClass());
+	//	if (auto* PrimComp = MyObjActor->GetRootComponent()->Cast<UPrimitiveComponent>())
+	//	{
+	//		PrimComp->SetMesh(TestMeshAsset);
+	//		PrimComp->SetMaterial(FAssetRegistry::GetInstance().Get<UMaterial>("Simple"));
+	//		PrimComp->SetRenderType(ERenderType::Primitive);   // Simple 렌더 타입
+	//		PrimComp->SetColor(FVector4(0.8f, 0.8f, 0.8f, 1.0f));
 	//	}
+	//	// 3. 크기(Scale) 및 위치(Location) 설정
+	//	FTransform Transform;
+	//	Transform.Location = FVector(0.0f, 0.0f, 0.0f);
+	//	Transform.Scale3D = FVector(1.0f, 1.0f, 1.0f); // 모델이 너무 작거나 크면 조절
+	//	MyObjActor->SetTransform(Transform);
 	//}
-
-	// Binary Load Test
-	FObjParser::LoadMeshFromBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
-
-	FMeshDesc TestMeshDesc{
-		.VertexData = TestVertices.data(),
-		.VertexDataSize = static_cast<uint32>(sizeof(FVertexData) * TestVertices.size()),
-		.VertexStride = static_cast<uint32>(sizeof(FVertexData)),
-		.VertexCount = static_cast<uint32>(TestVertices.size()),
-		.IndexData = TestIndices.data(),
-		.IndexDataSize = static_cast<uint32>(sizeof(uint32) * TestIndices.size()),
-		.IndexCount = static_cast<uint32>(TestIndices.size()),
-	};
-
-
-	TSharedPtr<FMesh> TestMesh = Renderer.CreateMesh(TestMeshDesc);
-	RenderResources.RegisterMesh(FName("MyTestMesh"), TestMesh);
-
-	UStaticMesh* TestMeshAsset = NewObject<UStaticMesh>();
-	UStaticMeshDesc TestMeshAssetDesc{};
-	TestMeshAssetDesc.ID = FName("MyTestMesh");
-	TestMeshAssetDesc.Name = "MyTestMesh";
-	TestMeshAssetDesc.Mesh = TestMesh.get();
-	TestMeshAsset->Load(TestMeshAssetDesc);
-	FAssetRegistry::GetInstance().Register(FName("MyTestMesh"), TestMeshAsset);
-
-	UScene* ActiveScene = SceneManager.CurrentScene;
-	if (ActiveScene)
-	{
-		// 1. 기본 액터 스폰
-		AActor* MyObjActor = ActiveScene->SpawnActor<AActor>();
-
-		// 2. 렌더링을 담당하는 프리미티브 컴포넌트 생성 및 루트 장착
-		MyObjActor->CreateRootComponent(UPrimitiveComponent::StaticClass());
-		if (auto* PrimComp = MyObjActor->GetRootComponent()->Cast<UPrimitiveComponent>())
-		{
-			PrimComp->SetMesh(TestMeshAsset);
-			PrimComp->SetMaterial(FAssetRegistry::GetInstance().Get<UMaterial>("Simple"));
-			PrimComp->SetRenderType(ERenderType::Primitive);   // Simple 렌더 타입
-			PrimComp->SetColor(FVector4(0.8f, 0.8f, 0.8f, 1.0f));
-		}
-		// 3. 크기(Scale) 및 위치(Location) 설정
-		FTransform Transform;
-		Transform.Location = FVector(0.0f, 0.0f, 0.0f);
-		Transform.Scale3D = FVector(1.0f, 1.0f, 1.0f); // 모델이 너무 작거나 크면 조절
-		MyObjActor->SetTransform(Transform);
-	}
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	bool bQuit = false;
 	while (!bQuit)

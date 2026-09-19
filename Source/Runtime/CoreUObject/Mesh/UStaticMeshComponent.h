@@ -24,7 +24,7 @@ public:
 
     int32 GetMaterialSlotLength() const { return static_cast<int32>(RenderData.Materials.size()); }
 
-    virtual EEngineShowFlags GetShowFlag() const { return EEngineShowFlags::SF_Mesh; }
+    virtual EEngineShowFlags GetShowFlag() const;
 
 protected:
     UStaticMeshComponent() = default;

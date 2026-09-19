@@ -27,10 +27,10 @@ FMatrix GetRenderMatrix(const FTransform &Transform, const FCamera &Camera) {
   FVector Right = ViewRight * Transform.Scale3D.Y;
 
   return FMatrix{
-      FVector4{ViewForward, 0.0f},
-      FVector4{Right, 0.0f},
-      FVector4{Up, 0.0f},
-      FVector4{Transform.Location, 1.0f},
+      FVector4{ ViewForward, 0.0f },
+      FVector4{ Right, 0.0f },
+      FVector4{ Up, 0.0f },
+      FVector4{ Transform.Location, 1.0f },
   };
 }
 } // namespace

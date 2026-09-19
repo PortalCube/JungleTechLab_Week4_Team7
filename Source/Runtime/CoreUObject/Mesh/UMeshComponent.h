@@ -26,7 +26,7 @@ public:
     virtual const FMaterialInstance* GetMaterialInstance(int Index = 0) const { return nullptr; }
     virtual const TArray<FMaterialInstance>* GetAllMaterialInstance() const { return nullptr; }
 
-    virtual EEngineShowFlags GetShowFlag() const override { return EEngineShowFlags::SF_Mesh; }
+    virtual EEngineShowFlags GetShowFlag() const override { return EEngineShowFlags::SF_Primitives; }
 
 protected:
     UMeshComponent() = default;

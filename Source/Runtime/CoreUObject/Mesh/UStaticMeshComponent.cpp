@@ -3,6 +3,7 @@ IMPLEMENT_UCLASS(UStaticMeshComponent, UMeshComponent)
 
 const FRenderData& UStaticMeshComponent::GetRenderData(const FCamera& Camera) const
 {
+	RenderData.ModelMatrix = GetRenderMatrix(Camera);
 	return RenderData;
 }
 
@@ -22,3 +23,9 @@ void UStaticMeshComponent::ClearMaterial()
 {
 	RenderData.Materials.clear();
 }
+
+EEngineShowFlags UStaticMeshComponent::GetShowFlag() const
+{
+	return EEngineShowFlags::SF_Primitives;
+}
+

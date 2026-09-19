@@ -141,7 +141,7 @@ void AActor::SetRootComponent(USceneComponent* Component)
 		throw EngineUtil::CreateError("이미 Root 컴포넌트가 있습니다.");
 	}
 
-	Component = RootComponent;
+	RootComponent = Component;
 
 	// TODO ActorOwner를 이렇게 지정하면 안됨
 	RootComponent->ActorOwner = this;
