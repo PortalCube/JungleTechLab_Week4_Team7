@@ -1,4 +1,5 @@
-#include "Runtime/CoreUObject/FStatsManager.h"
+#include "FStatsManager.h"
+#include "Runtime/Rendering/FRenderResourceLibrary.h"
 
 #include <d3d11.h>
 #include <windows.h>
@@ -111,4 +112,19 @@ size_t FStatsManager::GetGPUMemoryBudget() const
     }
 
     return static_cast<size_t>(Info.Budget);
+}
+
+size_t FStatsManager::GetVertexShaderMemoryUsed() const
+{
+    return MemoryStats.at(EStatMemoryCategory::VertexShader);
+}
+
+size_t FStatsManager::GetPixelShaderMemoryUsed() const
+{
+    return MemoryStats.at(EStatMemoryCategory::PixelShader);
+}
+
+size_t FStatsManager::GetTextureMemoryUsed() const
+{
+    return MemoryStats.at(EStatMemoryCategory::Texture);
 }

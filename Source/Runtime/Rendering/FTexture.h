@@ -12,16 +12,17 @@ public:
 	[[nodiscard]] ID3D11ShaderResourceView* GetSRV() const { return TextureSRV.Get(); }
 	[[nodiscard]] uint32 GetWidth() const { return Width; }
 	[[nodiscard]] uint32 GetHeight() const { return Height; }
-
+	[[nodiscard]] size_t GetMemorySize() const;
 private:
 	FTexture() = default;
-
+	
 	uint32 Width = 0u;
 	uint32 Height = 0u;
+	uint32 MipLevels = 0u;
+	DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN;
+	size_t MemorySize = 0;
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> Texture2D;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> TextureSRV;
-
-	DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN;
 };
 
 struct FTextureDesc

@@ -6,13 +6,13 @@
 #include "FRenderPipeline.h"
 #include "Runtime/Core/Log.h"
 #include "Runtime/Core/PointerTypes.h"
+#include "Runtime/CoreUObject/FStatsManager.h"
 #include "Runtime/Engine/FCamera.h"
 #include "Runtime/Rendering/FRenderQueue.h"
 #include "Runtime/Rendering/FTexture.h"
 #include "ShaderConstants.h"
 #include "ThirdParty/DirectXTK/Inc/DDSTextureLoader.h"
 #include "Vertices.h"
-#include "Runtime/CoreUObject/FStatsManager.h"
 #include <Windows.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -28,8 +28,6 @@ bool FRenderer::Initialize(HWND Window) {
   }
 
   LineBatcher.Initialize(Device.Get()); // batch line
-
-  FStatsManager::Get().Initialize(Device.Get());
 
   return true;
 }
@@ -179,7 +177,6 @@ TSharedPtr<FMesh> FRenderer::CreateMesh(const FMeshDesc &Desc) {
   if (FAILED(Result)) {
     return nullptr;
   }
-  FStatsManager::Get().AddMemory(EStatMemoryCategory::VertexBuffer, Desc.VertexDataSize);
 
   Mesh->VertexCount = Desc.VertexCount;
   Mesh->VertexStride = Desc.VertexStride;
@@ -200,7 +197,6 @@ TSharedPtr<FMesh> FRenderer::CreateMesh(const FMeshDesc &Desc) {
     if (FAILED(Result)) {
       return nullptr;
     }
-    FStatsManager::Get().AddMemory(EStatMemoryCategory::IndexBuffer, Desc.IndexDataSize);
   }
   Mesh->IndexCount = Desc.IndexCount;
 
@@ -250,7 +246,6 @@ TSharedPtr<FMesh> FRenderer::CreateDynamicMesh(const FMeshDesc &Desc) {
   if (FAILED(Result)) {
     return nullptr;
   }
-  FStatsManager::Get().AddMemory(EStatMemoryCategory::VertexBuffer, Desc.VertexDataSize);
 
   Mesh->VertexCount = Desc.VertexCount;
   Mesh->VertexStride = Desc.VertexStride;
@@ -272,7 +267,6 @@ TSharedPtr<FMesh> FRenderer::CreateDynamicMesh(const FMeshDesc &Desc) {
     if (FAILED(Result)) {
       return nullptr;
     }
-    FStatsManager::Get().AddMemory(EStatMemoryCategory::IndexBuffer, Desc.IndexDataSize);
   }
   Mesh->IndexCount = Desc.IndexCount;
   Mesh->IndexBufferSize = Desc.IndexDataSize;
@@ -327,6 +321,9 @@ FRenderer::CreateRenderPipeline(const FRenderPipelineDesc &Desc,
     return nullptr;
   }
 
+  Pipeline->SetVertexShaderSize(Blob->GetBufferSize());
+  FStatsManager::Get().AddMemory(EStatMemoryCategory::VertexShader, Blob->GetBufferSize());
+
   if (Desc.bIsInstancing) {
     Result = Device->CreateInputLayout(
         FVertexInstanceLayouts::Layout, FVertexInstanceLayouts::NumElements,
@@ -354,6 +351,8 @@ FRenderer::CreateRenderPipeline(const FRenderPipelineDesc &Desc,
   if (FAILED(Result)) {
     return nullptr;
   }
+  Pipeline->SetPixelShaderSize(Blob->GetBufferSize());
+  FStatsManager::Get().AddMemory(EStatMemoryCategory::PixelShader, Blob->GetBufferSize());
 
   D3D11_RASTERIZER_DESC RasterizerDesc{
       .FillMode = (RenderMode == EViewModeIndex::VMI_Wireframe)
@@ -468,6 +467,11 @@ TSharedPtr<FTexture> FRenderer::CreateTexture(const wchar_t *path) {
   Texture->Texture2D->GetDesc(&desc);
   Texture->Width = desc.Width;
   Texture->Height = desc.Height;
+  Texture->Format = desc.Format;
+  Texture->MipLevels = desc.MipLevels;
+  Texture->MemorySize = Texture->GetMemorySize();
+
+  FStatsManager::Get().AddMemory(EStatMemoryCategory::Texture, Texture->MemorySize);
 
   return Texture;
 }
@@ -643,7 +647,6 @@ bool FRenderer::InitializeConstantBuffers() {
   if (FAILED(Result)) {
     return false;
   }
-  FStatsManager::Get().AddMemory(EStatMemoryCategory::ConstantBuffer, ConstantBufferSize);
 
   D3D11_BUFFER_DESC FrameConstantBufferDesc = {
       .ByteWidth = sizeof(FFrameConstants),
@@ -658,7 +661,6 @@ bool FRenderer::InitializeConstantBuffers() {
     return false;
   }
 
-  FStatsManager::Get().AddMemory(EStatMemoryCategory::ConstantBuffer, sizeof(FFrameConstants));
 
   D3D11_BUFFER_DESC lightbufferDesc = {
       .ByteWidth = sizeof(FLightConstants),
@@ -673,7 +675,6 @@ bool FRenderer::InitializeConstantBuffers() {
     return false;
   }
 
-  FStatsManager::Get().AddMemory(EStatMemoryCategory::ConstantBuffer, sizeof(FLightConstants));
 
   return true;
 }
@@ -745,18 +746,6 @@ void FRenderer::DrawInstances(const FCamera &Camera) {
       }
       InstanceBuffer = NewBuffer;
       TextInstanceBufferSize = RequiredSize;
-
-      // 기존 메모리 제거
-      if (OldSize > 0) {
-          FStatsManager::Get().RemoveMemory(
-              EStatMemoryCategory::VertexBuffer,
-              OldSize);
-      }
-
-      // 새 메모리 추가
-      FStatsManager::Get().AddMemory(
-          EStatMemoryCategory::VertexBuffer,
-          TextInstanceBufferSize);
     }
 
     // 인스턴스 데이터 업로드
@@ -835,17 +824,6 @@ void FRenderer::DrawTextInstances(const FCamera &Camera, const FName &MeshId,
     }
     InstanceBuffer = NewBuffer;
     TextInstanceBufferSize = RequiredSize;
-
-    if (OldSize > 0)
-    {
-        FStatsManager::Get().RemoveMemory(
-            EStatMemoryCategory::VertexBuffer,
-            OldSize);
-    }
-
-    FStatsManager::Get().AddMemory(
-        EStatMemoryCategory::VertexBuffer,
-        TextInstanceBufferSize);
   }
 
   // 인스턴스 데이터 업로드

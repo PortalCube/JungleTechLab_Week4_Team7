@@ -7,6 +7,8 @@ enum class EStatMemoryCategory
 {
     UObject,
     Texture,
+    VertexShader,
+    PixelShader,
     VertexBuffer,
     IndexBuffer,
     ConstantBuffer,
@@ -36,6 +38,15 @@ public:
 
     void RemoveMemory( EStatMemoryCategory Category, size_t Size)
     {
+        /*auto It = MemoryStats.find(Category);
+
+        if (It == MemoryStats.end())
+        {
+            return;
+        }
+
+        It->second -= Size;*/
+
         auto It = MemoryStats.find(Category);
 
         if (It == MemoryStats.end())
@@ -43,7 +54,17 @@ public:
             return;
         }
 
-        It->second -= Size;
+        // 여기서 브레이크
+        size_t CurrentSize = It->second;
+
+        if (CurrentSize < Size)
+        {
+            It->second = 0;
+        }
+        else
+        {
+            It->second = CurrentSize - Size;
+        }
     }
 
     size_t GetMemory( EStatMemoryCategory Category) const
@@ -76,6 +97,11 @@ public:
 
     size_t GetGPUMemoryUsed() const;
     size_t GetGPUMemoryBudget() const;
+
+    size_t GetVertexShaderMemoryUsed() const;
+    size_t GetPixelShaderMemoryUsed() const;
+
+    size_t GetTextureMemoryUsed() const;
 
 private:
     FStatsManager() = default;

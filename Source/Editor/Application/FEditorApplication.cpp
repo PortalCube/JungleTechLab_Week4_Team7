@@ -63,7 +63,7 @@ void FEditorApplication::Tick(float DeltaTime) {
   PropertyWindow.Process(Editor);
   ConsoleWindow.Process(Editor, [this](const char* Command) {ExecuteCommand(Command);});
   ContentsDrawer.Process(Editor);
-  StatsWindow.Process(Editor, DeltaTime); // deltatime 전달 필요
+  // StatsWindow.Process(Editor, DeltaTime); // deltatime 전달 필요
   Editor.Process();
 }
 
@@ -123,17 +123,17 @@ void FEditorApplication::ExecuteCommand(const char* Command) {
 
     if (lowerCmd.compare("stat memory") == 0) {
         UE_LOG("Stat Memory Command is executed!");
-        StatsWindow.SetOpen(EStatsWindow::Memory, true);
+        EditorViewportWindow.SetOpen(EStatsWindow::Memory, true);
     }
 
     else if (lowerCmd.compare("stat fps") == 0) {
         UE_LOG("Stat FPS Command is executed!");
-        StatsWindow.SetOpen(EStatsWindow::FPS, true);
+        EditorViewportWindow.SetOpen(EStatsWindow::FPS, true);
     }
 
     else if (lowerCmd.compare("stat none") == 0) {
         UE_LOG("Stat Window is closed!");
-        StatsWindow.SetClose();
+        EditorViewportWindow.SetClose();
     }
 
     else {

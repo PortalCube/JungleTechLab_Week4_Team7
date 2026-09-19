@@ -12,6 +12,8 @@
 
 void FImguiEditorViewportWindow::Process(FEditor &Editor, float DeltaTime)
 {
+    DT = DeltaTime;
+
     FEditorViewportClient *Viewport = Editor.GetActiveViewport();
     if (!Viewport)
     {
@@ -37,6 +39,11 @@ void FImguiEditorViewportWindow::Process(FEditor &Editor, float DeltaTime)
     UpdateCamera(Editor, *Viewport, Input, DeltaTime);
 
     ClampWindowToWorkArea();
+
+    // 스탯 창
+
+    if (bOpenMemory) DrawStatsMemory();
+    if (bOpenFPS) DrawStatsFPS();
     EndWindow();
 }
 
@@ -279,4 +286,115 @@ void FImguiEditorViewportWindow::UpdateGizmoHover(FEditor &Editor,
 
     FGizmo &Gizmo = Editor.GetGizmo();
     Gizmo.HoveredHandle = Gizmo.HitTest(Editor.SelectedTransform, Ray, Viewport.ViewportCamera);
+}
+
+void FImguiEditorViewportWindow::DrawStatLine(ImDrawList* DrawList, const ImVec2& Position,
+    float& Y, const char* Name, const char* Value, FVector4 Color)
+{
+    const float ValueOffsetX = 240.0f;
+    const ImU32 TextColor = IM_COL32(Color.X, Color.Y, Color.Z, Color.W);
+
+    if (Name[0] != '\0'){
+        DrawList->AddText(ImVec2(Position.x, Y), TextColor, Name);
+        DrawList->AddText(ImVec2(Position.x + ValueOffsetX, Y), TextColor, Value);
+    }
+    else{
+        DrawList->AddText(ImVec2(Position.x, Y), TextColor, Value);
+    }
+
+    Y += 20.0f;
+}
+
+void FImguiEditorViewportWindow::DrawRow(ImDrawList* DrawList, const ImVec2& Pos,
+    float& Y, const char* Str, double Data, float RowColor)
+{
+    const float Width = 500.0f;
+    const float RowHeight = 20.0f;
+    FVector4 Color(255.0f, 255.0f, 255.0f, 255.0f);
+    char Buffer[64];
+
+    // Memory 전체 배경
+    DrawList->AddRectFilled(
+        ImVec2(Pos.x, Y),
+        ImVec2(Pos.x + Width, Y + RowHeight),
+        IM_COL32(RowColor, RowColor, RowColor, 200)
+    );
+
+    // Vertex Shader
+    sprintf_s(Buffer, "%.2f MB", Data);
+    DrawStatLine(DrawList, Pos, Y, Str, Buffer, Color);
+}
+
+void FImguiEditorViewportWindow::DrawStatsMemory()
+{
+    ImVec2 ViewportPos = ImGui::GetWindowPos();
+    ImVec2 ViewportSize = ImGui::GetWindowSize();
+
+    ImDrawList* DrawList = ImGui::GetWindowDrawList();
+
+    const ImVec2 Pos = {
+        ViewportPos.x + ViewportSize.x * 0.2f,
+        ViewportPos.y + ViewportSize.y * 0.2f
+    };
+    
+    float Y = Pos.y;
+
+    DrawList->AddText(ImVec2(Pos.x, Pos.y - 45.0f), IM_COL32(255, 255, 255, 255), "Memory");
+    DrawList->AddText(ImVec2(Pos.x, Pos.y - 20.0f), IM_COL32(255, 165, 0, 255), "Memory Counters");
+    DrawList->AddText(ImVec2(Pos.x + 240.0f, Pos.y - 20.0f), IM_COL32(255, 165, 0, 255), "UsedMax");
+    // CPU
+    DrawRow(DrawList, Pos, Y, "CPU Memory",
+        static_cast<double>(FStatsManager::Get().GetProcessMemoryUsed())
+        / (1024.0 * 1024.0), 30.0f);
+    // Ram
+    DrawRow(DrawList, Pos, Y, "Ram Used",
+        static_cast<double>(FStatsManager::Get().GetSystemMemoryUsed())
+        / (1024.0 * 1024.0 * 1024.0), 10.0f);
+    // Ram Available
+    DrawRow(DrawList, Pos, Y, "Ram Available",
+        static_cast<double>(FStatsManager::Get().GetSystemMemoryAvailable())
+        / (1024.0 * 1024.0 * 1024.0), 30.0f);
+    // GPU
+    DrawRow(DrawList, Pos, Y, "GPU Memory Used",
+        static_cast<double>(FStatsManager::Get().GetGPUMemoryUsed())
+        / (1024.0 * 1024.0 * 1024.0), 10.0f);
+    // GPU Available
+    DrawRow(DrawList, Pos, Y, "GPU Memory Available",
+        static_cast<double>(FStatsManager::Get().GetGPUMemoryBudget())
+        / (1024.0 * 1024.0), 30.0f);
+
+    // Vetex Shader
+    DrawRow(DrawList, Pos, Y, "VertexShader", 
+        static_cast<double>(FStatsManager::Get().GetVertexShaderMemoryUsed())
+        / (1024.0 * 1024.0), 10.0f);
+    // Pixel Shader
+    DrawRow(DrawList, Pos, Y, "Pixel Shader",
+        static_cast<double>(FStatsManager::Get().GetPixelShaderMemoryUsed())
+        / (1024.0 * 1024.0), 30.0f);
+    // Texture
+    DrawRow(DrawList, Pos, Y, "Texture",
+        static_cast<double>(FStatsManager::Get().GetTextureMemoryUsed())
+        / (1024.0 * 1024.0), 10.0f);
+
+}
+
+void FImguiEditorViewportWindow::DrawStatsFPS()
+{
+    ImVec2 ViewportPos = ImGui::GetWindowPos();
+    ImVec2 ViewportSize = ImGui::GetWindowSize();
+    ImDrawList* DrawList = ImGui::GetWindowDrawList();
+
+    const ImVec2 FPSPos = {
+        ViewportPos.x + ViewportSize.x - 180.0f,
+        ViewportPos.y + ViewportSize.y * 0.25f
+    };
+
+    float Y = FPSPos.y;
+    FVector4 FPSColor(0.0f, 255.0f, 255.0f, 255.0f);
+    char Buffer[64];
+
+    sprintf_s(Buffer, "%.2f FPS", 1.0f / DT);
+    DrawStatLine(DrawList, FPSPos, Y, "", Buffer, FPSColor);
+    sprintf_s( Buffer, "%.2f ms", DT * 1000.0f);
+    DrawStatLine( DrawList, FPSPos, Y, "", Buffer, FPSColor);
 }
