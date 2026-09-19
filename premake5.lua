@@ -1,6 +1,6 @@
 workspace "MyEngine"
     architecture "x86_64"
-    configurations { "Debug", "Release" }
+    configurations { "Debug", "Release", "ObjViewer" }
     platforms { "x86", "x64" }
     startproject "MyEngine"
     system "windows"
@@ -91,6 +91,9 @@ project "MyEngine"
         optimize "Full"
         symbols "On"
         linktimeoptimization "On"
+
+    filter "configurations:ObjViewer"
+        defines { "_OBJVIEWER" }
 
     filter { "configurations:Debug", "platforms:x64" }
         prebuildmessage "Converting PNG textures to DDS..."

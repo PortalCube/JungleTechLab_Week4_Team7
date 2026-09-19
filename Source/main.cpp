@@ -14,6 +14,8 @@
 #include <Windows.h>
 #include <windowsx.h>
 
+#include "../FObjParser.h"
+
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 static bool bRequestNewScene = false;
@@ -75,6 +77,66 @@ int WINAPI wWinMain(
 		EditorApp.Initialize_ImguiWin32DX11(Window, Device, Context);
 	}
 	EditorApp.Initialize_Runtime(&SceneManager, &RenderView);
+
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	// test /////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	TArray<FVertexData> TestVertices;
+	TArray<uint32> TestIndices;
+	TArray<FMeshSection> TestSections;
+
+	FRawObjData RawData;
+	const char* TestFilePath = "Resources/test.obj";
+	const char* TestBinFilePath = "Resources/test.bin";
+
+	//if (FObjParser::LoadObj(TestFilePath, RawData))
+	//{
+	//	if (FObjParser::ConvertObjToVertex(RawData, TestVertices, TestIndices, TestSections))
+	//	{			
+	//		FObjParser::SaveMeshToBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
+	//	}
+	//}
+
+	// Binary Load Test
+	FObjParser::LoadMeshFromBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
+
+	FMeshDesc TestMeshDesc{
+		.VertexData = TestVertices.data(),
+		.VertexDataSize = static_cast<uint32>(sizeof(FVertexData) * TestVertices.size()),
+		.VertexStride = static_cast<uint32>(sizeof(FVertexData)),
+		.VertexCount = static_cast<uint32>(TestVertices.size()),
+		.IndexData = TestIndices.data(),
+		.IndexDataSize = static_cast<uint32>(sizeof(uint32) * TestIndices.size()),
+		.IndexCount = static_cast<uint32>(TestIndices.size()),
+	};
+
+
+	RenderResources.RegisterMesh(FName("MyTestMesh"), Renderer.CreateMesh(TestMeshDesc));
+
+	UScene* ActiveScene = SceneManager.CurrentScene;
+	if (ActiveScene)
+	{
+		// 1. 기본 액터 스폰
+		AActor* MyObjActor = ActiveScene->SpawnActor<AActor>();
+
+		// 2. 렌더링을 담당하는 프리미티브 컴포넌트 생성 및 루트 장착
+		MyObjActor->CreateRootComponent(UPrimitiveComponent::StaticClass());
+		if (auto* PrimComp = MyObjActor->GetRootComponent()->Cast<UPrimitiveComponent>())
+		{
+			PrimComp->SetMeshID(FName("MyTestMesh"));         // 등록하신 Mesh 이름!
+			PrimComp->SetMaterialID(FName("Simple"));       // 기본 단색 셰이더
+			PrimComp->SetRenderType(ERenderType::Primitive);   // Simple 렌더 타입
+			PrimComp->SetColor(FVector(0.8f, 0.8f, 0.8f));  // 물체 색상 (밝은 회색)
+		}
+		// 3. 크기(Scale) 및 위치(Location) 설정
+		FTransform Transform;
+		Transform.Location = FVector(0.0f, 0.0f, 0.0f);
+		Transform.Scale3D = FVector(1.0f, 1.0f, 1.0f); // 모델이 너무 작거나 크면 조절
+		MyObjActor->SetTransform(Transform);
+	}
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
 
 	bool bQuit = false;
 	while (!bQuit)
