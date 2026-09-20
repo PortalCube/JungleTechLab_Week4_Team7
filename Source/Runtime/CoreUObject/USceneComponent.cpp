@@ -1,6 +1,6 @@
 #include "UClass.h"
 #include "USceneComponent.h"
-#include "ThirdParty/Json/nlohmann/json.hpp"
+#include "ThirdParty/Json/json.hpp"
 #include "UObjectGlobals.h" 
 #include "UPrimitiveComponent.h"
 #include "Runtime/Engine/FArchive.h"

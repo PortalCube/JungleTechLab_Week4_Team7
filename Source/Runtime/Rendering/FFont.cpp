@@ -1,6 +1,7 @@
 #include "FFont.h"
 #include "Runtime/Core/IntTypes.h"
 #include "Runtime/Core/FString.h"
+#include "ThirdParty/Json/json.hpp"
 #include <filesystem>
 #include <fstream>
 
@@ -31,50 +32,48 @@ void FFont::Deserialize(const FWString& path)
 		return;
 	}
 
-	std::stringstream buffer;
-	buffer << f.rdbuf();
-
-	json::JSON data = json::JSON::Load(buffer.str());
+	nlohmann::json data;
+	f >> data;
 
 	// atlas 자체 정보 
-	FString type = data["atlas"]["type"].ToString();
-	uint32 distanceRange = data["atlas"]["distanceRange"].ToInt();
-	uint32 dixtanceRangeMiddle = data["atlas"]["distanceRangeMiddle"].ToInt();
-	uint32 size = data["atlas"]["size"].ToInt();	
-	uint32 width = data["atlas"]["width"].ToInt();
-	uint32 height = data["atlas"]["height"].ToInt();
-	FString yOrigin = data["atlas"]["yOrigin"].ToString();
+	FString type = data["atlas"]["type"].get<std::string>();
+	uint32 distanceRange = data["atlas"]["distanceRange"].get<uint32>();
+	uint32 dixtanceRangeMiddle = data["atlas"]["distanceRangeMiddle"].get<uint32>();
+	uint32 size = data["atlas"]["size"].get<uint32>();
+	uint32 width = data["atlas"]["width"].get<uint32>();
+	uint32 height = data["atlas"]["height"].get<uint32>();
+	FString yOrigin = data["atlas"]["yOrigin"].get<std::string>();
 
 	// metrics
-	uint32 emSize = data["metrics"]["emSize"].ToInt();
-	float lineHeight = data["metrics"]["lineHeight"].ToFloat();
-	float ascender = data["metrics"]["ascender"].ToFloat();
-	float descender = data["metrics"]["descender"].ToFloat();
-	float underlineY = data["metrics"]["underlineY"].ToFloat();
-	float underlineThickness = data["metrics"]["underlineThickness"].ToFloat();
+	uint32 emSize = data["metrics"]["emSize"].get<uint32>();
+	float lineHeight = data["metrics"]["lineHeight"].get<float>();
+	float ascender = data["metrics"]["ascender"].get<float>();
+	float descender = data["metrics"]["descender"].get<float>();
+	float underlineY = data["metrics"]["underlineY"].get<float>();
+	float underlineThickness = data["metrics"]["underlineThickness"].get<float>();
 
 	// 문자
-	for (auto& glyph : data["glyphs"].ArrayRange())
+	for (const auto& glyph : data["glyphs"])
 	{
 		FCharacterInfo info{};
 
-		uint32 unicode = glyph["unicode"].ToInt();
-		info.advance = glyph["advance"].ToFloat();
+		uint32 unicode = glyph["unicode"].get<uint32>();
+		info.advance = glyph["advance"].get<float>();
 
-		if (glyph.hasKey("planeBounds"))
+		if (glyph.contains("planeBounds"))
 		{
-			info.planeLeft = glyph["planeBounds"]["left"].ToFloat();
-			info.planeTop = glyph["planeBounds"]["top"].ToFloat();
-			info.planeRight = glyph["planeBounds"]["right"].ToFloat();
-			info.planeBottom = glyph["planeBounds"]["bottom"].ToFloat();
+			info.planeLeft = glyph["planeBounds"]["left"].get<float>();
+			info.planeTop = glyph["planeBounds"]["top"].get<float>();
+			info.planeRight = glyph["planeBounds"]["right"].get<float>();
+			info.planeBottom = glyph["planeBounds"]["bottom"].get<float>();
 		}
 
-		if (glyph.hasKey("atlasBounds"))
+		if (glyph.contains("atlasBounds"))
 		{
-			float atlLeft = glyph["atlasBounds"]["left"].ToFloat();
-			float atlTop = glyph["atlasBounds"]["top"].ToFloat();
-			float atlRight = glyph["atlasBounds"]["right"].ToFloat();
-			float atlBot = glyph["atlasBounds"]["bottom"].ToFloat();
+			float atlLeft = glyph["atlasBounds"]["left"].get<float>();
+			float atlTop = glyph["atlasBounds"]["top"].get<float>();
+			float atlRight = glyph["atlasBounds"]["right"].get<float>();
+			float atlBot = glyph["atlasBounds"]["bottom"].get<float>();
 
 
 			info.u = atlLeft / width;

@@ -5,7 +5,7 @@
 #include "Runtime/Core/IntTypes.h"
 #include "Runtime/Math/FVector.h"
 #include "Runtime/Math/FVector2.h"
-#include "ThirdParty/Json/nlohmann/json.hpp"
+#include "ThirdParty/Json/json.hpp"
 
 // 임시...
 #undef GetObject

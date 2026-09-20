@@ -11,7 +11,7 @@
 #include <type_traits>
 
 
-#include "ThirdParty/Json/nlohmann/json.hpp"
+#include "ThirdParty/Json/json.hpp"
 
 class UScene final : public UObject {
     DECLARE_UCLASS(UScene, UObject)

@@ -9,6 +9,9 @@
 #include "Runtime/Engine/FArchive.h"
 #include <algorithm>
 
+#include "Runtime/CoreUObject/TObjectIterator.h"
+#include "Runtime/Core/Log.h"
+
 IMPLEMENT_UCLASS(UScene, UObject)
 UCLASS_META(UScene, SerializeName, "Scene")
 
@@ -212,5 +215,21 @@ AActor *UScene::SpawnActor(UClass *ClassType) {
   Actor->Register(*this);
 
   Actors.push_back(Actor);
+
+  int Count = 0;
+
+  for (TObjectIterator<AActor> It; It; ++It)
+  {
+      AActor* Actor = *It;
+
+      if (Actor)
+      {
+          ++Count;
+      }
+  }
+
+  UE_LOG("Total Actor Count : %d", Count);
+
+
   return Actor;
 }

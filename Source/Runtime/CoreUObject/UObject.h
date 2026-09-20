@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "UClass.h"
 #include "Runtime/Core/IntTypes.h"
-#include "ThirdParty/Json/nlohmann/json.hpp"
+#include "ThirdParty/Json/json.hpp"
 #include <cstddef>
 #include <new>
 #include <concepts>

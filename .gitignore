@@ -1,6 +1,7 @@
 # Build outputs
 Binaries/
 Intermediate/
+obj/
 
 # Visual Studio
 .vs/

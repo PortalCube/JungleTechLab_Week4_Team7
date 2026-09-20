@@ -88,56 +88,6 @@ public:
     return inMesh;
   }
 
-  // 개별 메쉬 접근자
-  [[nodiscard]] TSharedPtr<FMesh> GetCubeMesh() const {
-    return GetMesh(FName("Cube"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetCylinderMesh() const {
-    return GetMesh(FName("Cylinder"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetConeMesh() const {
-    return GetMesh(FName("Cone"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetSpotlightConeMesh() const {
-    return GetMesh(FName("SpotlightCone"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetArrowMesh() const {
-    return GetMesh(FName("Arrow"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetCircleMesh() const {
-    return GetMesh(FName("Circle"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetRotationGizmoMesh() const {
-    return GetMesh(FName("RotGizmo"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetSquareArrowMesh() const {
-    return GetMesh(FName("SquareArrow"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetGridMesh() const {
-    return GetMesh(FName("Grid"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetSphereMesh() const {
-    return GetMesh(FName("Sphere"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetLineMesh() const {
-    return GetMesh(FName("Line"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetPlaneMesh() const {
-    return GetMesh(FName("Plane"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetRectMesh() const {
-    return GetMesh(FName("Rect"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetTextMesh() const {
-    return GetMesh(FName("TextMesh"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetMasterYiMesh() const {
-    return GetMesh(FName("MasterYi"));
-  }
-  [[nodiscard]] TSharedPtr<FMesh> GetMasteryMesh() const {
-    return GetMesh(FName("MasterYi"));
-  }
-
   // 머티리얼 등록
   TSharedPtr<FMaterial> RegisterMaterial(const FName& Id, TSharedPtr<FMaterial> inMaterial);
 
