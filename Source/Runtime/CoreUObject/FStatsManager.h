@@ -14,6 +14,9 @@ enum class EStatMemoryCategory
     ConstantBuffer,
     RenderTarget,
     Editor,
+    MemoryPool, 
+    MemoryPoolUsed,
+    MemoryPoolFree
 };
 
 class FStatsManager final
@@ -102,6 +105,10 @@ public:
     size_t GetPixelShaderMemoryUsed() const;
 
     size_t GetTextureMemoryUsed() const;
+
+    size_t GetMemoryPool() const;
+    size_t GetMemoryPoolUsed() const;
+    size_t GetMemoryPoolFree() const;
 
 private:
     FStatsManager() = default;

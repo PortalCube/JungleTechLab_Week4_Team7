@@ -21,8 +21,6 @@ public:
 	[[nodiscard]] UObject* GetObjectByIndex(uint32 Index) const { return Objects[Index]; }
 	[[nodiscard]] bool IsValid(const UObject* Object, uint32 UUID) const;
 
-	// [[nodiscard]] TArray<UObject*>& GetObjects() { return Objects; }
-
 	FUObjectArray(const FUObjectArray&) = delete;
 	FUObjectArray& operator=(const FUObjectArray&) = delete;
 
@@ -34,10 +32,11 @@ public:
 	public:
 		explicit TIterator( uint32 InIndex) : Index(InIndex) {}
 		TIterator& operator++() { ++Index; return *this;}
+		TIterator operator++(int) { TIterator Temp = *this; ++Index; return Temp; }
 		bool operator==(const TIterator& Other) const { return Index == Other.Index; }
 		bool operator!=(const TIterator& Other) const { return Index != Other.Index; }
 		UObject* operator*() const { return FUObjectArray::Get().GetObjectByIndex(Index); }
-
+		UObject* operator->() const { return FUObjectArray::Get().GetObjectByIndex(Index); }
 	private:
 		uint32 Index;
 	};

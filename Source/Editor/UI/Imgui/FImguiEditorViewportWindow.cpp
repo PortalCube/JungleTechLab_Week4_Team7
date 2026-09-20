@@ -423,6 +423,18 @@ void FImguiEditorViewportWindow::DrawStatsMemory()
         static_cast<double>(FStatsManager::Get().GetTextureMemoryUsed())
         / (1024.0 * 1024.0), 10.0f);
 
+    DrawRow(DrawList, Pos, Y, "Total Memory Pool",
+        static_cast<double>(FStatsManager::Get().GetMemoryPool()) //, 30.0f);
+        / (1024.0 * 1024.0), 30.0f);
+
+    DrawRow(DrawList, Pos, Y, "Memory Pool Used",
+        static_cast<double>(FStatsManager::Get().GetMemoryPoolUsed()) //, 10.0f);
+        / (1024.0 * 1024.0), 10.0f);
+
+    DrawRow(DrawList, Pos, Y, "Memory Pool Free",
+        static_cast<double>(FStatsManager::Get().GetMemoryPoolFree()) //, 30.0f);
+        / (1024.0 * 1024.0), 30.0f);
+
 }
 
 void FImguiEditorViewportWindow::DrawStatsFPS()

@@ -22,6 +22,13 @@ public:
 		return *this;
 	}
 
+	TObjectIterator operator++(int)
+	{
+		TObjectIterator Temp = *this;
+		++(*this);
+		return Temp;
+	}
+
 	explicit operator bool() const 
 	{
 		return Iterator != FUObjectArray::Get().end();

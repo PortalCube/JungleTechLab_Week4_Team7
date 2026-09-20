@@ -1,6 +1,6 @@
 #pragma once
 
-#include "FAllocator.h"
+#include "Runtime/Core/FAllocator.h"
 
 
 
@@ -32,10 +32,19 @@ public:
 		return Allocator.Allocate(Size);
 	}
 
-
 	static void Free(void* Ptr)
 	{
 		Allocator.Free(Ptr);
+	}
+
+	static void* Malloc(size_t Size, size_t Alignment)
+	{
+		return Allocator.Allocate(Size, Alignment);
+	}
+
+	static void Free(void* Ptr, size_t Alignment)
+	{
+		Allocator.Free(Ptr, Alignment);
 	}
 
 private:

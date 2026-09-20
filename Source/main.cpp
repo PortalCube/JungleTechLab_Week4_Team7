@@ -11,6 +11,7 @@
 #include "Runtime/CoreUObject/UClass.h"
 #include "ThirdParty/Imgui/imgui.h"
 #include "ThirdParty/Imgui/imgui_internal.h"
+#include "Runtime/Core/FMemory.h"
 #include <Windows.h>
 #include <windowsx.h>
 
@@ -39,6 +40,8 @@ int WINAPI wWinMain(
 	_In_ LPWSTR lpCmdLine,
 	_In_ int nShowCmd) 
 {
+	FMemory::Init();
+
 	HWND Window = CreateWindowHandle(hInstance);
 	if (!Window)
 	{
@@ -77,6 +80,7 @@ int WINAPI wWinMain(
 	EditorApp.Initialize_Runtime(&SceneManager, &RenderView);
 
 	FStatsManager::Get().Initialize(Renderer.GetDevice());
+
 
 	bool bQuit = false;
 	while (!bQuit)

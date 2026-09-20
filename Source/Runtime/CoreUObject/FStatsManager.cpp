@@ -135,3 +135,18 @@ size_t FStatsManager::GetTextureMemoryUsed() const
 {
     return MemoryStats.at(EStatMemoryCategory::Texture);
 }
+
+size_t FStatsManager::GetMemoryPool() const
+{
+    return MemoryStats.at(EStatMemoryCategory::MemoryPool);
+}
+
+size_t FStatsManager::GetMemoryPoolUsed() const
+{
+    return MemoryStats.at(EStatMemoryCategory::MemoryPoolUsed);
+}
+
+size_t FStatsManager::GetMemoryPoolFree() const
+{
+    return MemoryStats.at(EStatMemoryCategory::MemoryPoolFree);
+}
