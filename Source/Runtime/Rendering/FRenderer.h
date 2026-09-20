@@ -82,6 +82,7 @@ public:
 
   void RenderOutline();
   ID3D11RenderTargetView* GetBackBuffer() { return BackBufferRTV.Get(); }
+  ID3D11DepthStencilView* GetDepthStencilView() { return DepthStencilView.Get(); }
 
 
 private:
@@ -166,6 +167,37 @@ public:
     }
   }
 
+  template <typename TConstants>
+  void DrawSection(
+      const FMesh& Mesh,
+      const FMaterial& Material,
+      const TConstants& Constants,
+      uint32 StartIndex,
+      uint32 IndexCount,
+      uint32 Slot = 0,
+      bool bApplyViewMode = true
+  )
+  {
+      UpdateBuffer(Constants, Slot);
+
+      TSharedPtr<FRenderPipeline> Pipeline = Material.Pipeline;
+      if (bApplyViewMode && CurrentRenderMode == EViewModeIndex::VMI_Wireframe) {
+          Pipeline = GetPipeline(FName("Simple_Wireframe"));
+      }
+      if (Pipeline) {
+          Pipeline->Bind(*Context.Get());
+      }
+
+      Material.BindResources(*Context.Get());
+      Mesh.BindResources(*Context.Get());
+
+      if (Mesh.HasIndices()) {
+          Context->DrawIndexed(IndexCount, StartIndex, 0);
+      }
+      else {
+          Context->Draw(Mesh.VertexCount, 0);
+      }
+  }
 
 private:
   // 어느 상수 타입이든 b0 버퍼 하나에 써 넣는다.

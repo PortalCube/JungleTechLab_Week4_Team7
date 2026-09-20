@@ -15,6 +15,7 @@
 #include <windowsx.h>
 
 #include "../FObjParser.h"
+#include "../FObjViewerApplication.h"
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -66,6 +67,15 @@ int WINAPI wWinMain(
 
 	//RTTI를 위한 UClass 초기화
 	UClass::ResolveTypeBitsets();
+
+#if defined(_OBJVIEWER)
+	FObjViewerApplication ObjViewer(Renderer);
+
+	ID3D11Device* Device = nullptr; ID3D11DeviceContext* Context = nullptr;
+	Renderer.GetDeviceAndContext_ImplDX11(Device, Context);
+	ObjViewer.Initialize(Window, Device, Context);
+
+#else
 	//새씬 생성
 	USceneManager SceneManager;
 	SceneManager.SetScene(NewObject<UScene>());
@@ -88,17 +98,19 @@ int WINAPI wWinMain(
 	FRawObjData RawData;
 	const char* TestFilePath = "Resources/test.obj";
 	const char* TestBinFilePath = "Resources/test.bin";
+	const char* TestMtlFilePath = "Resources/test.mtl";
 
-	//if (FObjParser::LoadObj(TestFilePath, RawData))
-	//{
-	//	if (FObjParser::ConvertObjToVertex(RawData, TestVertices, TestIndices, TestSections))
-	//	{			
-	//		FObjParser::SaveMeshToBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
-	//	}
-	//}
+	// Bake Obj
+	if (FObjParser::LoadObj(TestFilePath, RawData))
+	{
+		if (FObjParser::ConvertObjToVertex(RawData, TestVertices, TestIndices, TestSections))
+		{			
+			FObjParser::SaveMeshToBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
+		}
+	}
 
 	// Binary Load Test
-	FObjParser::LoadMeshFromBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
+	//FObjParser::LoadMeshFromBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
 
 	FMeshDesc TestMeshDesc{
 		.VertexData = TestVertices.data(),
@@ -137,6 +149,7 @@ int WINAPI wWinMain(
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
+#endif
 
 	bool bQuit = false;
 	while (!bQuit)
@@ -153,22 +166,38 @@ int WINAPI wWinMain(
 		if (bRequestResize)
 		{
 			Renderer.OnWindowSize(ResizeWidth, ResizeHeight);
+#if defined(_OBJVIEWER)
+			ObjViewer.OnWindowSize(ResizeWidth, ResizeHeight);
+#else
 			EditorApp.OnWindowSize(ResizeWidth, ResizeHeight);
+#endif
 			bRequestResize = false;
 		}
 
 		FInputManager::Get().BeginFrame();
+#if defined(_OBJVIEWER)
+		ObjViewer.Update(FTimeManager::Get().GetDeltaTime());
+#else
 		EditorApp.Update(FTimeManager::Get().GetDeltaTime());
-
+#endif
 		Renderer.BeginFrame();
-		EditorApp.Render();
+#if defined(_OBJVIEWER)
+		ObjViewer.Render();
+		ObjViewer.RenderUI();
+#else
+		EditorApp.Render();		
+#endif
 		Renderer.SwapBuffer();
 
 		//EditorApp.CollectGarbage();
 	}
 
+#if defined(_OBJVIEWER)
+
+#else
 	EditorApp.Shutdown();
 	SceneManager.Release();
+#endif
 	//EditorApp.CollectGarbage();
 	Renderer.Shutdown();
 
@@ -302,6 +331,14 @@ namespace
 			case VK_F7: bRequestNewScene = true; break;
 			}
 			break;
+
+		case WM_MOUSEWHEEL:
+		{
+			const float WheelDelta = static_cast<float>(GET_WHEEL_DELTA_WPARAM(WParam)) / static_cast<float>(WHEEL_DELTA);
+			FInputManager::Get().OnMouseWheel(WheelDelta);
+			break;
+		}		
+
 		default:
 			return DefWindowProc(Window, Message, WParam, LParam);
 		}

@@ -24,7 +24,8 @@ externalproject "DirectXTK_Desktop_2026"
     kind "StaticLib"
     language "C++"
     configmap {
-        ["Analysis"] = "Debug"
+        ["Analysis"] = "Debug",
+        ["ObjViewer"] = "Debug"
     }
 
 project "MyEngine"
@@ -91,6 +92,7 @@ project "MyEngine"
 
     filter "configurations:ObjViewer"
         defines { "_OBJVIEWER" }
+        symbols "On"
 
     filter { "configurations:Debug", "platforms:x64" }
         forceincludes { "Runtime/Core/Log.h" }
