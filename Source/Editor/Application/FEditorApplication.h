@@ -12,6 +12,7 @@
 #include "Runtime/Input/FCameraInputController.h"
 
 #include "Editor/Visualizer/FVisualizerRegistry.h"
+#include "SWindow.h"
 
 class FEditorApplication final {
 	FEditor Editor;
@@ -33,6 +34,7 @@ class FEditorApplication final {
 
 	FRenderView* RenderView = nullptr;
 
+	SWindow EditorViewports;
 public:
 	
 	static FEditorApplication& Get()

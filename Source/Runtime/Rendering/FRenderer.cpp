@@ -56,7 +56,8 @@ void FRenderer::BeginFrame() {
   Context->RSSetViewports(1, &Viewport);
   BindEditorViewportRenderTargets();
 
-  constexpr float ClearColor[] = {0.05f, 0.05f, 0.08f, 1.0f};
+  constexpr float ClearColor[] = {0.5f, 0.5f, 0.5f, 1.0f};
+  //constexpr float ClearColor[] = {0.05f, 0.05f, 0.08f, 1.0f};
   Context->ClearRenderTargetView(EditorViewPortRTV.Get(), ClearColor);
   Context->ClearDepthStencilView(
       DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);

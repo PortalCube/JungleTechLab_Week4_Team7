@@ -3,10 +3,10 @@
 #include "Runtime/Engine/FCamera.h"
 
 #include "Runtime/Engine/ShowFlags.h"
-
 class FEditorViewportClient final {
 	bool bFocused = false;
 	bool bHovered = false;
+
 public:
 	FCamera ViewportCamera;
 	// 전체 클라이언트 영역 기준 고정 UV: 좌상단 (0,0), 우하단 (1,1).
@@ -31,4 +31,6 @@ public:
 
 	[[nodiscard]] bool IsFocused() const { return bFocused; }
 	[[nodiscard]] bool IsHovered() const { return bHovered; }
+	void Update();
+
 };

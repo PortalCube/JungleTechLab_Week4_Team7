@@ -1,6 +1,6 @@
 #include "FStatsManager.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
-
+#include "Runtime/Core/Log.h"
 #include <d3d11.h>
 #include <windows.h>
 #include <psapi.h>
@@ -80,8 +80,15 @@ size_t FStatsManager::GetSystemMemoryAvailable() const
 
 size_t FStatsManager::GetGPUMemoryUsed() const
 {
+    /*if (!Adapter)
+        return 0;*/
+
     if (!Adapter)
+    {
+        UE_LOG("GPU Memory: Adapter is null");
         return 0;
+    }
+
 
     DXGI_QUERY_VIDEO_MEMORY_INFO Info{};
 

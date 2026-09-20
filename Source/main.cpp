@@ -76,6 +76,8 @@ int WINAPI wWinMain(
 	}
 	EditorApp.Initialize_Runtime(&SceneManager, &RenderView);
 
+	FStatsManager::Get().Initialize(Renderer.GetDevice());
+
 	bool bQuit = false;
 	while (!bQuit)
 	{
