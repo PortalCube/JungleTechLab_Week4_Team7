@@ -7,13 +7,14 @@
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Rendering/FRenderer.h"
 #include "Runtime/Rendering/FTexture.h"
+#include "Runtime/Utility/EngineUtil.h"
 #include "ThirdParty/stb/stb_image.h"
 #include <algorithm>
 #include <cctype>
 #include "FImguiDragDrop.h"
 FImguiContentsDrawer::FImguiContentsDrawer() : LeftPanelWidth(200.0f)
 {
-	RootPath = std::filesystem::current_path() / "Resources";
+	RootPath = EngineUtil::GetContentDirectory();
 	CurrentPath = RootPath;
 
 }

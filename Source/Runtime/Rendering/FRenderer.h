@@ -15,7 +15,6 @@
 
 #include <Windows.h>
 #include <d3d11.h>
-#include <filesystem>
 #include <wrl/client.h>
 
 class FTexture;
@@ -23,12 +22,6 @@ struct FTextureDesc;
 struct FCamera;
 class UTextInstanceComponent;
 struct FDrawCommand;
-
-inline FWString GetExecutableDirectory() {
-  wchar_t Buffer[256];
-  GetModuleFileNameW(nullptr, Buffer, 256);
-  return std::filesystem::path(Buffer).parent_path();
-}
 
 #include "Runtime/Engine/ShowFlags.h"
 

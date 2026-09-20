@@ -9,6 +9,7 @@
 #include "Runtime/Math/FVector.h"
 #include "Runtime/Material/FBlendDesc.h"
 #include "Runtime/Engine/FArchive.h"
+#include "Runtime/Utility/EngineUtil.h"
 #include "ThirdParty/Json/json.hpp"
 
 #include <fstream>
@@ -22,7 +23,7 @@ FRenderResourceLibrary &FRenderResourceLibrary::Get() {
 }
 
 bool FRenderResourceLibrary::CreateWireframePipeline(FRenderer &Renderer) {
-  const FWString Path = GetExecutableDirectory();
+  const FWString Path = EngineUtil::GetContentDirectory();
   const FWString VsPath = Path + L"/Shader/ExampleVS.cso";
   const FWString PsPath = Path + L"/Shader/ExamplePS.cso";
 
@@ -50,7 +51,7 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
     return false;
   }
 
-  const FWString Path = GetExecutableDirectory();
+  const FWString Path = EngineUtil::GetContentDirectory();
   const FWString VsPath = Path + L"/Shader/ExampleVS.cso";
   const FWString PsPath = Path + L"/Shader/ExamplePS.cso";
 
@@ -176,7 +177,7 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
     return false;
   }
 
-  const FWString Path = GetExecutableDirectory();
+  const FWString Path = EngineUtil::GetContentDirectory();
   const FWString VsPath = Path + L"/Shader/ScreenQuadVS.cso";
   const FWString PsPath = Path + L"/Shader/OutlinePostProcessPS.cso";
 

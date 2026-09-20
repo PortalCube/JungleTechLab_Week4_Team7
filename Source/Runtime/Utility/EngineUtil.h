@@ -8,6 +8,10 @@
 
 namespace EngineUtil
 {
+	/// <summary>
+	/// 실행 파일과 같은 위치에 있는 Content 폴더의 절대 경로를 반환합니다.
+	/// </summary>
+	FWString GetContentDirectory();
 
 	/// <summary>
 	/// 두 해시 값을 하나의 해시 값으로 만듭니다.

@@ -12,7 +12,6 @@ class FResourceLoader
 private:
 
 	static constexpr int32 CurrentSchemaVersion = 1;
-	static constexpr FStringView AssetDirectoryPath = "Content";
 
 	static void LoadPipelineAsset(const FArchive& Archive, const FName& ID);
 	static void LoadMaterialAsset(const FArchive& Archive, const FName& ID);

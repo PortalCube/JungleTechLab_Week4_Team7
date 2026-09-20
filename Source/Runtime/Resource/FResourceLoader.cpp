@@ -174,7 +174,7 @@ void FResourceLoader::LoadAssets()
 	LoadCodeGeneratedRenderAssets();
 	LoadDefaultStaticMeshAssets();
 
-	fs::path AssetPath{ FResourceLoader::AssetDirectoryPath };
+	const fs::path AssetPath = EngineUtil::GetContentDirectory();
 
 	bool bIsExist = fs::exists(AssetPath);
 	bool bIsDirectory = fs::is_directory(AssetPath);
@@ -273,8 +273,8 @@ void FResourceLoader::LoadPipelineAsset(const FArchive& Archive, const FName& ID
 	PipelineDesc.bIsInstancing = Archive.GetBool("Instancing");
 
 	// FRenderPipelineDesc 생성
-	const fs::path VertexShaderFilePath = fs::path(AssetDirectoryPath) / Archive.GetString("VertexShaderFilePath");
-	const fs::path PixelShaderFilePath = fs::path(AssetDirectoryPath) / Archive.GetString("PixelShaderFilePath");
+	const fs::path VertexShaderFilePath = fs::path(EngineUtil::GetContentDirectory()) / Archive.GetString("VertexShaderFilePath");
+	const fs::path PixelShaderFilePath = fs::path(EngineUtil::GetContentDirectory()) / Archive.GetString("PixelShaderFilePath");
 
 	RenderPipelineDesc.VertexShaderFilePath = VertexShaderFilePath.string();
 	RenderPipelineDesc.PixelShaderFilePath = PixelShaderFilePath.string();
@@ -398,7 +398,7 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 
 	StaticMeshDesc.ID = ID;
 	StaticMeshDesc.Name = Archive.GetString("Name");
-	FString MeshFilePath = (fs::path(AssetDirectoryPath) / Archive.GetString("MeshFilePath")).string();
+	FString MeshFilePath = (fs::path(EngineUtil::GetContentDirectory()) / Archive.GetString("MeshFilePath")).string();
 
 	FRawObjData RawObjData{};
 	if (!FObjParser::LoadObj(MeshFilePath.c_str(), RawObjData))
@@ -500,7 +500,7 @@ void FResourceLoader::LoadTextureAsset(const FArchive& Archive, const FName& ID)
 	TextureDesc.ID = ID;
 	TextureDesc.Name = Archive.GetString("Name");
 
-	fs::path RawTexturePath = fs::path(AssetDirectoryPath) / Archive.GetString("RawTextureFilePath");
+	fs::path RawTexturePath = fs::path(EngineUtil::GetContentDirectory()) / Archive.GetString("RawTextureFilePath");
 	if (RawTexturePath.extension() != ".dds")
 	{
 		RawTexturePath.replace_extension(".dds");
