@@ -10,12 +10,11 @@ UCLASS_META(ABillboardActor, DisplayName, "Billboard Actor")
 ABillboardActor::ABillboardActor()
 {
 	// 기본 큐브 컴포넌트 장착
-	CreateRootComponent(UBillBoardComp::StaticClass());
-	
-	if (auto* PrimComp = GetRootComponent()->Cast<UBillBoardComp>())
-	{
-		PrimComp->SetTexture(FAssetRegistry::GetInstance().Get<UTexture>("Texture/MasterYi_Head.json"));
-	}
+	UBillBoardComp* Object = NewObject<UBillBoardComp>();
+	SetRootComponent(Object);
+
+	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+	Object->SetTexture(Registry.Get<UTexture>("Texture/Space.json"));
 }
 
 UBillBoardComp* ABillboardActor::GetBillboardComponent() const

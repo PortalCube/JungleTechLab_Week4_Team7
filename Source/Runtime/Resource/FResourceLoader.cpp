@@ -259,6 +259,8 @@ void FResourceLoader::LoadAssets()
 
 void FResourceLoader::LoadPipelineAsset(const FArchive& Archive, const FName& ID)
 {
+	namespace fs = std::filesystem;
+
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
 
 	// 포인터만 생성..
@@ -271,10 +273,9 @@ void FResourceLoader::LoadPipelineAsset(const FArchive& Archive, const FName& ID
 	PipelineDesc.bIsInstancing = Archive.GetBool("Instancing");
 
 	// FRenderPipelineDesc 생성
-	const std::filesystem::path VertexShaderFilePath =
-		std::filesystem::path(AssetDirectoryPath) / Archive.GetString("VertexShaderFilePath");
-	const std::filesystem::path PixelShaderFilePath =
-		std::filesystem::path(AssetDirectoryPath) / Archive.GetString("PixelShaderFilePath");
+	const fs::path VertexShaderFilePath = fs::path(AssetDirectoryPath) / Archive.GetString("VertexShaderFilePath");
+	const fs::path PixelShaderFilePath = fs::path(AssetDirectoryPath) / Archive.GetString("PixelShaderFilePath");
+
 	RenderPipelineDesc.VertexShaderFilePath = VertexShaderFilePath.string();
 	RenderPipelineDesc.PixelShaderFilePath = PixelShaderFilePath.string();
 	RenderPipelineDesc.bIsInstancing = PipelineDesc.bIsInstancing;
@@ -388,6 +389,8 @@ void FResourceLoader::LoadMaterialAsset(const FArchive& Archive, const FName& ID
 
 void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& ID)
 {
+	namespace fs = std::filesystem;
+
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
 
 	UStaticMesh* StaticMesh = NewObject<UStaticMesh>();
@@ -395,8 +398,7 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 
 	StaticMeshDesc.ID = ID;
 	StaticMeshDesc.Name = Archive.GetString("Name");
-	FString MeshFilePath = (std::filesystem::path(AssetDirectoryPath) /
-		Archive.GetString("MeshFilePath")).string();
+	FString MeshFilePath = (fs::path(AssetDirectoryPath) / Archive.GetString("MeshFilePath")).string();
 
 	FRawObjData RawObjData{};
 	if (!FObjParser::LoadObj(MeshFilePath.c_str(), RawObjData))
@@ -456,6 +458,8 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 
 void FResourceLoader::LoadFontAsset(const FArchive& Archive, const FName& ID)
 {
+	namespace fs = std::filesystem;
+
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
 
 	UFont* FontAsset = NewObject<UFont>();
@@ -478,8 +482,7 @@ void FResourceLoader::LoadFontAsset(const FArchive& Archive, const FName& ID)
 	}
 
 	// TODO: Setter 지정
-	FRenderResourceLibrary::Get().AllFontMap[
-		std::filesystem::path(ID.ToString()).stem().string()] = Font;
+	FRenderResourceLibrary::Get().AllFontMap[fs::path(ID.ToString()).stem().string()] = Font;
 
 	FontAsset->Load(FontDesc);
 	Registry.Register(ID, FontAsset);
@@ -487,17 +490,21 @@ void FResourceLoader::LoadFontAsset(const FArchive& Archive, const FName& ID)
 
 void FResourceLoader::LoadTextureAsset(const FArchive& Archive, const FName& ID)
 {
+	namespace fs = std::filesystem;
+
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
 
 	UTexture* TextureAsset = NewObject<UTexture>();
 	UTextureDesc TextureDesc{};
 
-
 	TextureDesc.ID = ID;
 	TextureDesc.Name = Archive.GetString("Name");
-	std::filesystem::path RawTexturePath = std::filesystem::path(AssetDirectoryPath) /
-		Archive.GetString("RawTextureFilePath");
-	if (RawTexturePath.extension() != ".dds") { RawTexturePath.replace_extension(".dds"); }
+
+	fs::path RawTexturePath = fs::path(AssetDirectoryPath) / Archive.GetString("RawTextureFilePath");
+	if (RawTexturePath.extension() != ".dds")
+	{
+		RawTexturePath.replace_extension(".dds");
+	}
 
 	FRenderResourceLibrary& ResourceLibrary = FRenderResourceLibrary::Get();
 	FRenderer* Renderer = ResourceLibrary.GetRenderer();
@@ -517,8 +524,7 @@ void FResourceLoader::LoadTextureAsset(const FArchive& Archive, const FName& ID)
 			RawTexturePath.string());
 	}
 
-	ResourceLibrary.RegisterTexture(
-		std::filesystem::path(ID.ToString()).stem().string(), Texture);
+	ResourceLibrary.RegisterTexture(fs::path(ID.ToString()).stem().string(), Texture);
 	TextureDesc.Texture = Texture.get();
 
 	TextureAsset->Load(TextureDesc);
