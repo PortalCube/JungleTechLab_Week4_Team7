@@ -78,8 +78,9 @@ int WINAPI wWinMain(
 		throw EngineUtil::CreateError("FRenderResourceLibrary 초기화에 실패했습니다.");
 	}
 
-	UClass::ResolveTypeBitsets();
-	
+	UClass::ResolveTypeBitsets();	
+
+	FResourceLoader::LoadAssets();
 
 #if defined(_OBJVIEWER)
 	FObjViewerApplication ObjViewer(Renderer);
@@ -89,8 +90,6 @@ int WINAPI wWinMain(
 	ObjViewer.Initialize(Window, Device, Context);
 
 #else
-
-	FResourceLoader::LoadAssets();
 	//새씬 생성
 	USceneManager SceneManager;
 	SceneManager.SetScene(NewObject<UScene>());
@@ -118,7 +117,6 @@ int WINAPI wWinMain(
 		MyObjActor->SetRootComponent(Object);
 		FAssetRegistry& Registry = FAssetRegistry::GetInstance();
 		Object->SetMesh(Registry.Get<UStaticMesh>("StaticMesh/Rover/Rover.json"));
-		Object->SetMaterial(Registry.Get<UMaterial>("Material/Textured.json"));
 		Object->SetRenderType(ERenderType::Primitive);
 		Object->SetColor(FVector4(0.8f, 0.8f, 0.8f, 1.0f));
 		// 3. 크기(Scale) 및 위치(Location) 설정
