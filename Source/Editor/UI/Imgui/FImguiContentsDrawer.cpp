@@ -1,15 +1,11 @@
 #include "FImguiContentsDrawer.h"
 #include "ThirdParty/Imgui/imgui.h"
-#include "ThirdParty/Imgui/imgui_internal.h"
-#include "ThirdParty/Imgui/imgui_impl_dx11.h"
-#include "ThirdParty/Imgui/imgui_impl_win32.h"
 #include "Runtime/Core/FString.h"
 #include "Runtime/Asset/FAssetRegistry.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Rendering/FRenderer.h"
 #include "Runtime/Rendering/FTexture.h"
 #include "Runtime/Utility/EngineUtil.h"
-#include "ThirdParty/stb/stb_image.h"
 #include <algorithm>
 #include <cctype>
 #include "FImguiDragDrop.h"
@@ -47,8 +43,6 @@ void FImguiContentsDrawer::Process(FEditor& Editor)
 
 void FImguiContentsDrawer::RenderContentView()
 {
-	LoadsThisFrame = 0;
-
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
 	FFolderView FolderView = Registry.GetAssetDirectory(CurrentPath);
 
@@ -148,11 +142,6 @@ void FImguiContentsDrawer::RenderContentView()
 			PendingNavigate = Item;
 		}
 
-		if (ImGui::IsItemHovered())
-		{
-			ImGui::SetTooltip("%s", Item.c_str());
-		}
-
 		// 이름이 길면 썸네일 폭 안에서 줄바꿈한다.
 		ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + ThumbnailSize);
 		ImGui::TextUnformatted(Item.string().c_str());
@@ -222,25 +211,18 @@ void FImguiContentsDrawer::RenderContentView()
 			// ImGui 1.93의 ImTextureID는 ImU64라서 포인터를 정수로 한 번 거쳐야 한다.
 			const ImTextureID TexId = reinterpret_cast<ImTextureID>(DisplayImage->GetSRV());
 
-			if (ImGui::ImageButton("##thumb", TexId, ImVec2(ThumbnailSize, ThumbnailSize)))
-			{
-				SelectedPath = Path;
-			}
-
+			ImGui::ImageButton("##thumb", TexId, ImVec2(ThumbnailSize, ThumbnailSize));
 			ImGui::PopStyleColor();
 		}
 		else
 		{
 			// 이미지가 아니거나 아직 로드 전이면 종류를 글자로 보여준다.
-			if (ImGui::Selectable(
+			ImGui::Selectable(
 				"[FILE]",
 				bSelected,
 				ImGuiSelectableFlags_AllowDoubleClick,
 				ImVec2(ThumbnailSize, ThumbnailSize)
-			))
-			{
-				SelectedPath /= Path;
-			}
+			);
 		}
 		
 		if (ImGui::BeginDragDropSource())
@@ -255,19 +237,6 @@ void FImguiContentsDrawer::RenderContentView()
 		}
 
 		if (ImGui::IsItemHovered() && !ImGui::IsDragDropActive())
-		{
-			ImGui::SetTooltip("%s", Path.c_str());
-		}
-
-		// 더블클릭은 Selectable 반환값이 아니라 항목 위에서 직접 판정한다.
-		// 반환값 안에서 보면 클릭 타이밍에 따라 놓치는 경우가 있다.
-		if (ImGui::IsItemHovered() &&
-			ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-		{
-			PendingNavigate = Path;
-		}
-
-		if (ImGui::IsItemHovered())
 		{
 			ImGui::SetTooltip("%s", Path.c_str());
 		}

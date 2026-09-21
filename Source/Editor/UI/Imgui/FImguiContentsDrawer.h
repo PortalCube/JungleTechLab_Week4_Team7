@@ -45,15 +45,6 @@ private:
 		bool bIsDirectory = false;
 	};
 
-	// directory_iterator는 실제 파일 시스템 호출이라 매 프레임 돌리면 느려진다.
-	// 폴더가 바뀔 때와 새로고침할 때만 갱신한다.
-	TArray<FContentEntry> Entries;
-
 	std::filesystem::path SelectedPath;
 	float ThumbnailSize = 128.0f;
-
-	// 한 프레임에 새로 디코딩할 이미지 수.
-	// 폴더를 처음 열 때 수십 장을 한꺼번에 읽으면 눈에 띄게 멈춘다.
-	static constexpr int MaxLoadsPerFrame = 2;
-	int LoadsThisFrame = 0;
 };
