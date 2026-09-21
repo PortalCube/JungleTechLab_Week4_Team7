@@ -1,11 +1,14 @@
 #pragma once
 #include "Runtime/Math/FVector2.h"
 #include "Runtime/Engine/FCamera.h"
+#include "Editor/Grid/FGrid.h"
 
 #include "Runtime/Engine/ShowFlags.h"
 class FEditorViewportClient final {
 	bool bFocused = false;
 	bool bHovered = false;
+	FGrid Grid;
+	//Grid 이식중, ShowFlag 추가필요
 
 public:
 	FCamera ViewportCamera;
@@ -20,6 +23,8 @@ public:
 	                   static_cast<uint64>(EEngineShowFlags::SF_BillboardText);
 
 	void UpdateFocusedAndHovered(bool bFocused, bool bHovered);
+	FGrid& GetGrid() { return Grid; }
+	const FGrid& GetGrid() const { return Grid; }
 
 	[[nodiscard]] bool HasShowFlag(EEngineShowFlags Flag) const {
 		return (ShowFlags & static_cast<uint64>(Flag)) != 0;

@@ -69,14 +69,14 @@ void FEditorApplication::Tick(float DeltaTime) {
 }
 
 void FEditorApplication::Render() {
-  const TArray<FEditorViewportClient> &EditorViewports = Editor.GetViewports();
+  TArray<FEditorViewportClient> &EditorViewports = Editor.GetViewports();
   
 
   //Active인 ViewportClient만 렌더링
   for (SWindow& Leaf : Editor.Leaf)
   {
       if (!Leaf.bisActive) continue;
-      const FEditorViewportClient& EditorViewport = EditorViewports[Leaf.ViewportIndex];
+      FEditorViewportClient& EditorViewport = EditorViewports[Leaf.ViewportIndex];
 
           // 뷰포트 렌더링 명세 구성
           FSceneView sceneview{
@@ -95,7 +95,7 @@ void FEditorApplication::Render() {
           EditorCtx.SelectedTransform = Editor.SelectedTransform;
           EditorCtx.Gizmo = Editor.ObjectSelected() ? &Editor.GetGizmo() : nullptr;
           EditorCtx.TextComp = Editor.ObjectSelected() ? Editor.GetTextcomp() : nullptr;
-          EditorCtx.Grid = &Editor.GetGrid();
+          EditorCtx.Grid = &EditorViewport.GetGrid();
           EditorCtx.VisualizerRegistry = &VisualizerRegistry;
 
           if (EditorCtx.SelectedActor) {

@@ -91,6 +91,8 @@ private:
 		const FVector2& LocalMousePixels, const FVector2& ViewportSizePixels);
 	void UpdateGizmoHover(FEditor& Editor, const FEditorViewportClient& Viewport,
 		const FVector2& LocalMousePixels, const FVector2& ViewportSizePixels);
+	void ShowViewportVerticalSplitter(SSplitter& Splitter);
+	void ShowViewportHorizontalSplitter(SSplitter& Splitter);
 
 	// 스탯 드로우
 	void DrawStatLine(ImDrawList* DrawList, const ImVec2& Position, float& Y,
