@@ -19,6 +19,8 @@ private:
 	static void LoadFontAsset(const FArchive& Archive, const FName& ID);
 	static void LoadTextureAsset(const FArchive& Archive, const FName& ID);
 
+	static void LoadMtlMaterial(const std::filesystem::path& MtlFilePath);
+
 	/// <summary>
 	/// MeshUtil을 사용하여 엔진에서 기본으로 사용하는 메쉬를 생성하고 UStaticMesh 애셋으로 등록합니다.
 	/// </summary>

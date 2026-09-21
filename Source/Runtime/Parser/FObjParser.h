@@ -6,19 +6,13 @@
 #include "Source/Runtime/Core/FString.h"
 #include "Source/Runtime/Core/IntTypes.h"
 #include "Source/Runtime/Rendering/Vertices.h"
+#include "Source/Runtime/Rendering/FMesh.h"
 
 struct FObjIndex
 {
 	int v = 0;
 	int vt = 0;
 	int vn = 0;
-};
-
-struct FMeshSection
-{
-	FString MaterialName;
-	uint32 StartIndex = 0;
-	uint32 IndexCount = 0;
 };
 
 struct FRawObjData
