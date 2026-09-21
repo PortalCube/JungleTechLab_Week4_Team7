@@ -10,6 +10,7 @@
 #include "Runtime/Engine/FCamera.h"
 #include "Runtime/Rendering/FRenderQueue.h"
 #include "Runtime/Rendering/FTexture.h"
+#include "Runtime/Engine/FSceneView.h"
 #include "ShaderConstants.h"
 #include "ThirdParty/DirectXTK/Inc/DDSTextureLoader.h"
 #include "ThirdParty/DirectXTK/Inc/WICTextureLoader.h"
@@ -46,8 +47,8 @@ void FRenderer::Shutdown() {
   BlendStateMap.clear();
   SamplerStateMap.clear();
 
-  b0ConstantBuffer.Reset();
-  FrameConstantBuffer.Reset();
+  ObjectConstantBuffer.Reset();
+  ViewConstantBuffer.Reset();
 
   BackBufferRTV.Reset();
   DepthStencilView.Reset();
@@ -82,13 +83,6 @@ void FRenderer::SetViewportUV(FVector2 TopLeftUV, FVector2 LengthUV) {
   RenderViewport.Width = LengthUV.X * Viewport.Width;
   RenderViewport.Height = LengthUV.Y * Viewport.Height;
   Context->RSSetViewports(1, &RenderViewport);
-
-  FFrameConstants Constants{
-      FVector2{RenderViewport.Width, RenderViewport.Height}};
-  Context->UpdateSubresource(FrameConstantBuffer.Get(), 0, nullptr, &Constants,
-                             0, 0);
-  Context->VSSetConstantBuffers(1, 1, FrameConstantBuffer.GetAddressOf());
-  Context->PSSetConstantBuffers(1, 1, FrameConstantBuffer.GetAddressOf());
 };
 
 // void FRenderer::Draw(const FMesh &Mesh, const FMaterial &Material,
@@ -810,17 +804,17 @@ bool FRenderer::InitializeEditorViewportRenderTarget() {
 }
 
 bool FRenderer::InitializeConstantBuffers() {
-  // b0를 쓰는 모든 상수 타입이 공유하는 버퍼.
+  // b2를 쓰는 Object/Grid 상수 타입이 공유하는 버퍼.
   // 가장 큰 구조체보다 크게 잡아두고, 초과 여부는 UpdateBuffer의
   // static_assert가 잡는다.
-  D3D11_BUFFER_DESC b0Desc = {
+  D3D11_BUFFER_DESC ObjectConstantBufferDesc = {
       .ByteWidth = ConstantBufferSize,
       .Usage = D3D11_USAGE_DYNAMIC,
       .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
       .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
   };
 
-  HRESULT Result = Device->CreateBuffer(&b0Desc, nullptr, &b0ConstantBuffer);
+  HRESULT Result = Device->CreateBuffer(&ObjectConstantBufferDesc, nullptr, &ObjectConstantBuffer);
   if (FAILED(Result)) {
     return false;
   }
@@ -838,29 +832,45 @@ bool FRenderer::InitializeConstantBuffers() {
     return false;
   }
 
-
-  D3D11_BUFFER_DESC lightbufferDesc = {
-      .ByteWidth = sizeof(FLightConstants),
+  D3D11_BUFFER_DESC ViewConstantBufferDesc = {
+      .ByteWidth = sizeof(FViewConstants),
       .Usage = D3D11_USAGE_DEFAULT,
       .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
   };
 
-  Result =
-      Device->CreateBuffer(&lightbufferDesc, nullptr, &LightConstantBuffer);
+  Result = Device->CreateBuffer(&ViewConstantBufferDesc, nullptr,
+                                &ViewConstantBuffer);
 
   if (FAILED(Result)) {
     return false;
   }
 
 
+  D3D11_BUFFER_DESC LightConstantBufferDesc = {
+      .ByteWidth = sizeof(FLightConstants),
+      .Usage = D3D11_USAGE_DEFAULT,
+      .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+  };
+
+  Result =
+      Device->CreateBuffer(&LightConstantBufferDesc, nullptr, &LightConstantBuffer);
+
+  if (FAILED(Result)) {
+    return false;
+  }
+
   return true;
 }
 
-void FRenderer::UpdateLightConstants(const FLightConstants &Constants,
-                                     const EViewModeIndex InMode) {
-  Context->UpdateSubresource(LightConstantBuffer.Get(), 0, nullptr, &Constants,
-                             0, 0);
-  Context->PSSetConstantBuffers(2, 1, LightConstantBuffer.GetAddressOf());
+void FRenderer::UpdateLightConstants(const FLightConstants &Constants, const EViewModeIndex InMode) {
+  Context->UpdateSubresource(LightConstantBuffer.Get(), 0, nullptr, &Constants, 0, 0);
+  Context->PSSetConstantBuffers(4, 1, LightConstantBuffer.GetAddressOf());
+}
+
+void FRenderer::UpdateFrameConstants(const FFrameConstants &Constants) {
+  Context->UpdateSubresource(FrameConstantBuffer.Get(), 0, nullptr, &Constants, 0, 0);
+  Context->VSSetConstantBuffers(0, 1, FrameConstantBuffer.GetAddressOf());
+  Context->PSSetConstantBuffers(0, 1, FrameConstantBuffer.GetAddressOf());
 }
 
 void FRenderer::Draw(const FDrawCommand &Command, uint32 Slot,
@@ -912,7 +922,7 @@ void FRenderer::DrawInstances(const FCamera &Camera) {
 
     SC.DisableShading =
         CurrentRenderMode == EViewModeIndex::VMI_Unlit ? 1.0f : 0.0f;
-    UpdateBuffer(SC);
+    UpdateBuffer(SC, 2);
 
     const UINT InstanceCount = static_cast<UINT>(InstanceData.size());
     const UINT RequiredSize = InstanceCount * sizeof(FInstanceData);
@@ -984,7 +994,7 @@ void FRenderer::DrawTextInstances(const FDrawCommand &Command) {
 
   auto &ResLib = FRenderResourceLibrary::Get();
 
-  UpdateBuffer(Command.Constants);
+  UpdateBuffer(Command.Constants, 2);
 
   TArray<FInstanceData> InstanceData =
       ResLib.GetInstancingArray(Command.Mesh, &Command.Materials[0]);

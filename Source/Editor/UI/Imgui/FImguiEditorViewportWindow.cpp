@@ -13,7 +13,7 @@ void FImguiEditorViewportWindow::Process(FEditor &Editor, float DeltaTime)
 {
     DT = DeltaTime;
     TArray<FEditorViewportClient>& Viewports = Editor.GetViewports();
-    FEditorViewportClient* Viewport=nullptr;
+    FEditorViewportClient* Viewport=Editor.GetActiveViewport();
          //TArray<FEditorViewportClient>& Viewports = Editor.GetActiveViewport();
         //FEditorViewportClient& Viewport = Viewports[i];
 
@@ -50,6 +50,9 @@ void FImguiEditorViewportWindow::Process(FEditor &Editor, float DeltaTime)
             Editor.HorizonSplitter.Ratio = Editor.HorizonSplitter2.Ratio;
         }
 
+        // ini저장
+        Editor.State.SetSplitter(Editor.VerticalSplitter.Ratio, Editor.HorizonSplitter.Ratio, Editor.HorizonSplitter2.Ratio);
+
 
     // 스탯 창
 
@@ -58,7 +61,7 @@ void FImguiEditorViewportWindow::Process(FEditor &Editor, float DeltaTime)
         {
             SWindow& leaf = Editor.Leaf[i];
             if (!leaf.bisActive) continue;
-
+            
             FEditorViewportClient& CurrentViewport = Viewports[leaf.ViewportIndex];
             SyncViewportRect(CurrentViewport, leaf.Rect, ClientSize);
 
@@ -71,26 +74,27 @@ void FImguiEditorViewportWindow::Process(FEditor &Editor, float DeltaTime)
                 Mouse.X >= leaf.Rect.Left && Mouse.X < leaf.Rect.Right &&
                 Mouse.Y >= leaf.Rect.Top && Mouse.Y < leaf.Rect.Bottom)
             {
-                Viewport = &CurrentViewport;
 
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
                     ImGui::IsMouseClicked(ImGuiMouseButton_Right))
                 {
+                    Viewport = &CurrentViewport;
                     Editor.ActiveViewportIndex = leaf.ViewportIndex;
                 }
             }
         }
 
         //마우스가 focus된 viewport 처리
-        if (Viewport && Viewport == Editor.GetActiveViewport())
+        if (Viewport&& Viewport == Editor.GetActiveViewport() || ImGui::IsMouseDown(ImGuiMouseButton_Left) ||
+            ImGui::IsMouseDown(ImGuiMouseButton_Right))
         {
             const FVector2 TopLeftPixels = Viewport->TopLeftUV * ClientSize;
             const FVector2 SizePixels = Viewport->LengthUV * ClientSize;
             const FViewportInput Input = GatherInput(TopLeftPixels, SizePixels);
             Viewport->UpdateFocusedAndHovered(Input.bFocused, Input.bHovered);
 
-            UpdateGizmo(Editor, *Viewport, Input);
             UpdateSelection(Editor, *Viewport, Input);
+            UpdateGizmo(Editor, *Viewport, Input);
             UpdateCamera(Editor, *Viewport, Input, DeltaTime);
         }
 
@@ -114,7 +118,7 @@ void FImguiEditorViewportWindow::BeginWindow() const
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(30.0f, 30.0f));
 
-    ImGui::Begin("ViewPort", nullptr, WindowFlags);
+    ImGui::Begin("Viewport", nullptr, WindowFlags);
 
     // 3D 는 이 창 아래에 그려지므로 창 자체는 항상 가장 뒤에 둔다.
     ImGui::BringWindowToDisplayBack(ImGui::GetCurrentWindow());
@@ -201,7 +205,7 @@ void FImguiEditorViewportWindow::UpdateGizmo(FEditor &Editor,
         Gizmo.UpdateInteraction(Editor, Input.LocalMouse);
     }
 
-    if (Input.bLeftReleased)
+    if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
     {
         Gizmo.EndInteraction();
     }

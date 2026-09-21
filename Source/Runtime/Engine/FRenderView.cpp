@@ -15,6 +15,7 @@
 #include "Runtime/Rendering/ShaderConstants.h"
 #include "Runtime/Engine/FRenderData.h"
 #include "Runtime/Engine/UScene.h"
+#include "Runtime/Engine/FTimeManager.h"
 #include <fstream>
 
 FRenderView::FRenderView(FRenderer &Renderer) : Renderer(Renderer) {}
@@ -118,10 +119,21 @@ void FRenderView::CollectScenePrimitives(const UScene& Scene, const FSceneView& 
     }
 }
 
+void FRenderView::PrepareRender()
+{
+    FFrameConstants FrameConstants
+    {
+        .Time = FTimeManager::Get().GetTime(),
+        .DeltaTime = FTimeManager::Get().GetDeltaTime(),
+    };
+
+    Renderer.UpdateFrameConstants(FrameConstants);
+}
+
 void FRenderView::RenderView(const FSceneView& View, const UScene& Scene, const FEditorRenderContext& EditorCtx)
 {
     // 뷰포트 시작
-    BeginView(View.TopLeftUV, View.LengthUV, View.ViewMode, View.LightConstants);
+    BeginView(View);
 
     // 씬 컴포넌트 수집
     CollectScenePrimitives(Scene, View, EditorCtx.SelectedActor);
@@ -164,13 +176,26 @@ void FRenderView::RenderView(const FSceneView& View, const UScene& Scene, const 
     }
 }
 
-void FRenderView::BeginView(FVector2 TopLeftUV, FVector2 LengthUV, EViewModeIndex ViewMode, const FLightConstants& LightConstants)
+void FRenderView::BeginView(const FSceneView& View)
 {
     // 에디터 뷰포트 렌더타겟 바인딩
     Renderer.BindEditorViewportRenderTargets();
-    Renderer.SetViewportUV(TopLeftUV, LengthUV);
-    Renderer.SetRenderMode(ViewMode);
-    Renderer.UpdateLightConstants(LightConstants, ViewMode);
+    Renderer.SetViewportUV(View.TopLeftUV, View.LengthUV);
+    Renderer.SetRenderMode(View.ViewMode);
+    Renderer.UpdateLightConstants(View.LightConstants, View.ViewMode);
+
+    // ViewConstants 갱신
+    FViewConstants ViewConstants
+    {
+        .VP = View.ViewProj,
+        .ViewportSize = FVector2
+        {
+            View.LengthUV.X * Renderer.GetWidth(),
+            View.LengthUV.Y * Renderer.GetHeight(),
+        },
+    };
+
+    Renderer.UpdateBuffer(ViewConstants, 1);
 }
 
 void FRenderView::DrawGrid(const FCamera& Camera, FGrid& Grid)
@@ -205,9 +230,9 @@ void FRenderView::RenderOverlayPass(const FCamera& Camera, const FSceneView& Sce
     // 뷰포트 영역 재설정
     Renderer.SetViewportUV(SceneView.TopLeftUV, SceneView.LengthUV);
 
-    // 기즈모 렌더링
-    Renderer.ClearDepth();
-    Gizmo.Draw(Renderer, SelectedTransform, Camera);
+    //// 기즈모 렌더링
+    //Renderer.ClearDepth();
+    //Gizmo.Draw(Renderer, SelectedTransform, Camera);
 
     // 텍스트 오버레이 렌더링
     if (TextComp && (SceneView.ShowFlags & static_cast<uint64>(EEngineShowFlags::SF_BillboardText)))
@@ -222,27 +247,6 @@ void FRenderView::RenderOverlayPass(const FCamera& Camera, const FSceneView& Sce
             Renderer.ClearTextInstances();
         }
     }
-}
-
-void FRenderView::RenderGizmo(const FTransform &Transform,
-                              const FCamera &Camera, FVector2 TopLeftUV,
-                              FVector2 LengthUV, const FGizmo &Gizmo) {
-  Renderer.SetViewportUV(TopLeftUV, LengthUV);
-  Renderer.ClearDepth();
-  Gizmo.Draw(Renderer, Transform, Camera);
-}
-
-void FRenderView::RenderGridAndFlush(const FCamera &Camera, FVector2 TopLeftUV,
-                                     FVector2 LengthUV, FGrid &Grid) {
-  Renderer.SetViewportUV(TopLeftUV, LengthUV);
-  Grid.DrawLine(Renderer, Camera);
-
-  FGridLineConstants Constants{};
-  Constants.MVP = Camera.CreateViewProjectionMatrix();
-  Constants.CameraPosition = Camera.Position;
-  Constants.FadeStartDistance = 3.0f;
-  Constants.FadeEndDistance = 75.0f;
-  Renderer.FlushLineBatch(Constants, FName("Grid"));
 }
 
 void FRenderView::RenderLine(const FVector &Start, const FVector &End,
@@ -282,25 +286,6 @@ void FRenderView::RenderSphere(const FVector &Center, float Radius,
   LineBatcher.DrawSphere(Center, Radius, Color, Segments);
 }
 
-void FRenderView::RenderUUIDText(const FCamera& Camera, FVector2 TopLeftUV,
-                                 FVector2 LengthUV, UTextInstanceComponent* textcomp, const FSceneView& SceneView)
-{
-    if (!textcomp) return;
-
-    Renderer.SetViewportUV(TopLeftUV, LengthUV);
-    Renderer.ClearDepth();
-
-    // BuildRenderData()로 Font 기반 인스턴스 데이터 획득 후 드로우
-    FRenderData Data = textcomp->GetRenderData(Camera);
-    FDrawCommand Command = GetDrawCommand(Camera, Data);
-    if (!Data.Instances.empty())
-    {
-        Renderer.AddTextInstanceArray(Command);
-        Renderer.DrawTextInstances(Command);
-        Renderer.ClearTextInstances();
-    }
-}
-
 void FRenderView::RenderOutline(const FCamera &Camera,
                                 const AActor *SelectedActor) {
   DrawStencilMask(Camera, SelectedActor);
@@ -330,19 +315,8 @@ void FRenderView::DrawStencilMask(const FCamera& Camera,
     {
         OutlineMaterial->GetPipeline()->SetStencilRef(1);
         DrawCommand.Materials = { *OutlineMaterial };
-        Renderer.Draw(DrawCommand, 0, false);
+        Renderer.Draw(DrawCommand, 2, false);
     }
-}
-
-void FRenderView::RenderPostProcess(const FCamera &Camera, FVector2 TopLeftUV,
-                                    FVector2 LengthUV, AActor *SelectedActor) {
-  // 에디터 뷰포트 설정 후 후처리 수행
-  Renderer.SetViewportUV(TopLeftUV, LengthUV);
-  RenderOutline(Camera, SelectedActor);
-}
-void FRenderView::SetViewportUV(FVector2 TopLeftUV, FVector2 LengthUV)
-{
-    Renderer.SetViewportUV(TopLeftUV, LengthUV);
 }
 
 void FRenderView::SetRenderMode(EViewModeIndex InMode)
@@ -376,7 +350,7 @@ void FRenderView::FlushLineBatch(const FMatrix& ViewProjection, const FName& Pip
 void FRenderView::FlushQueue(const FCamera& Camera)
 {
     auto& ResLib = FRenderResourceLibrary::Get();
-
+    
     // Primitive 큐 처리
     for (const FDrawCommand& Data : RenderQueue.GetPrimRenderQ())
     {

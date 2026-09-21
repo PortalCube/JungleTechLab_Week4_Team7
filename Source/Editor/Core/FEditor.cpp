@@ -14,7 +14,6 @@
 #include "Runtime/Asset/FAssetRegistry.h"
 #include <numbers>
 
-
 void FEditor::Initialize(USceneManager *SceneManager) {
   State.ReadFromFile();
   Gizmo.Initialize();
@@ -91,6 +90,12 @@ void FEditor::LoadState()
     Viewport->GetGrid().SetCellSize(State.GetGridCellSize());
     Gizmo.Mode = static_cast<EGizmoMode>(State.GetGizmoMode());
     Gizmo.SetGizmoSpace(static_cast<EGizmoSpace>(State.GetGizmoSpace()));
+
+    //viewmode관련
+    VerticalSplitter.Ratio = State.GetSplitter().X;
+    HorizonSplitter.Ratio = State.GetSplitter().Y;
+    HorizonSplitter2.Ratio = State.GetSplitter().Z;
+    
 }
 
 void FEditor::NewScene() {
@@ -124,6 +129,7 @@ void FEditor::InitMultiViewport(FEditorViewportClient Viewport) {
   EditorViewports.push_back(Viewport);
   EditorViewports.push_back(Viewport);
   EditorViewports.push_back(Viewport);
+
 }
 void FEditor::DeleteViewport(int32 IndexOfViewport) {
   EditorViewports.erase(EditorViewports.begin() + IndexOfViewport);
@@ -278,8 +284,9 @@ void FEditor::SpawnInstancingToCurrentScene(int Count)
     SelectActor(TargetActor);
 }
 
-void FEditor::ChangeViewRayout(EViewportLayout Layout) 
+void FEditor::ResizeView(FEditorState::SplitViewMode mode)
 {
+//viewport를 가지고있는 splitter,window를 업데이트
     ActiveViewportIndex = 0;
     //=== 초기화 ===//
     for (int32 i = 0; i < 4; ++i)
@@ -304,28 +311,28 @@ void FEditor::ChangeViewRayout(EViewportLayout Layout)
             RB.bisActive = true;
         };
 
-    switch (Layout)
+    switch (mode)
     {
-    case EViewportLayout::Single:
+        case FEditorState::SplitViewMode::SINGLE:
         Leaf[0].bisActive = true;
         Root = &Leaf[0];
         break;
 
-    case EViewportLayout::LeftRight:
+    case FEditorState::SplitViewMode::HORIZONTAL:
         Leaf[0].bisActive = true;
         Leaf[1].bisActive = true;
         Connect(HorizonSplitter, Leaf[0], Leaf[1]);
         Root = &HorizonSplitter;
         break;
 
-    case EViewportLayout::TopBottom:
+    case FEditorState::SplitViewMode::VERTICAL:
         Leaf[0].bisActive = true;
         Leaf[2].bisActive = true;
         Connect(VerticalSplitter, Leaf[0], Leaf[2]);
         Root = &VerticalSplitter;
         break;
 
-    case EViewportLayout::Four:
+    case FEditorState::SplitViewMode::QUAD:
         Leaf[0].bisActive = true;
         Leaf[1].bisActive = true;
         Leaf[2].bisActive = true;
@@ -335,5 +342,40 @@ void FEditor::ChangeViewRayout(EViewportLayout Layout)
         Connect(HorizonSplitter2, Leaf[2], Leaf[3]);
         Root = &VerticalSplitter;
         break;
+    }
+}
+void FEditor::SetViewLayout(FEditorState::SplitViewMode mode) {
+    ResizeView(mode);
+
+    switch (mode)
+    {
+    case FEditorState::SplitViewMode::SINGLE:
+        VerticalSplitter.bisActive = false;
+        HorizonSplitter.bisActive = false;
+        HorizonSplitter2.bisActive = false;
+        State.SetSplitMode(FEditorState::SplitViewMode::SINGLE);
+        break;
+
+    case FEditorState::SplitViewMode::VERTICAL:
+        VerticalSplitter.bisActive = true;
+        HorizonSplitter.bisActive = false;
+        HorizonSplitter2.bisActive = false;
+        State.SetSplitMode(FEditorState::SplitViewMode::VERTICAL);
+        break;
+
+    case FEditorState::SplitViewMode::HORIZONTAL:
+        VerticalSplitter.bisActive = false;
+        HorizonSplitter.bisActive = true;
+        HorizonSplitter2.bisActive = false;
+        State.SetSplitMode(FEditorState::SplitViewMode::HORIZONTAL);
+        break;
+
+    case FEditorState::SplitViewMode::QUAD:
+        VerticalSplitter.bisActive = true;
+        HorizonSplitter.bisActive = true;
+        HorizonSplitter2.bisActive = true;
+        State.SetSplitMode(FEditorState::SplitViewMode::QUAD);
+        break;
+
     }
 }

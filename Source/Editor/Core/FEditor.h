@@ -21,13 +21,7 @@ enum class EEditorPrimitiveType : uint8 {
   Billboard,
   Spotlight,
 };
-enum class EViewportLayout
-{
-    Single,
-    TopBottom,
-    LeftRight,
-    Four
-};
+
 class FEditor {
 public:
   FTransform SelectedTransform;
@@ -52,7 +46,7 @@ public:
 
   void AddViewport(FEditorViewportClient Viewport);
   void InitMultiViewport(FEditorViewportClient Viewport);
-  void ChangeViewRayout(EViewportLayout Layout);
+  void ResizeView(FEditorState::SplitViewMode mode);
   void DeleteViewport(int32 IndexOfViewport);
   FEditorViewportClient* GetActiveViewport(); // 임시로 0번 반환
 
@@ -67,7 +61,7 @@ public:
   [[nodiscard]] TArray<FEditorViewportClient> &GetViewports() {
     return EditorViewports;
   }
-  [[nodiscard]] UScene *GetCurrentScene() const {
+  [[nodiscard]] UScene* GetCurrentScene() const {
     return SceneManager ? SceneManager->CurrentScene : nullptr;
   }
   void SpawnActorToCurrentScene(UClass* Type, int Count = 1);
@@ -81,8 +75,9 @@ public:
 
   void SaveState();
   void LoadState();
+  void SetViewLayout(FEditorState::SplitViewMode mode);
   UTextInstanceComponent* GetTextcomp() { return SelectedActorTextComp; }
-
+  
  //Viewport관련
   int32 ActiveViewportIndex = 0;
   SWindow* Root=nullptr;

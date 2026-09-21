@@ -38,7 +38,7 @@ void FEditorApplication::Initialize_Runtime(USceneManager *SceneManager,
   //
   Editor.Initialize(SceneManager);
   Editor.InitMultiViewport(FEditorViewportClient{});
-  Editor.ChangeViewRayout(EViewportLayout::Single);
+  Editor.SetViewLayout(Editor.State.GetSplitMode());
   Editor.LoadState();
 }
 
@@ -66,6 +66,8 @@ void FEditorApplication::Tick(float DeltaTime) {
 void FEditorApplication::Render() {
   TArray<FEditorViewportClient> &EditorViewports = Editor.GetViewports();
   
+  // 렌더 준비
+  RenderView->PrepareRender();
 
   //Active인 ViewportClient만 렌더링
   for (SWindow& Leaf : Editor.Leaf)
@@ -103,6 +105,29 @@ void FEditorApplication::Render() {
           RenderView->RenderView(sceneview, *SceneManager->CurrentScene, EditorCtx);
 
   }
+
+  //기즈모 그리기
+  if (Editor.ObjectSelected())
+  {
+      for (const SWindow& Leaf : Editor.Leaf)
+      {
+          if (!Leaf.bisActive)
+              continue;
+
+          const auto& Viewport = EditorViewports[Leaf.ViewportIndex];
+
+          // 마지막으로 그린 뷰의 렌더 모드가 남지 않도록 설정
+          RenderView->SetRenderMode(Viewport.ViewMode);
+
+          RenderView->RenderGizmo(
+              Editor.SelectedTransform,
+              Viewport.ViewportCamera,
+              Viewport.TopLeftUV,
+              Viewport.LengthUV,
+              Editor.GetGizmo());
+      }
+  }
+
   ImguiManager.RenderUI();
 }
 

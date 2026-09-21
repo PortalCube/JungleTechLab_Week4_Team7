@@ -2,7 +2,7 @@
     "Version": 1,
     "Name": "Textured",
     "AssetType": "Material",
-    "UPipelineID": "Pipeline/Textured.json",
-    "UTextureID": "Texture/Unreal.json",
+    "UPipelineID": "Pipeline/UVScroll.json",
+    "UTextureID": "Texture/oiiaii.json",
     "TextureSampler": { "FilterMode": "Bilinear", "WrapMode": "Wrap" }
 }
