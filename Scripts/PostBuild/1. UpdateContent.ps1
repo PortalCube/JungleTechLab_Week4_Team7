@@ -7,9 +7,13 @@ $ErrorActionPreference = "Stop"
 
 $projectRootPath = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $targetDirectoryPath = [System.IO.Path]::GetFullPath($TargetDirectory)
+$binariesDirectoryPath = [System.IO.Path]::GetFullPath((Join-Path $projectRootPath "Binaries"))
 $sourceContentDirectoryPath = Join-Path $projectRootPath "Content"
 $destinationContentDirectoryPath = Join-Path $targetDirectoryPath "Content"
 
+if (Test-Path -LiteralPath $destinationContentDirectoryPath) {
+    Remove-Item -LiteralPath $destinationContentDirectoryPath -Recurse -Force
+}
 
 New-Item -ItemType Directory -Path $destinationContentDirectoryPath -Force | Out-Null
 
