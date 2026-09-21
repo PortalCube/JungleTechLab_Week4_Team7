@@ -129,7 +129,6 @@ void FImguiToolbar::ShowViewBar(FEditor& Editor, FImguiConsoleWindow& ConsoleWin
 
         }
 
-       
         ImGui::EndMenu();
     }
 

@@ -41,6 +41,8 @@ public:
 	void RenderOverlayPass(const FCamera& Camera, const FSceneView& SceneView, const FTransform& SelectedTransform, const FGizmo& Gizmo, UTextInstanceComponent* TextComp);
 
 	// 개별 렌더 및 디버그 라인
+	void RenderGizmo(const FTransform& Transform, const FCamera& Camera, FVector2 TopLeftUV, FVector2 LengthUV, const FGizmo& Gizmo);
+
 	void RenderLine(const FVector& Start, const FVector& End, const FVector4& Color);
 	void RenderBoxCenterExtent(const FVector& Center, const FVector& Extent, const FVector4& Color);
 	void RenderBoxMinMax(const FVector& Min, const FVector& Max, const FVector4& Color);
