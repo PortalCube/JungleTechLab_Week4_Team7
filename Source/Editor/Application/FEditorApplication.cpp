@@ -66,6 +66,8 @@ void FEditorApplication::Tick(float DeltaTime) {
 void FEditorApplication::Render() {
   TArray<FEditorViewportClient> &EditorViewports = Editor.GetViewports();
   
+  // 렌더 준비
+  RenderView->PrepareRender();
 
   //Active인 ViewportClient만 렌더링
   for (SWindow& Leaf : Editor.Leaf)

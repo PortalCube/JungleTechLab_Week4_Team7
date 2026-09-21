@@ -1,34 +1,45 @@
-﻿#include <windows.h>
+#include <windows.h>
+#include <chrono>
 #include "FTimeManager.h"
+
+float FTimeManager::GetTime() const
+{
+    //TimePoint Clock = SteadyClock::now();
+    //return Duration(Clock - StartTime).count();
+    return TempTime;
+}
+
+float FTimeManager::GetDeltaTime() const
+{
+    //TimePoint Clock = SteadyClock::now();
+    //return Duration(Clock - PrevTime).count();
+    return TempDeltaTime;
+}
 
 FTimeManager::FTimeManager()
 {
-    QueryPerformanceFrequency(&Frequency);
-    QueryPerformanceCounter(&PrevTime);
-    TargetFrameTime = 1.0f / TargetFPS;
+    StartTime = SteadyClock::now();
+    PrevTime = SteadyClock::now();
 }
-
 
 void FTimeManager::Update()
 {
-    LARGE_INTEGER CurrentTime;
-    QueryPerformanceCounter(&CurrentTime);
+    float TargetTime = 1.0f / FPS;
+    float DeltaTime;
 
-    float ActualDeltaTime =
-        static_cast<float>(CurrentTime.QuadPart - PrevTime.QuadPart) /
-        static_cast<float>(Frequency.QuadPart);
+    TimePoint Clock = SteadyClock::now();
+    DeltaTime = Duration(Clock - PrevTime).count();
 
-    while (ActualDeltaTime < TargetFrameTime)
+    while (DeltaTime < TargetTime)
     {
-        QueryPerformanceCounter(&CurrentTime);
-
-        ActualDeltaTime =
-            static_cast<float>(CurrentTime.QuadPart - PrevTime.QuadPart) /
-            static_cast<float>(Frequency.QuadPart);
-
         _mm_pause();
+
+        Clock = SteadyClock::now();
+        DeltaTime = Duration(Clock - PrevTime).count();
     }
 
-    DeltaTime = bIsRunning ? ActualDeltaTime : 0.0f;
-    PrevTime = CurrentTime;
+    TempDeltaTime = DeltaTime;
+    TempTime = Duration(Clock - StartTime).count();
+
+    PrevTime = SteadyClock::now();
 }

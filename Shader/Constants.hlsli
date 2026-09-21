@@ -1,4 +1,18 @@
-cbuffer ObjectConstants : register(b0)
+cbuffer FrameConstants : register(b0)
+{
+    float Time;
+    float DeltaTime;
+    float2 FramePadding;
+}
+
+cbuffer ViewConstants : register(b1)
+{
+    row_major float4x4 VP;
+    float2 ViewportSize;
+    float2 ViewPadding;
+}
+
+cbuffer ObjectConstants : register(b2)
 {
     row_major float4x4 MVP;
     float3 ColorOverride;
@@ -10,14 +24,7 @@ cbuffer ObjectConstants : register(b0)
     float3 ObjectPadding;
 }
 
-cbuffer FrameConstants : register(b1)
-{
-    float2 ViewportSize;
-    float2 Padding;
-}
-
-
-cbuffer LightConstants : register(b2)
+cbuffer LightConstants : register(b4)
 {
     float3 LightDirection;
     float Intensity;

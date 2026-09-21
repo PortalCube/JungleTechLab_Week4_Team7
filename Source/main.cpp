@@ -178,7 +178,6 @@ int WINAPI wWinMain(
 	while (!bQuit)
 	{
 		FTimeManager::Get().Update();
-		FTimeManager::Get().Resume();
 
 		if (!ProcessWindowMessage())
 		{
