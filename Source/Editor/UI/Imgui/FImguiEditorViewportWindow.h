@@ -93,6 +93,7 @@ private:
 		const FVector2& LocalMousePixels, const FVector2& ViewportSizePixels);
 	void ShowViewportVerticalSplitter(SSplitter& Splitter);
 	void ShowViewportHorizontalSplitter(SSplitter& Splitter);
+	void ApplyPendingViewportMaximize(FEditor& Editor);
 
 	// 스탯 드로우
 	void DrawStatLine(ImDrawList* DrawList, const ImVec2& Position, float& Y,
@@ -103,10 +104,10 @@ private:
 	void DrawStatsMemory();
 	void DrawStatsFPS();
 	bool GetViewportSceneRect(const ImVec2& Origin, FRect& OutRect) const;
-	void DrawViewportHeader() const;
+	void DrawViewportHeader(int32 ViewportIndex,FEditor& Editor);
 	float DT = 1.0f;
 	bool bOpenMemory = false;
 	bool bOpenFPS = false;
-
+	int32 PendingMaximizeViewport = -1;
 	FCameraInputController CameraController;
 };

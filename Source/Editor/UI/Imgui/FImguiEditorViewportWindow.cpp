@@ -12,6 +12,9 @@
 
 void FImguiEditorViewportWindow::Process(FEditor& Editor, float DeltaTime)
 {
+    //화면이 버튼을 눌러 최대일때 처리
+    ApplyPendingViewportMaximize(Editor);
+
     DT = DeltaTime;
 
     // 종료와 Hover 초기화는 뷰포트의 포커스/표시 여부와 관계없이 처리한다.
@@ -55,6 +58,9 @@ void FImguiEditorViewportWindow::Process(FEditor& Editor, float DeltaTime)
         Editor.HorizonSplitter.Ratio = Editor.HorizonSplitter2.Ratio;
     }
 
+    // 연결된 스플리터 비율을 이번 프레임의 모든 Leaf에 반영한다.
+    Editor.Root->OnResize(Rect);
+
     // 스플리터 비율 저장
     Editor.State.SetSplitter(
         Editor.VerticalSplitter.Ratio,
@@ -70,17 +76,22 @@ void FImguiEditorViewportWindow::Process(FEditor& Editor, float DeltaTime)
         SWindow& leaf = Editor.Leaf[i];
         if (!leaf.bisActive) continue;
 
-        const float Width = leaf.Rect.GetWidth();
-        const float Height = leaf.Rect.GetHeight();
+        // 내부 경계에만 스플리터 공간을 확보해 3D 입력 영역과 겹치지 않게 한다.
+        FRect ChildRect = leaf.Rect;
+        if (ChildRect.Left > Rect.Left) ChildRect.Left += 3.0f;
+        if (ChildRect.Right < Rect.Right) ChildRect.Right -= 3.0f;
+        if (ChildRect.Top > Rect.Top) ChildRect.Top += 3.0f;
+        if (ChildRect.Bottom < Rect.Bottom) ChildRect.Bottom -= 3.0f;
+
+        const float Width = ChildRect.GetWidth();
+        const float Height = ChildRect.GetHeight();
 
         if (Width <= 0.0f || Height <= 0.0f) continue;
 
         FEditorViewportClient& CurrentViewport =Viewports[leaf.ViewportIndex];
 
-        // Leaf 위치를 ImGui 화면 좌표로 변환
-        ImGui::SetCursorScreenPos(ImVec2(
-            Origin.x + leaf.Rect.Left,
-            Origin.y + leaf.Rect.Top));
+        // 스플리터 여백을 제외한 자식 창 위치를 ImGui 화면 좌표로 변환
+        ImGui::SetCursorScreenPos(ImVec2(Origin.x + ChildRect.Left, Origin.y + ChildRect.Top));
 
         // 자식 창과 내부 UI의 ID를 뷰포트별로 분리
         ImGui::PushID(leaf.ViewportIndex);
@@ -96,7 +107,7 @@ void FImguiEditorViewportWindow::Process(FEditor& Editor, float DeltaTime)
         if (bVisible)
         {
             //상단바 생성
-            DrawViewportHeader();
+            DrawViewportHeader(leaf.ViewportIndex,Editor);
 
             //상단바 아래의 실제 3D 영역을 별도 함수로 계산
             FRect SceneRect{};
@@ -394,13 +405,7 @@ void FImguiEditorViewportWindow::ShowViewportVerticalSplitter(SSplitter& Splitte
     ImGui::PushStyleColor(ImGuiCol_SeparatorHovered, Color);
     ImGui::PushStyleColor(ImGuiCol_SeparatorActive, Color);
 
-    ImGui::SplitterBehavior(
-        ImRect(ImVec2(Origin.x + R.Left, Y - 3),
-            ImVec2(Origin.x + R.Right, Y + 3)),
-        ImGui::GetID("VerticalSplitter"),
-        ImGuiAxis_Y,
-        &Top, &Bottom,
-        10.0f, 10.0f);
+    ImGui::SplitterBehavior(ImRect(ImVec2(Origin.x + R.Left, Y - 3), ImVec2(Origin.x + R.Right, Y + 3)), ImGui::GetID("VerticalSplitter"), ImGuiAxis_Y, &Top, &Bottom, 10.0f, 10.0f);
 
     ImGui::PopStyleColor(2);
     ImGui::PopID();
@@ -423,13 +428,7 @@ void FImguiEditorViewportWindow::ShowViewportHorizontalSplitter(SSplitter& Split
     ImGui::PushStyleColor(ImGuiCol_SeparatorHovered, Color);
     ImGui::PushStyleColor(ImGuiCol_SeparatorActive, Color);
 
-    ImGui::SplitterBehavior(
-        ImRect(ImVec2(X - 3, Origin.y + R.Top),
-            ImVec2(X + 3, Origin.y + R.Bottom)),
-        ImGui::GetID("HorizontalSplitter"),
-        ImGuiAxis_X,
-        &Left, &Right,
-        10.0f, 10.0f);
+    ImGui::SplitterBehavior(ImRect(ImVec2(X - 3, Origin.y + R.Top), ImVec2(X + 3, Origin.y + R.Bottom)), ImGui::GetID("HorizontalSplitter"), ImGuiAxis_X, &Left, &Right, 10.0f, 10.0f);
 
     ImGui::PopStyleColor(2);
     ImGui::PopID();
@@ -583,7 +582,8 @@ bool FImguiEditorViewportWindow::GetViewportSceneRect(
     return true;
 }
 
-void FImguiEditorViewportWindow::DrawViewportHeader() const
+// 변경: 뷰포트 번호 추가, const 제거
+void FImguiEditorViewportWindow::DrawViewportHeader(int32 ViewportIndex,FEditor& Editor)
 {
     const float HeaderHeight = ImGui::GetFrameHeight();
     const float ButtonSize = HeaderHeight - 6.0f;
@@ -605,22 +605,12 @@ void FImguiEditorViewportWindow::DrawViewportHeader() const
     ImGui::PushStyleColor(ImGuiCol_HeaderActive, ActiveColor);
 
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f);
-    ImGui::PushStyleVar(
-        ImGuiStyleVar_WindowPadding,
-        ImVec2(8.0f, 0.0f));
-    ImGui::PushStyleVar(
-        ImGuiStyleVar_ItemSpacing,
-        ImVec2(ImGui::GetStyle().ItemSpacing.x, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(ImGui::GetStyle().ItemSpacing.x, 0.0f));
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
 
-    const bool bVisible = ImGui::BeginChild(
-        "ViewportHeader",
-        ImVec2(0.0f, HeaderHeight),
-        ImGuiChildFlags_AlwaysUseWindowPadding,
-        ImGuiWindowFlags_MenuBar |
-        ImGuiWindowFlags_NoScrollbar |
-        ImGuiWindowFlags_NoScrollWithMouse);
+    const bool bVisible = ImGui::BeginChild("ViewportHeader", ImVec2(0.0f, HeaderHeight), ImGuiChildFlags_AlwaysUseWindowPadding, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
     if (bVisible && ImGui::BeginMenuBar())
     {
@@ -630,10 +620,10 @@ void FImguiEditorViewportWindow::DrawViewportHeader() const
         ImDrawList* HeaderDrawList = ImGui::GetWindowDrawList();
 
         // 오른쪽 끝의 최대화 버튼 위치
-        const float ButtonX =ImGui::GetWindowWidth() -Style.WindowPadding.x -ButtonSize;
+        const float ButtonX = ImGui::GetWindowWidth() - Style.WindowPadding.x - ButtonSize;
 
         // 최대화 버튼 왼쪽의 Camera 메뉴 위치
-        const float CameraWidth =ImGui::CalcTextSize("Camera").x +Style.ItemSpacing.x * 3.0f;
+        const float CameraWidth = ImGui::CalcTextSize("Camera").x + Style.ItemSpacing.x * 3.0f;
         const float CameraX = ButtonX - CameraWidth;
 
         if (CameraX > ImGui::GetCursorPosX()) ImGui::SetCursorPosX(CameraX);
@@ -645,21 +635,27 @@ void FImguiEditorViewportWindow::DrawViewportHeader() const
         const ImVec2 CameraMax = ImGui::GetItemRectMax();
         const bool bCameraHovered = ImGui::IsItemHovered();
 
-        HeaderDrawList->AddRect(
-            ImVec2(CameraMin.x + 0.5f, CameraMin.y + 0.5f),
-            ImVec2(CameraMax.x - 0.5f, CameraMax.y - 0.5f),
-            ImGui::GetColorU32(
-                (bCameraOpen || bCameraHovered)
-                ? HighlightColor
-                : BorderColor),
-            3.0f,
-            0,
-            1.0f);
+        HeaderDrawList->AddRect(ImVec2(CameraMin.x + 0.5f, CameraMin.y + 0.5f), ImVec2(CameraMax.x - 0.5f, CameraMax.y - 0.5f), ImGui::GetColorU32((bCameraOpen || bCameraHovered) ? HighlightColor : BorderColor), 3.0f, 0, 1.0f);
 
         if (bCameraOpen)
         {
-            ImGui::TextUnformatted("Perspective");
+            FCamera& Camera = Editor.GetActiveViewport()->ViewportCamera;
+
+            ImGui::TextUnformatted("PERSPECTIVE");
             ImGui::Separator();
+            if(ImGui::MenuItem("Perspective"))
+            {
+                if (Camera.Projection.ProjectionType != EProjectionType::Perspective)
+                    Camera.Projection.ProjectionType = EProjectionType::Perspective;
+
+            }
+            ImGui::TextUnformatted("ORTHOGRAPHIC");
+            ImGui::Separator();
+            if (ImGui::MenuItem("Orthographic"))
+            {
+                if(Camera.Projection.ProjectionType != EProjectionType::Orthographic)
+                Camera.Projection.ProjectionType = EProjectionType::Orthographic;
+            }
             ImGui::MenuItem("Top");
             ImGui::MenuItem("Bottom");
             ImGui::MenuItem("Left");
@@ -673,27 +669,23 @@ void FImguiEditorViewportWindow::DrawViewportHeader() const
         // 최대화 버튼 오른쪽 정렬
         if (ButtonX > ImGui::GetCursorPosX()) ImGui::SetCursorPosX(ButtonX);
 
-
         // 줄어든 버튼을 상단바의 세로 중앙에 배치
-        ImGui::SetCursorPosY(
-            (HeaderHeight - ButtonSize) * 0.5f);
+        ImGui::SetCursorPosY((HeaderHeight - ButtonSize) * 0.5f);
 
-        // UI만 표시
-        ImGui::Button("##Maximize",ImVec2(ButtonSize, ButtonSize));
+        if (ImGui::Button("##Maximize", ImVec2(ButtonSize, ButtonSize)))
+        {
+            // 추가: 실제 배치 변경은 다음 Process() 시작에서 처리
+            PendingMaximizeViewport = ViewportIndex;
+        }
 
         const ImVec2 ButtonMin = ImGui::GetItemRectMin();
         const ImVec2 ButtonMax = ImGui::GetItemRectMax();
         const bool bButtonHovered = ImGui::IsItemHovered();
 
-        // 버튼 내부의 최대화 아이콘
-        const float IconPadding = ButtonSize * 0.25f;
         if (bButtonHovered)
         {
             // 호버 시 바깥 테두리 강조
-            HeaderDrawList->AddRect(
-                ImVec2(ButtonMin.x + 0.5f, ButtonMin.y + 0.5f),
-                ImVec2(ButtonMax.x - 0.5f, ButtonMax.y - 0.5f),
-                ImGui::GetColorU32(HighlightColor),3.0f,0, 1.0f);
+            HeaderDrawList->AddRect(ImVec2(ButtonMin.x + 0.5f, ButtonMin.y + 0.5f), ImVec2(ButtonMax.x - 0.5f, ButtonMax.y - 0.5f), ImGui::GetColorU32(HighlightColor), 3.0f, 0, 1.0f);
             ImGui::SetTooltip("Maximize / Restore");
         }
 
@@ -704,4 +696,43 @@ void FImguiEditorViewportWindow::DrawViewportHeader() const
 
     ImGui::PopStyleVar(5);
     ImGui::PopStyleColor(9);
+}
+
+void FImguiEditorViewportWindow::ApplyPendingViewportMaximize(FEditor& Editor)
+{
+    if (PendingMaximizeViewport == -1) return;
+
+    const int32 ViewportIndex = PendingMaximizeViewport;
+    PendingMaximizeViewport = -1;
+
+    const auto SplitMode = Editor.State.GetSplitMode();
+
+    // 원래 단일 화면이면 변경할 필요 없음
+    if (SplitMode == FEditorState::SplitViewMode::SINGLE) return;
+
+    // 요청 이후 툴바에서 배치가 바뀌어 대상이 숨겨졌다면 무시
+    bool bViewportVisible = false;
+    for (const SWindow& Leaf : Editor.Leaf)
+    {
+        if (Leaf.bisActive && Leaf.ViewportIndex == ViewportIndex)
+        {
+            bViewportVisible = true;
+            break;
+        }
+    }
+    if (!bViewportVisible) return;
+
+    // 저장된 모드는 분할인데 Root가 Leaf[0]이면 임시 최대화 상태
+    if (Editor.Root == &Editor.Leaf[0])
+    {
+        Editor.ResizeView(SplitMode);
+    }
+    else
+    {
+        Editor.ResizeView(FEditorState::SplitViewMode::SINGLE);
+        Editor.Leaf[0].ViewportIndex = ViewportIndex;
+    }
+
+    // ResizeView()가 활성 번호를 0으로 초기화하므로 다시 지정
+    Editor.ActiveViewportIndex = ViewportIndex;
 }
