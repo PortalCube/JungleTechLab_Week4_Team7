@@ -9,7 +9,7 @@
 #include "Runtime/Asset/UFont.h"
 #include "Runtime/Asset/UStaticMesh.h"
 #include "Runtime/Asset/UTexture.h"
-#include "Runtime/Mesh/FObjParser.h"
+#include "Runtime/Parser/FObjParser.h"
 #include "Runtime/Mesh/MeshUtil.h"
 #include "Runtime/Rendering/FRenderer.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"

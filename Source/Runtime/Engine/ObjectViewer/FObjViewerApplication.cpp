@@ -99,9 +99,8 @@ void FObjViewerApplication::Render()
 			auto TexIt = TextureMap.find(Mtl.map_Kd);
 			if (TexIt != TextureMap.end())
 			{
-				TextureMaterial->SetTexture(TexIt->second);
-				Constants.ColorOverride = Mtl.Kd;
-				Constants.ColorOverrideAmount = 0.0f;
+				TextureMaterial->SetTexture(TexIt->second.get());
+				Constants.Color = FVector4{ Mtl.Kd, 0.0f };
 				Renderer->DrawSection(*CurrentMesh, *TextureMaterial, Constants, Section.StartIndex, Section.IndexCount);
 			}
 
@@ -110,8 +109,7 @@ void FObjViewerApplication::Render()
 		// No Texture file
 		else
 		{			
-			Constants.ColorOverride = Mtl.Kd;
-			Constants.ColorOverrideAmount = 1.0f;
+			Constants.Color = FVector4{ Mtl.Kd, 1.0f };
 		}
 
 		Renderer->DrawSection(*CurrentMesh, *SimpleMaterial, Constants, Section.StartIndex, Section.IndexCount);

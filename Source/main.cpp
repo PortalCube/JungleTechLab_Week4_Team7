@@ -20,8 +20,8 @@
 #include <Windows.h>
 #include <windowsx.h>
 
-#include "../FObjParser.h"
-#include "../FObjViewerApplication.h"
+#include "Runtime/Parser/FObjParser.h"
+#include "Runtime/Engine/ObjectViewer/FObjViewerApplication.h"
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -74,6 +74,8 @@ int WINAPI wWinMain(
 	}
 
 	UClass::ResolveTypeBitsets();
+
+	FResourceLoader::LoadAssets();
 
 #if defined(_OBJVIEWER)
 	FObjViewerApplication ObjViewer(Renderer);

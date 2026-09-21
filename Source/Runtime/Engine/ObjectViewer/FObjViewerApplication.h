@@ -6,7 +6,7 @@
 #include "Source/Runtime/Rendering/FRenderer.h"
 #include "Source/Runtime/Rendering/FRenderResourceLibrary.h"
 
-#include "FObjParser.h"
+#include "Runtime/Parser/FObjParser.h"
 #include "FViewerCameraController.h"
 
 class FObjViewerApplication
