@@ -1,5 +1,6 @@
 #include "FImguiContentsDrawer.h"
 #include "ThirdParty/Imgui/imgui.h"
+#include "ThirdParty/Imgui/imgui_internal.h"
 #include "Runtime/Core/FString.h"
 #include "Runtime/Asset/FAssetRegistry.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
@@ -131,7 +132,7 @@ void FImguiContentsDrawer::RenderContentView()
 
 		if (ImGui::IsItemHovered() && !ImGui::IsDragDropActive())
 		{
-			ImGui::SetTooltip("%s", Item.c_str());
+			ImGui::SetTooltip("%s", Item.string().c_str());
 		}
 
 		// 더블클릭은 Selectable 반환값이 아니라 항목 위에서 직접 판정한다.

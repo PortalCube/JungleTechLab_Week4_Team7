@@ -27,6 +27,8 @@ private:
 
 	TMap<FName, UAsset*> AssetMap;
 
+	mutable TMap<std::filesystem::path, FFolderView> DirectoryCache;
+
 public:
 
 	static FAssetRegistry& GetInstance();

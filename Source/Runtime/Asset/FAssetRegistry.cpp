@@ -45,6 +45,13 @@ void FAssetRegistry::Clear()
 
 FFolderView FAssetRegistry::GetAssetDirectory(const fs::path& ParentPath) const
 {
+	const auto& Item = DirectoryCache.find(ParentPath);
+
+	if (Item != DirectoryCache.end())
+	{
+		return Item->second;
+	}
+
 	FFolderView Result;
 
 	for (const auto& [AssetID, Asset] : GetAssetMap())
@@ -72,6 +79,8 @@ FFolderView FAssetRegistry::GetAssetDirectory(const fs::path& ParentPath) const
 			Result.Folders.insert(TargetPath);
 		}
 	}
+
+	DirectoryCache[ParentPath] = Result;
 
 	return Result;
 }
