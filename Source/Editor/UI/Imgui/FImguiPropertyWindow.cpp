@@ -10,11 +10,19 @@
 #include "ThirdParty/Imgui/imgui_internal.h"
 #include "ThirdParty/Imgui/imgui_impl_dx11.h"
 #include "ThirdParty/Imgui/imgui_impl_win32.h"
+#include "ThirdParty/Imgui/imgui_stdlib.h"
 #include <string>
 #include "FImguiDragDrop.h"
 #include "Runtime/Rendering/FMaterial.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Asset/FAssetRegistry.h"
+
+
+namespace
+{
+	constexpr float SlotSize = 64.0f;
+}
+
 
 void FImguiPropertyWindow::Process(FEditor& Editor)
 {
@@ -118,6 +126,7 @@ void FImguiPropertyWindow::ShowComponentDetails(FEditor& Editor, AActor& Actor,
 	{
 		ShowSpotLightSettings(static_cast<USpotLightComponent&>(Comp));
 	}
+
 	else if (Comp.IsA<UStaticMeshComponent>())
 	{
 		ShowStaticMeshSettings(Actor, static_cast<UStaticMeshComponent&>(Comp), bIsRoot);
@@ -216,51 +225,182 @@ void FImguiPropertyWindow::ShowStaticMeshSettings(AActor& Actor, UStaticMeshComp
 	ImGui::Separator();
 	ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Static Mesh Settings");
 
-	//ShowTextureSlot(MeshComp);
+
+	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+
+	if (ImGui::BeginTable(
+		"StaticMeshAssetSlots",
+		2,
+		ImGuiTableFlags_SizingStretchSame
+	))
+	{
+		// 첫 번째 행
+		ImGui::TableNextRow();
+
+		ImGui::TableSetColumnIndex(0);
+		ShowMaterialSlot(MeshComp);
+
+		ImGui::TableSetColumnIndex(1);
+		ShowTextureSlot(MeshComp);
+
+		// 두 번째 행
+		ImGui::TableNextRow();
+
+		ImGui::TableSetColumnIndex(0);
+		ShowPipelineSlot(MeshComp);
+
+		ImGui::TableSetColumnIndex(1);
+		ShowStaticMeshSlot(MeshComp);
+
+		ImGui::EndTable();
+	}
+}
+
+void FImguiPropertyWindow::ShowMaterialSlot(UStaticMeshComponent& MeshComp) const
+{
+	UMaterial* Material = MeshComp.GetMaterialInstance()->Material;
+
+	ImGui::Spacing();
+	ImGui::TextDisabled("Material");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button(Material->GetID().ToString().c_str(), ImVec2(FullWidth, SlotSize));
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UMaterial* NewMaterial = Dropped->Ptr->Cast<UMaterial>();
+
+			if (NewMaterial)
+			{
+				MeshComp.SetMaterial(NewMaterial);
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
+}
+
+void FImguiPropertyWindow::ShowPipelineSlot(UStaticMeshComponent& MeshComp) const
+{
+	UPipeline* Pipeline = MeshComp.GetMaterialInstance()->Pipeline;
+
+	ImGui::Spacing();
+	ImGui::TextDisabled("Pipeline");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button(Pipeline->GetID().ToString().c_str(), ImVec2(FullWidth, SlotSize));
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UPipeline* NewPipeline = Dropped->Ptr->Cast<UPipeline>();
+
+			if (NewPipeline)
+			{
+				MeshComp.SetPipeline(NewPipeline);
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
 }
 
 void FImguiPropertyWindow::ShowTextureSlot(UStaticMeshComponent& MeshComp) const
 {
-	//constexpr float SlotSize = 64.0f;
-	//TSharedPtr<FMaterial> Material = FRenderResourceLibrary::Get().GetMaterial(MeshComp.GetMaterial());
-	//TSharedPtr<FTexture> CurrentTexture = Material ? Material->GetTexture() : nullptr;
+	UMaterial* Material = MeshComp.GetMaterialInstance()->Material;
+	FTexture* CurrentTexture = nullptr;
+	
+	if (Material)
+	{
+		UTexture* TextureAsset = Material->GetTexture();
 
-	//ImGui::Spacing();
-	//ImGui::TextDisabled("Texture");
+		if (TextureAsset)
+		{
+			CurrentTexture = TextureAsset->Get();
+		}
+	}
 
-	//if (CurrentTexture && CurrentTexture->GetSRV())
-	//{
-	//	// ImGui 1.93의 ImTextureID는 ImU64라서 포인터를 정수로 한 번 거친다.
-	//	const ImTextureID TexId = static_cast<ImTextureID>(
-	//		reinterpret_cast<intptr_t>(CurrentTexture->GetSRV()));
-	//	ImGui::Image(TexId, ImVec2(SlotSize, SlotSize));
-	//}
-	//else
-	//{
-	//	// 비어 있어도 드롭받을 아이템은 있어야 하므로 자리를 만든다.
-	//	ImGui::Button("No\nTexture", ImVec2(SlotSize, SlotSize));
-	//}
+	ImGui::Spacing();
+	ImGui::TextDisabled("Texture");
 
-	//// 드롭 타깃은 아이템을 그린 직후여야 한다.
-	//if (!ImGui::BeginDragDropTarget())
-	//{
-	//	return;
-	//}
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	if (CurrentTexture && CurrentTexture->GetSRV())
+	{
+		const ImTextureID TexId = reinterpret_cast<ImTextureID>(CurrentTexture->GetSRV());
+		ImGui::Image(TexId, ImVec2(FullWidth, SlotSize));
+	}
+	else
+	{
+		ImGui::Button("No\nTexture", ImVec2(FullWidth, SlotSize));
+	}
 
-	//if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
-	//{
-	//	// 타입 이름이 같아도 크기가 다르면 다른 구조체일 수 있다.
-	//	if (Material && Payload->DataSize == static_cast<int>(sizeof(FContentDragPayload)))
-	//	{
-	//		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
 
-	//		if (Dropped->Kind == FContentDragPayload::EKind::Texture)
-	//		{
-	//			Material->SetTextureByName(Dropped->Key);
-	//		}
-	//	}
-	//}
-	//ImGui::EndDragDropTarget();
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UTexture* Texture = Dropped->Ptr->Cast<UTexture>();
+
+			if (Texture)
+			{
+				MeshComp.SetTexture(Texture);
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
+}
+
+void FImguiPropertyWindow::ShowStaticMeshSlot(UStaticMeshComponent& MeshComp) const
+{
+	const UStaticMesh* StaticMesh = MeshComp.GetMesh();
+
+	ImGui::Spacing();
+	ImGui::TextDisabled("StaticMesh");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button(StaticMesh->GetID().ToString().c_str(), ImVec2(FullWidth, SlotSize));
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UStaticMesh* NewStaticMesh = Dropped->Ptr->Cast<UStaticMesh>();
+
+			if (NewStaticMesh)
+			{
+				MeshComp.SetMesh(NewStaticMesh);
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
 }
 
 void FImguiPropertyWindow::ShowGizmoSettings(FEditor& Editor) const

@@ -19,6 +19,22 @@ const FMaterialInstance* UStaticMeshComponent::GetMaterialInstance(int Index) co
 	return &RenderData.Materials[static_cast<size_t>(Index)];
 }
 
+void UStaticMeshComponent::SetPipeline(UPipeline* Pipeline, int Index)
+{
+	if (Index < 0 || Index >= GetMaterialSlotLength()) { return; }
+	FMaterialInstance& Instance = RenderData.Materials[static_cast<size_t>(Index)];
+
+	Instance.Pipeline = Pipeline;
+}
+
+void UStaticMeshComponent::SetTexture(UTexture* Texture, int Index)
+{
+	if (Index < 0 || Index >= GetMaterialSlotLength()) { return; }
+	FMaterialInstance& Instance = RenderData.Materials[static_cast<size_t>(Index)];
+
+	Instance.Texture = Texture;
+}
+
 void UStaticMeshComponent::ClearMaterial()
 {
 	RenderData.Materials.clear();

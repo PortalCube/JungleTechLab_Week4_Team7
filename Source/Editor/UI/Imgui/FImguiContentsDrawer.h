@@ -1,6 +1,14 @@
 #pragma once
 #include "Editor/Core/FEditor.h"
 
+
+
+class UTexture;
+class UPipeline;
+class UMaterial;
+class UStaticMesh;
+class UFont;
+
 class FImguiContentsDrawer final
 {
 
@@ -22,6 +30,7 @@ private:
 	//폴더 트리 렌더
 	void RenderFolderTree();
 	void RenderFolderTreeNode(const std::filesystem::path& FolderPath);
+
 	// 우측 파일 목록
 	void RenderContentView();
 
@@ -36,21 +45,12 @@ private:
 		bool bIsDirectory = false;
 	};
 
-	// CurrentPath의 내용을 다시 읽어 Entries를 채운다.
-	void RefreshEntries();
-
-	// 항목의 썸네일용 텍스처를 얻는다. 없으면 디스크에서 읽어 라이브러리에 등록한다.
-	// 이미지가 아니거나 로드에 실패하면 nullptr.
-	TSharedPtr<class FTexture> GetOrLoadThumbnail(const FContentEntry& Item);
-
 	// directory_iterator는 실제 파일 시스템 호출이라 매 프레임 돌리면 느려진다.
 	// 폴더가 바뀔 때와 새로고침할 때만 갱신한다.
 	TArray<FContentEntry> Entries;
-	std::filesystem::path CachedPath;
-	bool bNeedsRefresh = true;
 
 	std::filesystem::path SelectedPath;
-	float ThumbnailSize = 80.0f;
+	float ThumbnailSize = 128.0f;
 
 	// 한 프레임에 새로 디코딩할 이미지 수.
 	// 폴더를 처음 열 때 수십 장을 한꺼번에 읽으면 눈에 띄게 멈춘다.

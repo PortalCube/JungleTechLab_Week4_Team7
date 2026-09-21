@@ -1,6 +1,26 @@
 #include "FAssetRegistry.h"
 #include "Runtime/Utility/EngineUtil.h"
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
+namespace
+{
+	bool IsSubpath(fs::path& OutTargetPath, const fs::path& Parent, const fs::path& Child)
+	{
+		fs::path ParentNormal = Parent.lexically_normal();
+		fs::path ChildNormal = Child.lexically_normal();
+
+		fs::path Relative = ChildNormal.lexically_relative(ParentNormal);
+
+		if (Relative.empty() || *Relative.begin() == ".." || *Relative.begin() == ".") { return false; }
+		
+		OutTargetPath = *Relative.begin();
+		return true;
+	}
+}
+
 FAssetRegistry& FAssetRegistry::GetInstance()
 {
 	static FAssetRegistry Instance;
@@ -21,4 +41,37 @@ void FAssetRegistry::Register(const FName& Name, UAsset* Pipeline)
 void FAssetRegistry::Clear()
 {
 	AssetMap.clear();
+}
+
+FFolderView FAssetRegistry::GetAssetDirectory(const fs::path& ParentPath) const
+{
+	FFolderView Result;
+
+	for (const auto& [AssetID, Asset] : GetAssetMap())
+	{
+		const FString AssetIDString = AssetID.ToString();
+		if (!AssetIDString.empty() && AssetIDString.front() == '#')
+		{
+			continue;
+		}
+
+		fs::path AssetPath{ AssetIDString };
+		fs::path TargetPath;
+
+		if (!IsSubpath(TargetPath, ParentPath, AssetPath))
+		{
+			continue;
+		}
+
+		if (TargetPath.has_extension())
+		{
+			Result.Assets.push_back(Asset);
+		}
+		else
+		{
+			Result.Folders.insert(TargetPath);
+		}
+	}
+
+	return Result;
 }

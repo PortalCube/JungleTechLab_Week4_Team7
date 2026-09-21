@@ -29,4 +29,9 @@ protected:
 
 	void LoadInternal(UAssetDesc& Desc);
 
+public:
+
+	const FName& GetID() const { return ID; }
+	const FName& GetName() const { return Name; }
+
 };
