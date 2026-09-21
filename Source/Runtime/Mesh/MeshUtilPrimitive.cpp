@@ -248,14 +248,14 @@ bool MeshUtil::CreatePlaneMesh(FRenderer &Renderer, FRenderResourceLibrary &Libr
 bool MeshUtil::CreateRectMesh(FRenderer &Renderer, FRenderResourceLibrary &Library) {
   // 사각형 정점 배열
   const TArray<FVertexData> Vertices = {
-      {0.0f, -0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f},
-      {0.0f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f},
-      {0.0f, 0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f},
-      {0.0f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+      {0.0f, -0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f},
+      {0.0f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f},
+      {0.0f, 0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f},
+      {0.0f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f,
        0.0f},
   };
 
-  // 양면 인덱스 배열
+  // -X 방향을 앞면으로 하는 인덱스 배열
   const TArray<uint32> Indices = {0, 1, 2, 0, 2, 3};
 
   FMeshDesc MeshDesc{
