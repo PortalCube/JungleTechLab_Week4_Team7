@@ -209,11 +209,11 @@ void FImguiControlPanelWindow::CameraSetting(FEditor& Editor)
 
         bool bOrthographic =
             (Camera.Projection.ProjectionType == EProjectionType::Orthographic);
-        if (ImGui::Checkbox("Orthogonal", &bOrthographic))
-        {
-            Camera.Projection.ProjectionType =
-                bOrthographic ? EProjectionType::Orthographic : EProjectionType::Perspective;
-        }
+        //if (ImGui::Checkbox("Orthogonal", &bOrthographic))
+        //{
+        //    Camera.Projection.ProjectionType =
+        //        bOrthographic ? EProjectionType::Orthographic : EProjectionType::Perspective;
+        //}
 
         float CameraSensitivity = Editor.State.GetCameraSensitivity();
         ImGui::SetNextItemWidth(180.0f);
