@@ -310,7 +310,7 @@ void FRenderView::DrawStencilMask(const FCamera& Camera,
     DrawCommand.Constants.MVP = ModelMatrix * Camera.CreateViewProjectionMatrix();
     DrawCommand.Constants.World = ModelMatrix;
 
-    auto OutlineMaterial = FRenderResourceLibrary::Get().GetMaterial("Outline");
+    auto OutlineMaterial = FRenderResourceLibrary::Get().GetMaterial("#Outline");
     if (OutlineMaterial)
     {
         OutlineMaterial->GetPipeline()->SetStencilRef(1);

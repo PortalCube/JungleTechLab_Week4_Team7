@@ -35,8 +35,8 @@ bool MeshUtil::CreateGridMesh(FRenderer &Renderer, FRenderResourceLibrary &Libra
       .IndexCount = static_cast<uint32>(Indices.size()),
   };
 
-  Library.RegisterMesh(FName("Grid"), Renderer.CreateMesh(MeshDesc));
-  return Library.AllMeshMap[FName("Grid")] != nullptr;
+  Library.RegisterMesh(FName("#Grid"), Renderer.CreateMesh(MeshDesc));
+  return Library.AllMeshMap[FName("#Grid")] != nullptr;
 }
 
 bool MeshUtil::CreateLineMesh(FRenderer &Renderer, FRenderResourceLibrary &Library) {
@@ -46,8 +46,8 @@ bool MeshUtil::CreateLineMesh(FRenderer &Renderer, FRenderResourceLibrary &Libra
                  .VertexCount = static_cast<uint32>(std::size(LineVertices)),
                  .bIsLine = true};
 
-  Library.RegisterMesh(FName("Line"), Renderer.CreateMesh(Desc));
-  return Library.AllMeshMap[FName("Line")] != nullptr;
+  Library.RegisterMesh(FName("#Line"), Renderer.CreateMesh(Desc));
+  return Library.AllMeshMap[FName("#Line")] != nullptr;
 }
 
 bool MeshUtil::CreateMasterYiMesh(FRenderer &Renderer, FRenderResourceLibrary &Library) {
@@ -61,7 +61,7 @@ bool MeshUtil::CreateMasterYiMesh(FRenderer &Renderer, FRenderResourceLibrary &L
       .IndexCount = MasterYiHeadIndexCount,
   };
 
-  Library.RegisterMesh(FName("MasterYi"), Renderer.CreateMesh(MeshDesc));
-  return Library.AllMeshMap[FName("MasterYi")] != nullptr;
+  Library.RegisterMesh(FName("#MasterYi"), Renderer.CreateMesh(MeshDesc));
+  return Library.AllMeshMap[FName("#MasterYi")] != nullptr;
 }
 

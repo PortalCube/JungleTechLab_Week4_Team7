@@ -1024,7 +1024,7 @@ void FRenderer::RenderOutline() {
   Context->PSSetShaderResources(0, 2, SRVs);
 
   FRenderResourceLibrary::Get()
-      .GetPipeline(FName("PostProcess"))
+      .GetPipeline(FName("#PostProcess"))
       ->Bind(*Context.Get());
   Context->Draw(3, 0);
 

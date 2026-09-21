@@ -14,6 +14,6 @@ ACylinderActor::ACylinderActor()
 	SetRootComponent(Object);
 
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-	Object->SetMesh(Registry.Get<UStaticMesh>("Cylinder"));
+	Object->SetMesh(Registry.Get<UStaticMesh>("#Cylinder"));
 	Object->SetMaterial(Registry.Get<UMaterial>("Material/Textured.json"));
 }

@@ -14,7 +14,7 @@ AMasterYi::AMasterYi()
 	if (auto* PrimComp = GetPrimitiveComponent())
 	{
 		FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-		PrimComp->SetMesh(Registry.Get<UStaticMesh>("MasterYi"));
+		PrimComp->SetMesh(Registry.Get<UStaticMesh>("#MasterYi"));
 		PrimComp->SetMaterial(Registry.Get<UMaterial>("Material/Textured.json"));
 		PrimComp->SetRenderType(ERenderType::Texture);
 	}

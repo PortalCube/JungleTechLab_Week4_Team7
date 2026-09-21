@@ -161,7 +161,7 @@ public:
 
     FRenderPipeline* Pipeline = Material.Pipeline;
     if (bApplyViewMode && CurrentRenderMode == EViewModeIndex::VMI_Wireframe) {
-      Pipeline = GetPipeline(FName("Simple_Wireframe")).get();
+      Pipeline = GetPipeline(FName("#Simple_Wireframe")).get();
     }
     if (Pipeline) {
       Pipeline->Bind(*Context.Get());
@@ -193,7 +193,7 @@ public:
       // TODO: 저희 현재 FRenderPipeline* 쓰고 있어서 바꿔야 할겁니다..
       TSharedPtr<FRenderPipeline> Pipeline = TSharedPtr<FRenderPipeline>{ Material.Pipeline };
       if (bApplyViewMode && CurrentRenderMode == EViewModeIndex::VMI_Wireframe) {
-          Pipeline = GetPipeline(FName("Simple_Wireframe"));
+          Pipeline = GetPipeline(FName("#Simple_Wireframe"));
       }
       if (Pipeline) {
           Pipeline->Bind(*Context.Get());

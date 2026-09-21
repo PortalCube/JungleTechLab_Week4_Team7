@@ -117,27 +117,27 @@ void FResourceLoader::LoadDefaultStaticMeshAssets()
 		Registry.Register(ID, StaticMesh);
 	};
 
-	RegisterStaticMeshAsset("Cube", MeshUtil::CreateCubeMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Cylinder", MeshUtil::CreateCylinderMesh(*Renderer, ResourceLibrary, 1.0f, 24u, 1.0f, 1.0f));
-	RegisterStaticMeshAsset("Cone", MeshUtil::CreateConeMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("SpotlightCone", MeshUtil::CreateSpotlightConeMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Arrow", MeshUtil::CreateArrowMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Circle", MeshUtil::CreateCircleMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("RotGizmo", MeshUtil::CreateRotationGizmoMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("SquareArrow", MeshUtil::CreateSquareArrowMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Grid", MeshUtil::CreateGridMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Sphere", MeshUtil::CreateSphereMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Line", MeshUtil::CreateLineMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Plane", MeshUtil::CreatePlaneMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Rect", MeshUtil::CreateRectMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("MasterYi", MeshUtil::CreateMasterYiMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Cube", MeshUtil::CreateCubeMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Cylinder", MeshUtil::CreateCylinderMesh(*Renderer, ResourceLibrary, 1.0f, 24u, 1.0f, 1.0f));
+	RegisterStaticMeshAsset("#Cone", MeshUtil::CreateConeMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#SpotlightCone", MeshUtil::CreateSpotlightConeMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Arrow", MeshUtil::CreateArrowMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Circle", MeshUtil::CreateCircleMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#RotGizmo", MeshUtil::CreateRotationGizmoMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#SquareArrow", MeshUtil::CreateSquareArrowMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Grid", MeshUtil::CreateGridMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Sphere", MeshUtil::CreateSphereMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Line", MeshUtil::CreateLineMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Plane", MeshUtil::CreatePlaneMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Rect", MeshUtil::CreateRectMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#MasterYi", MeshUtil::CreateMasterYiMesh(*Renderer, ResourceLibrary));
 }
 
 void FResourceLoader::LoadCodeGeneratedRenderAssets()
 {
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
 	FRenderResourceLibrary& Library = FRenderResourceLibrary::Get();
-	TSharedPtr<FRenderPipeline> Pipeline = Library.GetPipeline("Outline");
+	TSharedPtr<FRenderPipeline> Pipeline = Library.GetPipeline("#Outline");
 	if (!Pipeline)
 	{
 		throw EngineUtil::CreateError(
@@ -146,23 +146,23 @@ void FResourceLoader::LoadCodeGeneratedRenderAssets()
 
 	UPipeline* PipelineAsset = NewObject<UPipeline>();
 	UPipelineDesc PipelineDesc{};
-	PipelineDesc.ID = "Pipeline/Outline";
-	PipelineDesc.Name = "Outline";
+	PipelineDesc.ID = "#Pipeline/Outline";
+	PipelineDesc.Name = "#Outline";
 	PipelineDesc.Pipeline = Pipeline.get();
 	PipelineAsset->Load(PipelineDesc);
 	Registry.Register(PipelineDesc.ID, PipelineAsset);
 
 	UMaterial* MaterialAsset = NewObject<UMaterial>();
 	UMaterialDesc MaterialDesc{};
-	MaterialDesc.ID = "Material/Outline";
-	MaterialDesc.Name = "Outline";
+	MaterialDesc.ID = "#Material/Outline";
+	MaterialDesc.Name = "#Outline";
 	MaterialDesc.Pipeline = PipelineAsset;
 	MaterialAsset->Load(MaterialDesc);
 	Registry.Register(MaterialDesc.ID, MaterialAsset);
 
 	TSharedPtr<FMaterial> Material = MakeShared<FMaterial>();
 	Material->SetPipeLine(Pipeline.get());
-	Library.RegisterMaterial("Outline", Material);
+	Library.RegisterMaterial("#Outline", Material);
 }
 
 void FResourceLoader::LoadAssets()

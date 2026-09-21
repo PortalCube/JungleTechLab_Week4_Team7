@@ -39,7 +39,7 @@ bool FRenderResourceLibrary::CreateWireframePipeline(FRenderer &Renderer) {
   TSharedPtr<FRenderPipeline> WireframePipeline =
       Renderer.CreateRenderPipeline(Desc, EViewModeIndex::VMI_Wireframe);
   if (WireframePipeline) {
-    AllPipelineMap[FName("Simple_Wireframe")] = WireframePipeline;
+    AllPipelineMap[FName("#Simple_Wireframe")] = WireframePipeline;
   }
 
   return WireframePipeline != nullptr;
@@ -167,7 +167,7 @@ bool FRenderResourceLibrary::CreateOutlinePipeline(FRenderer &Renderer) {
       .BlendState           = std::move(BlendState),
   };
 
-  AllPipelineMap[FName("Outline")] = std::make_shared<FRenderPipeline>(std::move(CreateInfo));
+  AllPipelineMap[FName("#Outline")] = std::make_shared<FRenderPipeline>(std::move(CreateInfo));
   return true;
 }
 
@@ -278,7 +278,7 @@ bool FRenderResourceLibrary::CreatePostProcessPipeline(FRenderer &Renderer) {
       .BlendState           = std::move(BlendState),
   };
 
-  AllPipelineMap[FName("PostProcess")] = std::make_shared<FRenderPipeline>(std::move(CreateInfo));
+  AllPipelineMap[FName("#PostProcess")] = std::make_shared<FRenderPipeline>(std::move(CreateInfo));
   return true;
 }
 

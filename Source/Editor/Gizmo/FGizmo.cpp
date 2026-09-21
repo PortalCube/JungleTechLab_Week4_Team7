@@ -15,9 +15,9 @@
 void FGizmo::Initialize()
 {
 	auto& RenderResources = FRenderResourceLibrary::Get();
-	ArrowMesh = RenderResources.GetMesh(FName("Arrow"));
-	CircleMesh = RenderResources.GetMesh(FName("Circle"));
-	SquareArrowMesh = RenderResources.GetMesh(FName("SquareArrow"));
+	ArrowMesh = RenderResources.GetMesh(FName("#Arrow"));
+	CircleMesh = RenderResources.GetMesh(FName("#Circle"));
+	SquareArrowMesh = RenderResources.GetMesh(FName("#SquareArrow"));
 
 	Material = RenderResources.GetMaterial(FName("Gizmo"));
 }

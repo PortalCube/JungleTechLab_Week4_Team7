@@ -39,7 +39,7 @@ void UTextInstanceComponent::Initialize() {
   Super::Initialize();
 
   FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-  SetMesh(Registry.Get<UStaticMesh>("Rect"));
+  SetMesh(Registry.Get<UStaticMesh>("#Rect"));
   SetMaterial(Registry.Get<UMaterial>("Material/Instance_Text_Bazzi.json"));
   SetFont("bazziotf");
 
