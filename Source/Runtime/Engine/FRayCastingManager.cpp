@@ -56,7 +56,8 @@ bool FRayCastingManager::RayIntersectsMeshes(
 			continue;
 		}
 
-		auto Mesh = FRenderResourceLibrary::Get().GetMesh(Component->GetPureRenderData().MeshId);
+		const UStaticMesh* MeshAsset = Component->GetRenderData(Camera).Mesh;
+		const FMesh* Mesh = MeshAsset ? MeshAsset->Get() : nullptr;
 		if (!Mesh)
 		{
 			continue;

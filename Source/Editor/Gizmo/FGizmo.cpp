@@ -207,14 +207,14 @@ void FGizmo::EndInteraction()
 
 void FGizmo::DrawAxis(FRenderer& Renderer, EGizmoHandle Handle, const FMatrix& MVP) const
 {
-	constexpr FVector Color[3] = {
-		FVector{ 0.8f, 0.0f, 0.0f },
-		FVector{ 0.0f, 0.8f, 0.0f },
-		FVector{ 0.0f, 0.0f, 0.8f },
+	constexpr FVector4 Color[3] = {
+		{ 0.8f, 0.0f, 0.0f, 1.0f },
+		{ 0.0f, 0.8f, 0.0f, 1.0f },
+		{ 0.0f, 0.0f, 0.8f, 1.0f },
 	};
 
-	constexpr FVector ActiveColor = FVector{ 1.0f, 1.0f, 0.1f };
-	constexpr FVector HoverColor = FVector{ 0.7f, 0.7f, 0.0f };
+	constexpr FVector4 ActiveColor { 1.0f, 1.0f, 0.1f, 1.0f };
+	constexpr FVector4 HoverColor { 0.7f, 0.7f, 0.0f, 1.0f };
 
 	TSharedPtr<FMesh> GizmoMesh;
 	TSharedPtr<FMaterial> GizmoMaterial;
@@ -248,8 +248,7 @@ void FGizmo::DrawAxis(FRenderer& Renderer, EGizmoHandle Handle, const FMatrix& M
 
 	FObjectConstants Constants{};
 	Constants.MVP = MVP;
-	Constants.ColorOverride = DrawColor;
-	Constants.ColorOverrideAmount = 1.0f;
+	Constants.Color = DrawColor;
 	Constants.DisableShading = 1.0f;
 	Renderer.Draw(*GizmoMesh, *GizmoMaterial, Constants);
 }

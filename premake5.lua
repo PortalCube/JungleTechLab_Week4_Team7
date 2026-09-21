@@ -1,6 +1,6 @@
 workspace "MyEngine"
     architecture "x86_64"
-    configurations { "Debug", "Release" }
+    configurations { "Debug", "Release", "ObjViewer"  }
     platforms { "x86", "x64" }
     startproject "MyEngine"
     system "windows"
@@ -23,6 +23,9 @@ externalproject "DirectXTK_Desktop_2026"
     uuid "E0B52AE7-E160-4D32-BF3F-910B785E5A8E"
     kind "StaticLib"
     language "C++"
+    configmap {
+        ["ObjViewer"] = "Debug"
+    }
 
 project "MyEngine"
     uuid "05383B45-2B78-451C-9197-8B61474A12BC"
@@ -33,6 +36,8 @@ project "MyEngine"
     staticruntime "Off"
 
     files {
+	"**.h",
+	"**.cpp",
         "Source/**.h",
         "Source/**.hpp",
         "Source/**.cpp",
@@ -59,8 +64,7 @@ project "MyEngine"
         "DirectXTK_Desktop_2026",
         "user32",
         "d3d11",
-        "dxgi",
-        "d3dcompiler"
+        "dxgi"
     }
 
     -- 미리 컴파일된 헤더로 컴파일 시간 최적화
@@ -74,12 +78,16 @@ project "MyEngine"
     multiprocessorcompile "On"
     buildoptions { "/utf-8", "/FS" }
     linkoptions { "/DEBUG" }
-
-    -- 텍스쳐 DDS 빌드 스크립트
-    postbuildmessage "Copying textures to output directory..."
+	
+	-- 프리 빌드, 포스트 빌드 스크립트
+	prebuildmessage "빌드 전처리 단계를 실행합니다..."
+	prebuildcommands {
+		'powershell -NoProfile -ExecutionPolicy Bypass -File "%{wks.location}Scripts/PreBuild.ps1"'
+	}
+	
+	postbuildmessage "빌드 후처리 단계를 실행합니다..."
     postbuildcommands {
-        '{COPYDIR} "%{wks.location}Resources/Textures" "%{cfg.targetdir}/Textures"',
-        '{COPYDIR} "%{wks.location}Resources/Edit" "%{cfg.targetdir}/Edit"'
+		'powershell -NoProfile -ExecutionPolicy Bypass -File "%{wks.location}Scripts/PostBuild.ps1" -TargetDirectory "%{cfg.targetdir}"'
     }
 
     filter "configurations:Debug"
@@ -92,11 +100,9 @@ project "MyEngine"
         symbols "On"
         linktimeoptimization "On"
 
-    filter { "configurations:Debug", "platforms:x64" }
-        prebuildmessage "Converting PNG textures to DDS..."
-        prebuildcommands {
-            'call "%{wks.location}ConvertTextures.bat"'
-        }
+   filter "configurations:ObjViewer"
+        defines { "_OBJVIEWER" }
+        symbols "On"
 
     filter "platforms:x86"
         defines { "WIN32" }
@@ -116,13 +122,13 @@ project "MyEngine"
         shadertype "Vertex"
         shadermodel "5.0"
         shaderentry "MainVS"
-        shaderobjectfileoutput "%{cfg.targetdir}/Shader/%{file.basename}.cso"
+        shaderobjectfileoutput "%{wks.location}/Content/Shader/%{file.basename}.cso"
 
     filter "files:**PS.hlsl"
         shadertype "Pixel"
         shadermodel "5.0"
         shaderentry "MainPS"
-        shaderobjectfileoutput "%{cfg.targetdir}/Shader/%{file.basename}.cso"
+        shaderobjectfileoutput "%{wks.location}/Content/Shader/%{file.basename}.cso"
 
     filter "files:**.hlsli"
         buildaction "None"

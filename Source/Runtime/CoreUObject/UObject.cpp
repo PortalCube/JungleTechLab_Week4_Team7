@@ -26,10 +26,6 @@ void UObject::Deserialize(const FArchive& Archive)
 	UUID = Archive.GetInt32("UUID");
 }
 
-void UObject::AddReferencedObjects(FReferenceCollector& Collector)
-{
-}
-
 void* UObject::operator new(std::size_t Size)
 {
 	// void* Memory = ::operator new(Size);

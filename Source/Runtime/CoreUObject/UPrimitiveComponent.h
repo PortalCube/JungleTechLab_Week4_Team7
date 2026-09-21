@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Runtime/Engine/FCamera.h"
-#include "Runtime/Geometry/FAxisAlignedBoundingBox.h"
-#include "Runtime/Rendering/FRenderQueue.h"
+#include "Runtime/Engine/FRenderData.h"
 #include "Runtime/Engine/ShowFlags.h"
+#include "Runtime/Math/FMatrix.h"
+#include "Runtime/Geometry/FAxisAlignedBoundingBox.h"
 #include "USceneComponent.h"
 
 class UPrimitiveComponent : public USceneComponent {
@@ -15,52 +16,28 @@ public:
     void Register(UScene& InScene) override;
     void Unregister() override;
 
+    void SetMesh(UStaticMesh* Mesh) { RenderData.Mesh = Mesh; }
+    void SetMaterial(UMaterial* Material, int32 Index = 0);
+    void SetTexture(UTexture* Texture, int32 Index = 0);
+    void SetRenderType(ERenderType Type) { RenderData.Type = Type; }
+    void SetColor(const FVector4& Color, int32 Index = 0);
+
+    virtual const FRenderData& GetRenderData(const FCamera& Camera) const { return RenderData; }
     virtual FMatrix GetRenderMatrix(const FCamera& Camera) const { return GetGlobalTransform().ToMatrix(); }
-    virtual void SetRelativeTransform(const FTransform& RelativeTransform) override;
 
-    // FRenderData 조회 및 설정
-    virtual const FRenderData& GetRenderData(const FCamera& Camera){ return RenderData; }
-    const FRenderData& GetPureRenderData() const { return RenderData; }
-
-
-    // ID 접근자
-    void SetMeshID(const FName& InMeshId)         { RenderData.MeshId = InMeshId; }
-    void SetMaterialID(const FName& InMaterialId) { RenderData.MaterialId = InMaterialId; }
-    void SetTextureID(const FName& InTextureId)   { RenderData.TextureId = InTextureId; }
-    void SetRenderType(ERenderType InType)       { RenderData.type = InType; }
-    const FName& GetMeshID() const               { return RenderData.MeshId; }
-    const FName& GetMaterialID() const           { return RenderData.MaterialId; }
-    const FName& GetTextureID() const            { return RenderData.TextureId; }
-    ERenderType GetRenderType() const            { return RenderData.type; }
-
-    // 충돌 판정용 바운드 계산
-    virtual FAxisAlignedBoundingBox CalcLocalBounds();
-
-    // 텍스처 이름으로 머티리얼 텍스처 교체
-    bool SetTextureByName(const FName& InTextureName);
-
-    // 색상 설정 및 조회
-    const FVector& GetColor() const { return Color; }
-    void SetColor(const FVector& InColor) {
-        Color = InColor;
-        ColorAmount = 1.0f;
-    }
-    float GetColorAmount() const { return ColorAmount; }
-    void SetColorAmount(float InAmount) { ColorAmount = InAmount; }
+    virtual FAxisAlignedBoundingBox CalcLocalBounds() { return {}; }
 
     virtual EEngineShowFlags GetShowFlag() const { return EEngineShowFlags::SF_Primitives; }
-
-    FMatrix GetModelMatrix();
 
 protected:
     UPrimitiveComponent() = default;
 
-    FRenderData RenderData = {
-       .MeshId = FName("None"),
-       .MaterialId = FName("None"),
-       .TextureId = FName("None"),
-       .type = ERenderType::None,
-       .bSelected = false,
+    mutable FRenderData RenderData
+    {
+       .Mesh = nullptr,
+       .Materials = {},
+       .ModelMatrix = FMatrix::Identity,
+       .Type = ERenderType::None,
     };
 
     FVector Color{1.0f, 1.0f, 1.0f};

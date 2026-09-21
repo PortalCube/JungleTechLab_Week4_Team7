@@ -3,13 +3,13 @@
 #include "Runtime/Math/FMatrix.h"
 #include "Runtime/Math/FVector.h"
 #include "Runtime/Math/FVector2.h"
+#include "Runtime/Math/FVector4.h"
 
 
 // b0에 바인딩
 struct FObjectConstants {
   FMatrix MVP;
-  FVector ColorOverride{0.0f, 0.0f, 0.0f};
-  float ColorOverrideAmount = 0.0f;
+  FVector4 Color{0.0f, 0.0f, 0.0f, 0.0f};
   FVector2 UVScale{1.0f, 1.0f};
   FVector2 UVOffset{0.0f, 0.0f};
   FMatrix World = FMatrix::GetIdentity();

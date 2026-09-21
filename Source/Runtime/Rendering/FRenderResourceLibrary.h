@@ -11,7 +11,6 @@
 #include "Runtime/Core/TArray.h"
 #include "Runtime/Core/TMap.h"
 #include "Vertices.h"
-#include "FFont.h"
 
 class FRenderer;
 class FTexture;
@@ -38,15 +37,12 @@ public:
   // 폰트 보관 맵
   TMap<FName, TSharedPtr<FFont>> AllFontMap;
 
-  // 에디터용 아이콘 텍스쳐 보관 맵
-  TMap<FString, TSharedPtr<FTexture>> AllEditorTextureMap;
-
   // 인스턴싱 배치 배열 맵
   TMap<FInstanceBatchKey, TArray<FInstanceData>> AllInstancingArrayMap;
 
   // 인스턴싱 배열 조회
-  TArray<FInstanceData>& GetInstancingArray(const FName& MatId, const FName& MeshId) {
-    return AllInstancingArrayMap[{MatId, MeshId}];
+  TArray<FInstanceData>& GetInstancingArray(const FMesh* Mesh, const FMaterial* Material) {
+    return AllInstancingArrayMap[{Mesh, Material}];
   }
 
   // 파이프라인 조회
@@ -57,20 +53,16 @@ public:
     return nullptr;
   }
 
+  void RegisterPipeline(const FName& Id, TSharedPtr<FRenderPipeline> Pipeline) {
+    AllPipelineMap[Id] = std::move(Pipeline);
+  }
+
   // 머티리얼 조회
   [[nodiscard]] TSharedPtr<FMaterial> GetMaterial(const FName& Id) const {
     auto it = AllMaterialMap.find(Id);
     if (it != AllMaterialMap.end())
       return it->second;
     return nullptr;
-  }
-
-  // 편집용 머티리얼 조회
-  [[nodiscard]] TSharedPtr<FMaterial> GetEditMaterial(const FName& Id) const {
-      auto it = AllMaterialMap.find(Id);
-      if (it != AllMaterialMap.end())
-          return it->second;
-      return nullptr;
   }
 
   // 메쉬 조회
@@ -95,21 +87,10 @@ public:
     AllTextureMap[name] = texture;
   }
 
-  void RegisterEditTexture(const FString &name, TSharedPtr<FTexture> texture) {
-    AllEditorTextureMap[name] = texture;
-  }
-
   // 텍스처 조회
   [[nodiscard]] TSharedPtr<FTexture> GetTexture(const FName &name) const {
     auto it = AllTextureMap.find(name);
     if (it != AllTextureMap.end())
-      return it->second;
-    return nullptr;
-  }
-
-  [[nodiscard]] TSharedPtr<FTexture> GetEditTexture(const FString &name) const {
-    auto it = AllEditorTextureMap.find(name);
-    if (it != AllEditorTextureMap.end())
       return it->second;
     return nullptr;
   }
@@ -130,14 +111,20 @@ public:
     return AllMaterialMap;
   }
 
+  const TMap<FName, TSharedPtr<FRenderPipeline>>& GetAllPipelines() const {
+    return AllPipelineMap;
+  }
+
+  const TMap<FName, TSharedPtr<FTexture>>& GetAllTextures() const {
+    return AllTextureMap;
+  }
+
   // 렌더러 참조 조회
   FRenderer *GetRenderer() const { return RendererRef; }
 
   // 정점 배열 메쉬 캐싱 생성
   TSharedPtr<FMesh> GetOrCreateMesh(const FName &ID,
                                     const TArray<FVertexData> &vertices);
-
-  
 
   [[nodiscard]] TSharedPtr<FFont> GetFont(const FName& InName) const {
       auto it = AllFontMap.find(InName);
@@ -146,40 +133,12 @@ public:
       return nullptr;
   }
 
-
 private:
   bool InitializePipelines(FRenderer &Renderer);
-  bool CreateSolidWireframePipeline(FRenderer &Renderer);
+  bool CreateWireframePipeline(FRenderer &Renderer);
   bool CreateOutlinePipeline(FRenderer &Renderer);
   bool CreatePostProcessPipeline(FRenderer &Renderer);
 
-  bool CreateCubeMesh(FRenderer &Renderer);
-  bool CreateCylinderMesh(FRenderer &Renderer, float Height, uint32 SliceCount,
-                          float TopRadius, float BottomRadius);
-  bool CreateConeMesh(FRenderer &Renderer);
-  bool CreateSpotlightConeMesh(FRenderer &Renderer);
-  bool CreateArrowMesh(FRenderer &Renderer);
-  bool CreateCircleMesh(FRenderer &Renderer);
-  bool CreateRotationGizmoMesh(FRenderer &Renderer);
-  bool CreateSquareArrowMesh(FRenderer &Renderer);
-  bool CreateGridMesh(FRenderer &Renderer);
-  bool CreateSphereMesh(FRenderer &Renderer);
-  bool CreateLineMesh(FRenderer &Renderer);
-  bool CreatePlaneMesh(FRenderer &Renderer);
-  bool CreateRectMesh(FRenderer &Renderer);
-  bool CreateMasterYiMesh(FRenderer &Renderer);
-  bool CreateMasteryMesh(FRenderer &Renderer) { return CreateMasterYiMesh(Renderer); }
-
   bool CreateInstancingArrayMap();
-  bool CreateOutlinePipeline(); //아웃라인용
-
-  // 텍스처 및 머티리얼 일괄 초기화
-  bool CreateTextures(FRenderer &Renderer);
-  bool InitializeMaterials(FRenderer &Renderer);
-  bool CreateEditTextures(FRenderer &Renderer);
-
-  // 폰트 일괄 초기화
-  bool CreateFonts(FRenderer& Renderer);
-
   FRenderer *RendererRef = nullptr;
 };

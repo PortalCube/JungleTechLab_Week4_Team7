@@ -1,6 +1,8 @@
 #include "ASphereActor.h"
 #include "Runtime/CoreUObject/UClass.h"
 #include "Runtime/CoreUObject/UObjectGlobals.h"
+#include "Runtime/CoreUObject/Mesh/UStaticMeshComponent.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 
 IMPLEMENT_UCLASS(ASphereActor, AActor)
 UCLASS_META(ASphereActor, DisplayName, "Sphere Actor")
@@ -8,28 +10,10 @@ UCLASS_META(ASphereActor, DisplayName, "Sphere Actor")
 ASphereActor::ASphereActor()
 {
 	// 기본 구체 컴포넌트 장착
-	CreateRootComponent(USphereComp::StaticClass());
-	SetColor(FVector{ 1.0f, 1.0f, 1.0f });
-}
+	UStaticMeshComponent* Object = NewObject<UStaticMeshComponent>();
+	SetRootComponent(Object);
 
-void ASphereActor::SetColor(const FVector& InColor)
-{
-	if (auto* Comp = GetSphereComponent())
-	{
-		Comp->SetColor(InColor);
-	}
-}
-
-FVector ASphereActor::GetColor() const
-{
-	if (auto* Comp = GetSphereComponent())
-	{
-		return Comp->GetColor();
-	}
-	return FVector{ 1.0f, 1.0f, 1.0f };
-}
-
-USphereComp* ASphereActor::GetSphereComponent() const
-{
-	return RootComponent ? RootComponent->Cast<USphereComp>() : nullptr;
+	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+	Object->SetMesh(Registry.Get<UStaticMesh>("Sphere"));
+	Object->SetMaterial(Registry.Get<UMaterial>("Material/Textured.json"));
 }

@@ -7,27 +7,21 @@
 #include "Runtime/Core/IntTypes.h"
 #include "Runtime/Core/PointerTypes.h"
 #include "Runtime/Core/TMap.h"
+#include "Runtime/Material/FTextureSamplerDesc.h"
 #include "Runtime/Math/FVector2.h"
 #include "Runtime/Rendering/FLineBatcher.h"
-#include "Runtime/Core/IntTypes.h"
 #include "ShaderConstants.h"
 #include "Vertices.h"
 
 #include <Windows.h>
 #include <d3d11.h>
-#include <filesystem>
 #include <wrl/client.h>
 
 class FTexture;
 struct FTextureDesc;
 struct FCamera;
 class UTextInstanceComponent;
-
-inline FWString GetExecutableDirectory() {
-  wchar_t Buffer[256];
-  GetModuleFileNameW(nullptr, Buffer, 256);
-  return std::filesystem::path(Buffer).parent_path();
-}
+struct FDrawCommand;
 
 #include "Runtime/Engine/ShowFlags.h"
 
@@ -50,9 +44,6 @@ public:
   TSharedPtr<FMesh> CreateMesh(const FMeshDesc &Desc);
   [[nodiscard]]
   TSharedPtr<FMesh> CreateDynamicMesh(const FMeshDesc &Desc); // 텍스트 렌더링용
-  [[nodiscard]]
-  TSharedPtr<FMaterial> CreateMaterial(const FMaterialDesc &Desc);
-
   void GetDeviceAndContext_ImplDX11(ID3D11Device *&DeviceOut,
                                     ID3D11DeviceContext *&ContextOut);
   [[nodiscard]] ID3D11Device *GetDevice() const { return Device.Get(); }
@@ -75,19 +66,32 @@ public:
   void UpdateLightConstants(const FLightConstants &Constants, const EViewModeIndex InMode);
 
   // 텍스트 인스턴싱
-  void AddTextInstanceArray(const TArray<FInstanceData>& Instances, const FName& MeshId, const FName& MaterialId);
+  void AddTextInstanceArray(const FDrawCommand& Command);
   void DrawInstances(const FCamera& Camera);
-  void DrawTextInstances(const FCamera& Camera, const FName& MeshId, const FName& MaterialId);
+  void DrawTextInstances(const FDrawCommand& Command);
   void ClearTextInstances();
+
+  void Draw(const FDrawCommand& Command, uint32 Slot = 0,
+            bool bApplyViewMode = true);
 
   void RenderOutline();
   ID3D11RenderTargetView* GetBackBuffer() { return BackBufferRTV.Get(); }
+  ID3D11DepthStencilView* GetDepthStencilView() { return DepthStencilView.Get(); }
 
 
 private:
   bool InitializeDeviceAndSwapChain(HWND Window);
   bool InitializeBackBufferAndDepthStencil();
   bool InitializeConstantBuffers();
+
+  Microsoft::WRL::ComPtr<ID3D11RasterizerState>
+  GetOrCreateRasterizerState(const FRasterizerDesc& Desc);
+  Microsoft::WRL::ComPtr<ID3D11DepthStencilState>
+  GetOrCreateDepthStencilState(const FDepthStencilDesc& Desc);
+  Microsoft::WRL::ComPtr<ID3D11BlendState>
+  GetOrCreateBlendState(const FBlendDesc& Desc);
+  Microsoft::WRL::ComPtr<ID3D11SamplerState>
+  GetOrCreateSamplerState(const FTextureSamplerDesc& Desc);
 
 private:
   FLineBatcher LineBatcher;
@@ -116,6 +120,11 @@ private:
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> EditorViewPortSRV;
   Microsoft::WRL::ComPtr<ID3D11Texture2D> renderTexture;
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> DepthStencilSRV;
+
+  TMap<FRasterizerDesc, Microsoft::WRL::ComPtr<ID3D11RasterizerState>> RasterizerStateMap;
+  TMap<FDepthStencilDesc, Microsoft::WRL::ComPtr<ID3D11DepthStencilState>> DepthStencilStateMap;
+  TMap<FBlendDesc, Microsoft::WRL::ComPtr<ID3D11BlendState>> BlendStateMap;
+  TMap<FTextureSamplerDesc, Microsoft::WRL::ComPtr<ID3D11SamplerState>> SamplerStateMap;
 
   bool InitializeEditorViewportRenderTarget();
 
@@ -148,9 +157,9 @@ public:
   {
     UpdateBuffer(Constants, Slot);
 
-    TSharedPtr<FRenderPipeline> Pipeline = Material.Pipeline;
+    FRenderPipeline* Pipeline = Material.Pipeline;
     if (bApplyViewMode && CurrentRenderMode == EViewModeIndex::VMI_Wireframe) {
-      Pipeline = GetPipeline(FName("Simple_Wireframe"));
+      Pipeline = GetPipeline(FName("Simple_Wireframe")).get();
     }
     if (Pipeline) {
       Pipeline->Bind(*Context.Get());
@@ -166,6 +175,38 @@ public:
     }
   }
 
+  template <typename TConstants>
+  void DrawSection(
+      const FMesh& Mesh,
+      const FMaterial& Material,
+      const TConstants& Constants,
+      uint32 StartIndex,
+      uint32 IndexCount,
+      uint32 Slot = 0,
+      bool bApplyViewMode = true
+  )
+  {
+      UpdateBuffer(Constants, Slot);
+
+      // TODO: 저희 현재 FRenderPipeline* 쓰고 있어서 바꿔야 할겁니다..
+      TSharedPtr<FRenderPipeline> Pipeline = TSharedPtr<FRenderPipeline>{ Material.Pipeline };
+      if (bApplyViewMode && CurrentRenderMode == EViewModeIndex::VMI_Wireframe) {
+          Pipeline = GetPipeline(FName("Simple_Wireframe"));
+      }
+      if (Pipeline) {
+          Pipeline->Bind(*Context.Get());
+      }
+
+      Material.BindResources(*Context.Get());
+      Mesh.BindResources(*Context.Get());
+
+      if (Mesh.HasIndices()) {
+          Context->DrawIndexed(IndexCount, StartIndex, 0);
+      }
+      else {
+          Context->Draw(Mesh.VertexCount, 0);
+      }
+  }
 
 private:
   // 어느 상수 타입이든 b0 버퍼 하나에 써 넣는다.
@@ -179,19 +220,13 @@ private:
     // MVP를 가진 상수 타입에만 적용한다(없는 타입은 그대로 통과).
     TConstants ShaderConstants = Constants;
     if constexpr (requires { ShaderConstants.MVP; }) {
-      static const FMatrix UnrealClipToD3DClip{
-          FVector{0.0f, 0.0f, 1.0f}, FVector{1.0f, 0.0f, 0.0f},
-          FVector{0.0f, 1.0f, 0.0f}, FVector{0.0f, 0.0f, 0.0f}};
-      ShaderConstants.MVP *= UnrealClipToD3DClip;
+        ShaderConstants.MVP = ShaderConstants.MVP.ToD3DMatrix();
     }
 
     // 언리얼 Clip -> D3D Clip 좌표 변환.
     // MVP를 가진 상수 타입에만 적용한다(없는 타입은 그대로 통과).
     if constexpr (requires { ShaderConstants.VP; }) {
-      static const FMatrix UnrealClipToD3DClip{
-          FVector{0.0f, 0.0f, 1.0f}, FVector{1.0f, 0.0f, 0.0f},
-          FVector{0.0f, 1.0f, 0.0f}, FVector{0.0f, 0.0f, 0.0f}};
-      ShaderConstants.VP *= UnrealClipToD3DClip;
+        ShaderConstants.VP = ShaderConstants.VP.ToD3DMatrix();
     }
 
     D3D11_MAPPED_SUBRESOURCE Mapped{};

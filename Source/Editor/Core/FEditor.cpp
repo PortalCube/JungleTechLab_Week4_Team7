@@ -5,16 +5,13 @@
 #include "Runtime/Actors/ACylinderActor.h"
 #include "Runtime/Actors/ABillboardActor.h"
 #include "Runtime/Actors/ASpotlightActor.h"
-#include "Runtime/CoreUObject/UCubeComp.h"
-#include "Runtime/CoreUObject/UCylinderComp.h"
 #include "Runtime/CoreUObject/UObject.h"
-#include "Runtime/CoreUObject/USphereComp.h"
 #include "Runtime/Engine/FTimeManager.h"
 #include "Runtime/Input/FInputManager.h"
 #include "Runtime/Actors/AInstancingActor.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Math/Random.h"
-#include "Runtime/CoreUObject/FGarbageCollector.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 #include <numbers>
 
 
@@ -26,8 +23,9 @@ void FEditor::Initialize(USceneManager *SceneManager) {
   {
     SelectedActorTextComp->Initialize();
     SelectedActorTextComp->SetInheritRotation(false);
-    SelectedActorTextComp->SetMeshID(FName("Rect"));
-    SelectedActorTextComp->SetMaterialID(FName("SelectedActor_Text"));
+    FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+    SelectedActorTextComp->SetMesh(Registry.Get<UStaticMesh>("Rect"));
+    SelectedActorTextComp->SetMaterial(Registry.Get<UMaterial>("Material/SelectedActor_Text.json"));
     SelectedActorTextComp->SetFont(FName("bazziotf"));
   }
   this->SceneManager = SceneManager;

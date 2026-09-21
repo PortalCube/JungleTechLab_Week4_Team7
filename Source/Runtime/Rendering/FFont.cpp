@@ -1,9 +1,45 @@
 #include "FFont.h"
+#include "Runtime/Engine/FArchive.h"
 #include "Runtime/Core/IntTypes.h"
-#include "Runtime/Core/FString.h"
-#include "ThirdParty/Json/json.hpp"
-#include <filesystem>
-#include <fstream>
+
+FFont::FFont(const FArchive& Archive)
+{
+	const FArchive AtlasArchive = Archive.GetArchive("atlas");
+	const float AtlasWidth = static_cast<float>(AtlasArchive.GetUInt32("width"));
+	const float AtlasHeight = static_cast<float>(AtlasArchive.GetUInt32("height"));
+
+	for (const FArchive& GlyphArchive : Archive.GetArchiveArray("glyphs"))
+	{
+		FCharacterInfo Info{};
+		const uint32 Unicode = GlyphArchive.GetUInt32("unicode");
+		Info.advance = GlyphArchive.GetFloat("advance");
+
+		if (!GlyphArchive.IsNull("planeBounds"))
+		{
+			const FArchive Bounds = GlyphArchive.GetArchive("planeBounds");
+			Info.planeLeft = Bounds.GetFloat("left");
+			Info.planeTop = Bounds.GetFloat("top");
+			Info.planeRight = Bounds.GetFloat("right");
+			Info.planeBottom = Bounds.GetFloat("bottom");
+		}
+
+		if (!GlyphArchive.IsNull("atlasBounds"))
+		{
+			const FArchive Bounds = GlyphArchive.GetArchive("atlasBounds");
+			const float Left = Bounds.GetFloat("left");
+			const float Top = Bounds.GetFloat("top");
+			const float Right = Bounds.GetFloat("right");
+			const float Bottom = Bounds.GetFloat("bottom");
+
+			Info.u = Left / AtlasWidth;
+			Info.v = Top / AtlasHeight;
+			Info.width = (Right - Left) / AtlasWidth;
+			Info.height = (Bottom - Top) / AtlasHeight;
+		}
+
+		CharInfoMap.emplace(static_cast<char32_t>(Unicode), Info);
+	}
+}
 
 void FFont::InitializeForASCII(float InNumberOfLine)
 {
@@ -21,68 +57,6 @@ void FFont::InitializeForASCII(float InNumberOfLine)
 		ci.height = uvSize;
 
 		CharInfoMap[static_cast<char>(i)] = ci;
-	}
-}
-
-void FFont::Deserialize(const FWString& path)
-{
-	std::ifstream f(path);
-	if (!f)
-	{
-		return;
-	}
-
-	nlohmann::json data;
-	f >> data;
-
-	// atlas 자체 정보 
-	FString type = data["atlas"]["type"].get<std::string>();
-	uint32 distanceRange = data["atlas"]["distanceRange"].get<uint32>();
-	uint32 dixtanceRangeMiddle = data["atlas"]["distanceRangeMiddle"].get<uint32>();
-	uint32 size = data["atlas"]["size"].get<uint32>();
-	uint32 width = data["atlas"]["width"].get<uint32>();
-	uint32 height = data["atlas"]["height"].get<uint32>();
-	FString yOrigin = data["atlas"]["yOrigin"].get<std::string>();
-
-	// metrics
-	uint32 emSize = data["metrics"]["emSize"].get<uint32>();
-	float lineHeight = data["metrics"]["lineHeight"].get<float>();
-	float ascender = data["metrics"]["ascender"].get<float>();
-	float descender = data["metrics"]["descender"].get<float>();
-	float underlineY = data["metrics"]["underlineY"].get<float>();
-	float underlineThickness = data["metrics"]["underlineThickness"].get<float>();
-
-	// 문자
-	for (const auto& glyph : data["glyphs"])
-	{
-		FCharacterInfo info{};
-
-		uint32 unicode = glyph["unicode"].get<uint32>();
-		info.advance = glyph["advance"].get<float>();
-
-		if (glyph.contains("planeBounds"))
-		{
-			info.planeLeft = glyph["planeBounds"]["left"].get<float>();
-			info.planeTop = glyph["planeBounds"]["top"].get<float>();
-			info.planeRight = glyph["planeBounds"]["right"].get<float>();
-			info.planeBottom = glyph["planeBounds"]["bottom"].get<float>();
-		}
-
-		if (glyph.contains("atlasBounds"))
-		{
-			float atlLeft = glyph["atlasBounds"]["left"].get<float>();
-			float atlTop = glyph["atlasBounds"]["top"].get<float>();
-			float atlRight = glyph["atlasBounds"]["right"].get<float>();
-			float atlBot = glyph["atlasBounds"]["bottom"].get<float>();
-
-
-			info.u = atlLeft / width;
-			info.v = atlTop / height;
-			info.width = (atlRight - atlLeft) / width;
-			info.height = (atlBot - atlTop) / height;
-		}
-
-		CharInfoMap.emplace(static_cast<char32_t>(unicode), info);
 	}
 }
 

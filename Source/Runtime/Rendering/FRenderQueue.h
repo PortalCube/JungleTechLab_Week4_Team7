@@ -1,32 +1,19 @@
 #pragma once
 
+#include "Runtime/Engine/FRenderData.h"
 #include "FMesh.h"
 #include "FMaterial.h"
-#include "FRenderResourceLibrary.h"
 #include "ShaderConstants.h"
 #include "Runtime/Core/TArray.h"
-#include "Runtime/Core/PointerTypes.h"
 
 // 렌더링에 필요한 드로우 정보
 
-enum class ERenderType
+struct FDrawCommand
 {
-    Primitive,
-    Texture,
-    Text,
-    Instancing,
-    Spotlight,
-    None
-};
-
-struct FRenderData
-{
-    FName MeshId{"None"};
-    FName MaterialId{"None"};
-    FName TextureId{"None"};
-    FObjectConstants Constants;
-    ERenderType type = ERenderType::Primitive;
-    bool bSelected = false;
+    FMesh* Mesh = nullptr;
+    TArray<FMaterial> Materials;
+    FObjectConstants Constants{};
+    ERenderType Type = ERenderType::Primitive;
     TArray<FInstanceData> Instances;
 };
 
@@ -35,9 +22,9 @@ class FRenderQueue
 {
 public:
     // 아이템 추가
-    void Push(const FRenderData& Data)
+    void Push(const FDrawCommand& Data)
     {
-        switch (Data.type)
+        switch (Data.Type)
         {
         case ERenderType::Primitive:
             primRenderQ.push_back(Data);
@@ -59,13 +46,12 @@ public:
         }
     }
 
-
     // 수집된 아이템 조회
-    const TArray<FRenderData>& GetPrimRenderQ() const { return primRenderQ; }
-    const TArray<FRenderData>& GetTextureRenderQ() const { return TextureRenderQ; }
-    const TArray<FRenderData>& GetTextRenderQ() const { return TextRenderQ; }
-    const TArray<FRenderData>& GetInstancingRenderQ() const { return InstancingRenderQ; }
-    const TArray<FRenderData>& GetSpotlightRenderQ() const { return SpotlightRenderQ; }
+    const TArray<FDrawCommand>& GetPrimRenderQ() const { return primRenderQ; }
+    const TArray<FDrawCommand>& GetTextureRenderQ() const { return TextureRenderQ; }
+    const TArray<FDrawCommand>& GetTextRenderQ() const { return TextRenderQ; }
+    const TArray<FDrawCommand>& GetInstancingRenderQ() const { return InstancingRenderQ; }
+    const TArray<FDrawCommand>& GetSpotlightRenderQ() const { return SpotlightRenderQ; }
 
     // 프레임 끝에 호출
     void Clear() { 
@@ -83,9 +69,9 @@ public:
     bool IsSpotlightRQEmpty() const { return SpotlightRenderQ.empty(); }
 
 private:
-    TArray<FRenderData> primRenderQ;
-    TArray<FRenderData> TextureRenderQ;
-    TArray<FRenderData> TextRenderQ;
-    TArray<FRenderData> InstancingRenderQ;
-    TArray<FRenderData> SpotlightRenderQ;
+    TArray<FDrawCommand> primRenderQ;
+    TArray<FDrawCommand> TextureRenderQ;
+    TArray<FDrawCommand> TextRenderQ;
+    TArray<FDrawCommand> InstancingRenderQ;
+    TArray<FDrawCommand> SpotlightRenderQ;
 };

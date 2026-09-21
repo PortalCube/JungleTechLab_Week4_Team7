@@ -1,6 +1,8 @@
 #pragma once
 
-#include "EBlendMode.h"
+#include "Runtime/Material/FBlendDesc.h"
+#include "Runtime/Material/FRasterizerDesc.h"
+#include "Runtime/Material/FDepthStencilDesc.h"
 #include "Runtime/Core/FString.h"
 #include "Vertices.h"
 #include <d3d11.h>
@@ -9,21 +11,31 @@
 #include "Runtime/Core/IntTypes.h"
 #include "Runtime/CoreUObject/FStatsManager.h"
 
-// 내장 파이프라인 식별자 전방선언
-
-struct FRenderPipelineDesc {
-  FWString VertexShaderFileName;
-  FWString PixelShaderFileName;
-  bool bEnableDepthTest = true;
-  bool bEnableDepthWrite = true;               //기본 불투명
-  D3D11_CULL_MODE CullMode = D3D11_CULL_BACK;  //기본 뒷면 제거
-  EBlendMode BlendMode = EBlendMode::Opaque;
-  bool bIsInstancing = false;				   //기본 노 인스턴스
-
-  bool operator==(const FRenderPipelineDesc &) const = default;
+struct FRenderPipelineDesc
+{
+  FString VertexShaderFilePath;
+  FString PixelShaderFilePath;
+  FBlendDesc Blend;
+  FRasterizerDesc Rasterizer;
+  FDepthStencilDesc DepthStencil;
+  bool bIsInstancing = false;
 };
 
-class FRenderResourceLibrary;
+struct FRenderPipelineCreateInfo
+{
+  FRenderPipelineDesc Desc;
+
+  Microsoft::WRL::ComPtr<ID3D11VertexShader> VertexShader;
+  Microsoft::WRL::ComPtr<ID3D11PixelShader> PixelShader;
+  Microsoft::WRL::ComPtr<ID3D11InputLayout> InputLayout;
+
+  Microsoft::WRL::ComPtr<ID3D11RasterizerState> RasterizerState;
+  Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DepthStencilState;
+  Microsoft::WRL::ComPtr<ID3D11SamplerState> SamplerState;
+  Microsoft::WRL::ComPtr<ID3D11BlendState> BlendState;
+
+  bool bIsInstancing = false;
+};
 
 class FRenderPipeline final {
 	friend class FRenderer;
@@ -31,13 +43,11 @@ class FRenderPipeline final {
 	friend class FRenderResourceLibrary;
 
 public:
-	~FRenderPipeline() {
-		//FStatsManager::Get().RemoveMemory(EStatMemoryCategory::VertexShader, VertexShaderSize);
-		// FStatsManager::Get().RemoveMemory(EStatMemoryCategory::PixelShader, PixelShaderSize);
-	}
-	[[nodiscard]] FRenderPipelineDesc GetPipelineDesc() const { return desc; }
-	void SetStencilRef(UINT InRef) { StencilRef = InRef; }
-	[[nodiscard]] UINT GetStencilRef() const { return StencilRef; }
+  explicit FRenderPipeline(FRenderPipelineCreateInfo CreateInfo);
+
+  FRenderPipelineDesc GetPipelineDesc() const { return desc; }
+  void SetStencilRef(UINT InRef) { StencilRef = InRef; }
+  UINT GetStencilRef() const { return StencilRef; }
 
 	void SetVertexShaderSize(size_t Size) { VertexShaderSize = Size; }
 	size_t GetVertexShaderSize() { return VertexShaderSize; }

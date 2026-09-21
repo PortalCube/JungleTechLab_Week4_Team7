@@ -19,9 +19,9 @@ void FBillboardVisualizer::Draw(
 
 	const UBillBoardComp& BillBoardComponent = *Component.Cast<UBillBoardComp>();
 
-	auto MeshPtr = FRenderResourceLibrary::Get().GetMesh(BillBoardComponent.GetPureRenderData().MeshId);
+	UStaticMesh* MeshPtr = BillBoardComponent.GetRenderData(Camera).Mesh;
 	if (!MeshPtr) return;
-	const FMesh& Mesh = *MeshPtr;
+	const FMesh& Mesh = *MeshPtr->Get();
 	const FMatrix ModelMatrix = BillBoardComponent.GetRenderMatrix(Camera);
 
 	if (Mesh.GetPositions().size() != 4) { return; }

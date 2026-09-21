@@ -2,6 +2,7 @@
 #include "Runtime/CoreUObject/UObjectGlobals.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Engine/FArchive.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 #include "UClass.h"
 
 IMPLEMENT_UCLASS(USpotLightComponent, UPrimitiveComponent)
@@ -12,9 +13,10 @@ void USpotLightComponent::Initialize()
 {
 	Super::Initialize();
 	// 스포트라이트 메쉬 및 머티리얼 장착
-	SetMeshID(FName("SpotlightCone"));
-	SetMaterialID(FName("Spotlight"));
-	RenderData.type = ERenderType::Spotlight;
+	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+	SetMesh(Registry.Get<UStaticMesh>("SpotlightCone"));
+	SetMaterial(Registry.Get<UMaterial>("Material/Spotlight.json"));
+	RenderData.Type = ERenderType::Spotlight;
 }
 
 void USpotLightComponent::Serialize(FArchive& Archive) const

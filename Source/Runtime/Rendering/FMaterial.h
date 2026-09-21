@@ -6,51 +6,31 @@
 #include "Runtime/Core/FName.h"
 #include "Runtime/Core/PointerTypes.h"
 #include "Runtime/Core/TMap.h"
+#include "Runtime/Material/FTextureSamplerDesc.h"
 #include "Vertices.h"
 #include <d3d11.h>
 
-
-class FRenderer;
-class FRenderResourceLibrary;
-
-
-
-
-
-
-
-
-
 class FMaterial final {
-  friend class FRenderer;
+	friend class FRenderer;
 
 public:
-  FMaterial() = default;
-  
-  void SetPipeLine(const TSharedPtr<FRenderPipeline>& InPipeline);
-  //void SetWireframePipeLine(const TSharedPtr<FRenderPipeline>& InPipeline);
 
-  [[nodiscard]] TSharedPtr<FRenderPipeline> GetPipeline() const { return Pipeline; }
+	void SetPipeLine(FRenderPipeline* InPipeline) { Pipeline = InPipeline; }
+	FRenderPipeline* GetPipeline() const { return Pipeline; }
 
-  void SetTexture(const TSharedPtr<FTexture>& InTexture);
-  [[nodiscard]] TSharedPtr<FTexture> GetTexture() const { return Texture; }
+	void SetTexture(FTexture* InTexture) { Texture = InTexture; }
+	FTexture* GetTexture() const { return Texture; }
 
-  // 원본 머터리얼에서 텍스처 교체 함수
-  bool SetTextureByName(const FName& InTextureName);
+	void SetSamplerDesc(FTextureSamplerDesc InSamplerDesc) { SamplerDesc = InSamplerDesc; }
+	FTextureSamplerDesc GetSamplerDesc() const { return SamplerDesc; }
 
+	FName MaterialId{ "None" };
 
-  FName MaterialId{"None"};
+	void BindResources(ID3D11DeviceContext& Context) const;
+
 private:
-  void BindResources(ID3D11DeviceContext &Context) const;
 
-  TSharedPtr<FRenderPipeline> Pipeline;
-  TSharedPtr<FRenderPipeline> WireframePipeline;
-  // TODO: 텍스처를 여러 개 쓰게 되면 TArray로 바꾸고 슬롯 단위로 바인딩
-  TSharedPtr<FTexture> Texture;
-};
-
-struct FMaterialDesc {
-  FWString VertexShaderFileName;
-  FWString PixelShaderFileName;
-  bool bEnableDepthTest = true;
+	FRenderPipeline* Pipeline = nullptr;
+	FTexture* Texture = nullptr;
+	FTextureSamplerDesc SamplerDesc;
 };

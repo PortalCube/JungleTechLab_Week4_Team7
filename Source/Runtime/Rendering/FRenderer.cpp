@@ -12,6 +12,7 @@
 #include "Runtime/Rendering/FTexture.h"
 #include "ShaderConstants.h"
 #include "ThirdParty/DirectXTK/Inc/DDSTextureLoader.h"
+#include "ThirdParty/DirectXTK/Inc/WICTextureLoader.h"
 #include "Vertices.h"
 #include <Windows.h>
 #include <d3d11.h>
@@ -39,6 +40,11 @@ void FRenderer::Shutdown() {
   }
 
   LineBatcher.Shutdown();
+
+  RasterizerStateMap.clear();
+  DepthStencilStateMap.clear();
+  BlendStateMap.clear();
+  SamplerStateMap.clear();
 
   b0ConstantBuffer.Reset();
   FrameConstantBuffer.Reset();
@@ -95,11 +101,11 @@ void FRenderer::SetViewportUV(FVector2 TopLeftUV, FVector2 LengthUV) {
 //   }
 //
 //   if (Pipeline) {
-//     Pipeline->Bind(*Context.Get());
+//     Pipeline->Bind(*Context.GetInstance());
 //   }
 //
-//   Material.BindResources(*Context.Get());
-//   Mesh.BindResources(*Context.Get());
+//   Material.BindResources(*Context.GetInstance());
+//   Mesh.BindResources(*Context.GetInstance());
 //
 //   Context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
 //
@@ -115,9 +121,9 @@ void FRenderer::SetViewportUV(FVector2 TopLeftUV, FVector2 LengthUV) {
 //   UpdateGridConstants(GridConstants);
 //   const auto &Pipeline = Material.Pipeline;
 //
-//   Pipeline->Bind(*Context.Get());
-//   Material.BindResources(*Context.Get());
-//   Mesh.BindResources(*Context.Get());
+//   Pipeline->Bind(*Context.GetInstance());
+//   Material.BindResources(*Context.GetInstance());
+//   Mesh.BindResources(*Context.GetInstance());
 //
 //   Context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
 //
@@ -292,11 +298,6 @@ TSharedPtr<FMesh> FRenderer::CreateDynamicMesh(const FMeshDesc &Desc) {
   return Mesh;
 }
 
-TSharedPtr<FMaterial> FRenderer::CreateMaterial(const FMaterialDesc &Desc) {
-  TSharedPtr<FMaterial> Material{new FMaterial()};
-  return Material;
-}
-
 void FRenderer::GetDeviceAndContext_ImplDX11(ID3D11Device *&DeviceOut,
                                              ID3D11DeviceContext *&ContextOut) {
   DeviceOut = Device.Get();
@@ -304,164 +305,288 @@ void FRenderer::GetDeviceAndContext_ImplDX11(ID3D11Device *&DeviceOut,
 }
 
 TSharedPtr<FRenderPipeline>
-FRenderer::CreateRenderPipeline(const FRenderPipelineDesc &Desc,
-                                EViewModeIndex RenderMode) {
-  TSharedPtr<FRenderPipeline> Pipeline{new FRenderPipeline()};
-  Pipeline->desc = Desc;
+FRenderer::CreateRenderPipeline(const FRenderPipelineDesc &Desc, EViewModeIndex RenderMode) {
+  namespace fs = std::filesystem;
+
+  FRenderPipelineDesc ClonedDesc = Desc;
+
+  if (RenderMode == EViewModeIndex::VMI_Wireframe) {
+    ClonedDesc.Rasterizer.FillMode = ERasterizerFillMode::Wireframe;
+  }
 
   Microsoft::WRL::ComPtr<ID3DBlob> Blob;
-  HRESULT Result = D3DReadFileToBlob(Desc.VertexShaderFileName.c_str(), &Blob);
+  const fs::path VertexShaderPath{ ClonedDesc.VertexShaderFilePath };
+  HRESULT Result = D3DReadFileToBlob(VertexShaderPath.wstring().c_str(), &Blob);
   if (FAILED(Result)) {
     return nullptr;
   }
 
+  Microsoft::WRL::ComPtr<ID3D11VertexShader> VertexShader;
   Result = Device->CreateVertexShader(Blob->GetBufferPointer(),
                                       Blob->GetBufferSize(), nullptr,
-                                      &Pipeline->VertexShader);
+                                      &VertexShader);
   if (FAILED(Result)) {
     return nullptr;
   }
 
-  Pipeline->SetVertexShaderSize(Blob->GetBufferSize());
+  size_t VSSize = Blob->GetBufferSize();
   FStatsManager::Get().AddMemory(EStatMemoryCategory::VertexShader, Blob->GetBufferSize());
-
-  if (Desc.bIsInstancing) {
+  
+  Microsoft::WRL::ComPtr<ID3D11InputLayout> InputLayout;
+  if (ClonedDesc.bIsInstancing) {
     Result = Device->CreateInputLayout(
         FVertexInstanceLayouts::Layout, FVertexInstanceLayouts::NumElements,
         Blob->GetBufferPointer(), Blob->GetBufferSize(),
-        &Pipeline->InputLayout);
+        &InputLayout);
   } else {
     Result = Device->CreateInputLayout(
         FVertexLayouts::Layout, FVertexLayouts::NumElements,
         Blob->GetBufferPointer(), Blob->GetBufferSize(),
-        &Pipeline->InputLayout);
+        &InputLayout);
   }
 
   if (FAILED(Result)) {
     return nullptr;
   }
 
-  Result = D3DReadFileToBlob(Desc.PixelShaderFileName.c_str(), &Blob);
+  const fs::path PixelShaderPath{ ClonedDesc.PixelShaderFilePath };
+  Result = D3DReadFileToBlob(PixelShaderPath.wstring().c_str(), &Blob);
   if (FAILED(Result)) {
     return nullptr;
   }
 
-  Result =
-      Device->CreatePixelShader(Blob->GetBufferPointer(), Blob->GetBufferSize(),
-                                nullptr, &Pipeline->PixelShader);
+  Microsoft::WRL::ComPtr<ID3D11PixelShader> PixelShader;
+  Result = Device->CreatePixelShader(Blob->GetBufferPointer(), Blob->GetBufferSize(), nullptr, &PixelShader);
   if (FAILED(Result)) {
     return nullptr;
   }
-  Pipeline->SetPixelShaderSize(Blob->GetBufferSize());
+
+  size_t PSSize = Blob->GetBufferSize();
   FStatsManager::Get().AddMemory(EStatMemoryCategory::PixelShader, Blob->GetBufferSize());
 
-  D3D11_RASTERIZER_DESC RasterizerDesc{
-      .FillMode = (RenderMode == EViewModeIndex::VMI_Wireframe)
-                      ? D3D11_FILL_WIREFRAME
-                      : D3D11_FILL_SOLID,
-      .CullMode = Desc.CullMode,
-      .FrontCounterClockwise = false,
+  auto RasterizerState = GetOrCreateRasterizerState(ClonedDesc.Rasterizer);
+  auto DepthStencilState = GetOrCreateDepthStencilState(ClonedDesc.DepthStencil);
+  auto BlendState = GetOrCreateBlendState(ClonedDesc.Blend);
+  auto SamplerState = GetOrCreateSamplerState(FTextureSamplerDesc{});
+
+  if (
+      !RasterizerState ||
+      !DepthStencilState ||
+      !BlendState ||
+      !SamplerState
+      ) {
+    return nullptr;
+  }
+
+  FRenderPipelineCreateInfo CreateInfo{
+      .Desc                 = std::move(ClonedDesc),
+      .VertexShader         = std::move(VertexShader),
+      .PixelShader          = std::move(PixelShader),
+      .InputLayout          = std::move(InputLayout),
+      .RasterizerState      = std::move(RasterizerState),
+      .DepthStencilState    = std::move(DepthStencilState),
+      .SamplerState         = std::move(SamplerState),
+      .BlendState           = std::move(BlendState),
   };
 
-  Result = Device->CreateRasterizerState(&RasterizerDesc,
-                                         &Pipeline->RasterizerState);
-  if (FAILED(Result)) {
-    return nullptr;
+  TSharedPtr<FRenderPipeline> Pipeline = MakeShared<FRenderPipeline>(std::move(CreateInfo));
+
+  Pipeline->SetPixelShaderSize(VSSize);
+  Pipeline->SetPixelShaderSize(PSSize);
+
+  return Pipeline;
+}
+
+Microsoft::WRL::ComPtr<ID3D11RasterizerState>
+FRenderer::GetOrCreateRasterizerState(const FRasterizerDesc& Desc) {
+  if (const auto It = RasterizerStateMap.find(Desc); It != RasterizerStateMap.end()) {
+    return It->second;
   }
 
-  D3D11_DEPTH_STENCIL_DESC DepthStencilDesc{
-      .DepthEnable = Desc.bEnableDepthTest,
-      .DepthWriteMask = Desc.bEnableDepthWrite ? D3D11_DEPTH_WRITE_MASK_ALL
-                                               : D3D11_DEPTH_WRITE_MASK_ZERO,
-      .DepthFunc = D3D11_COMPARISON_LESS,
+  static const TMap<ERasterizerFillMode, D3D11_FILL_MODE> FillModeMap{
+      {ERasterizerFillMode::Solid, D3D11_FILL_SOLID},
+      {ERasterizerFillMode::Wireframe, D3D11_FILL_WIREFRAME},
   };
 
-  Result = Device->CreateDepthStencilState(&DepthStencilDesc,
-                                           &Pipeline->DepthStencilState);
-  if (FAILED(Result)) {
+  static const TMap<ERasterizerCullMode, D3D11_CULL_MODE> CullModeMap{
+      {ERasterizerCullMode::None, D3D11_CULL_NONE},
+      {ERasterizerCullMode::Front, D3D11_CULL_FRONT},
+      {ERasterizerCullMode::Back, D3D11_CULL_BACK},
+  };
+  static const TMap<ERasterizerFrontFaceMode, BOOL> FrontFaceMap{
+      {ERasterizerFrontFaceMode::CounterClockwise, TRUE},
+      {ERasterizerFrontFaceMode::Clockwise, FALSE},
+  };
+
+  const D3D11_RASTERIZER_DESC NativeDesc{
+      .FillMode = FillModeMap.at(Desc.FillMode),
+      .CullMode = CullModeMap.at(Desc.CullMode),
+      .FrontCounterClockwise = FrontFaceMap.at(Desc.FrontFace),
+      .MultisampleEnable = Desc.bUseMultisample,
+      .AntialiasedLineEnable = Desc.bUseAntialiasedLine,
+  };
+
+  Microsoft::WRL::ComPtr<ID3D11RasterizerState> State;
+  if (FAILED(Device->CreateRasterizerState(&NativeDesc, &State))) {
+    return nullptr;
+  }
+  RasterizerStateMap.emplace(Desc, State);
+  return State;
+}
+
+Microsoft::WRL::ComPtr<ID3D11DepthStencilState>
+FRenderer::GetOrCreateDepthStencilState(const FDepthStencilDesc& Desc) {
+  if (const auto It = DepthStencilStateMap.find(Desc); It != DepthStencilStateMap.end()) {
+    return It->second;
+  }
+
+  static const TMap<EDepthWriteMode, D3D11_DEPTH_WRITE_MASK> DepthWriteMap{
+      {EDepthWriteMode::Disable, D3D11_DEPTH_WRITE_MASK_ZERO},
+      {EDepthWriteMode::Enable, D3D11_DEPTH_WRITE_MASK_ALL},
+  };
+
+  D3D11_DEPTH_STENCIL_DESC NativeDesc{};
+  NativeDesc.DepthEnable = Desc.bDepthEnable;
+  NativeDesc.DepthWriteMask = DepthWriteMap.at(Desc.DepthWrite);
+  NativeDesc.DepthFunc = D3D11_COMPARISON_LESS;
+  NativeDesc.StencilEnable = Desc.bStencilEnable;
+  NativeDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+  NativeDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+  NativeDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+  NativeDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+  NativeDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+  NativeDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+  NativeDesc.BackFace = NativeDesc.FrontFace;
+
+  Microsoft::WRL::ComPtr<ID3D11DepthStencilState> State;
+  if (FAILED(Device->CreateDepthStencilState(&NativeDesc, &State))) {
+    return nullptr;
+  }
+  DepthStencilStateMap.emplace(Desc, State);
+  return State;
+}
+
+Microsoft::WRL::ComPtr<ID3D11BlendState>
+FRenderer::GetOrCreateBlendState(const FBlendDesc& Desc) {
+  if (const auto It = BlendStateMap.find(Desc); It != BlendStateMap.end()) {
+    return It->second;
+  }
+
+  static const TMap<EBlendMode, D3D11_RENDER_TARGET_BLEND_DESC> BlendModeMap{
+      {EBlendMode::Opaque,
+       {.BlendEnable = FALSE,
+        .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL}},
+      {EBlendMode::Masked,
+       {.BlendEnable = FALSE,
+        .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL}},
+      {EBlendMode::Translucent,
+       {.BlendEnable = TRUE,
+        .SrcBlend = D3D11_BLEND_SRC_ALPHA,
+        .DestBlend = D3D11_BLEND_INV_SRC_ALPHA,
+        .BlendOp = D3D11_BLEND_OP_ADD,
+        .SrcBlendAlpha = D3D11_BLEND_ONE,
+        .DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA,
+        .BlendOpAlpha = D3D11_BLEND_OP_ADD,
+        .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL}},
+      {EBlendMode::Additive,
+       {.BlendEnable = TRUE,
+        .SrcBlend = D3D11_BLEND_ONE,
+        .DestBlend = D3D11_BLEND_ONE,
+        .BlendOp = D3D11_BLEND_OP_ADD,
+        .SrcBlendAlpha = D3D11_BLEND_ONE,
+        .DestBlendAlpha = D3D11_BLEND_ZERO,
+        .BlendOpAlpha = D3D11_BLEND_OP_ADD,
+        .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL}},
+      {EBlendMode::PremultipliedAlpha,
+       {.BlendEnable = TRUE,
+        .SrcBlend = D3D11_BLEND_ONE,
+        .DestBlend = D3D11_BLEND_INV_SRC_ALPHA,
+        .BlendOp = D3D11_BLEND_OP_ADD,
+        .SrcBlendAlpha = D3D11_BLEND_ONE,
+        .DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA,
+        .BlendOpAlpha = D3D11_BLEND_OP_ADD,
+        .RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL}},
+  };
+
+  D3D11_BLEND_DESC NativeDesc{};
+  NativeDesc.RenderTarget[0] = BlendModeMap.at(Desc.BlendMode);
+
+  Microsoft::WRL::ComPtr<ID3D11BlendState> State;
+
+  if (FAILED(Device->CreateBlendState(&NativeDesc, &State))) {
     return nullptr;
   }
 
-  // 블렌드 상태 생성
-  D3D11_BLEND_DESC BlendDesc{};
-  BlendDesc.AlphaToCoverageEnable = false;
-  BlendDesc.IndependentBlendEnable = false;
-  auto &RenderTargetBlend = BlendDesc.RenderTarget[0];
+  BlendStateMap.emplace(Desc, State);
+  return State;
+}
 
-  switch (Desc.BlendMode) {
-  case EBlendMode::Opaque:
-  case EBlendMode::Masked:
-    RenderTargetBlend.BlendEnable = false;
-    break;
-
-  case EBlendMode::Translucent:
-    RenderTargetBlend.BlendEnable = true;
-    RenderTargetBlend.SrcBlend = D3D11_BLEND_SRC_ALPHA;
-    RenderTargetBlend.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-    RenderTargetBlend.BlendOp = D3D11_BLEND_OP_ADD;
-    RenderTargetBlend.SrcBlendAlpha = D3D11_BLEND_ONE;
-    RenderTargetBlend.DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
-    RenderTargetBlend.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    break;
-
-  case EBlendMode::Additive:
-    RenderTargetBlend.BlendEnable = true;
-    RenderTargetBlend.SrcBlend = D3D11_BLEND_ONE;
-    RenderTargetBlend.DestBlend = D3D11_BLEND_ONE;
-    RenderTargetBlend.BlendOp = D3D11_BLEND_OP_ADD;
-    RenderTargetBlend.SrcBlendAlpha = D3D11_BLEND_ONE;
-    RenderTargetBlend.DestBlendAlpha = D3D11_BLEND_ZERO;
-    RenderTargetBlend.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    break;
-
-  case EBlendMode::PremultipliedAlpha:
-    RenderTargetBlend.BlendEnable = true;
-    RenderTargetBlend.SrcBlend = D3D11_BLEND_ONE;
-    RenderTargetBlend.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-    RenderTargetBlend.BlendOp = D3D11_BLEND_OP_ADD;
-    RenderTargetBlend.SrcBlendAlpha = D3D11_BLEND_ONE;
-    RenderTargetBlend.DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
-    RenderTargetBlend.BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    break;
+Microsoft::WRL::ComPtr<ID3D11SamplerState>
+FRenderer::GetOrCreateSamplerState(const FTextureSamplerDesc& Desc) {
+  if (const auto It = SamplerStateMap.find(Desc); It != SamplerStateMap.end()) {
+    return It->second;
   }
 
-  RenderTargetBlend.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+  static const TMap<ETextureSamplerFilterMode, D3D11_FILTER> FilterModeMap{
+      {ETextureSamplerFilterMode::Point, D3D11_FILTER_MIN_MAG_MIP_POINT},
+      {ETextureSamplerFilterMode::Bilinear,
+       D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT},
+      {ETextureSamplerFilterMode::Trilinear, D3D11_FILTER_MIN_MAG_MIP_LINEAR},
+      {ETextureSamplerFilterMode::Anisotropic, D3D11_FILTER_ANISOTROPIC},
+  };
+  static const TMap<ETextureSamplerWrapMode, D3D11_TEXTURE_ADDRESS_MODE>
+      WrapModeMap{
+          {ETextureSamplerWrapMode::Wrap, D3D11_TEXTURE_ADDRESS_WRAP},
+          {ETextureSamplerWrapMode::Mirror, D3D11_TEXTURE_ADDRESS_MIRROR},
+          {ETextureSamplerWrapMode::Clamp, D3D11_TEXTURE_ADDRESS_CLAMP},
+      };
+  static const TMap<ETextureSamplerFilterMode, UINT> MaxAnisotropyMap{
+      {ETextureSamplerFilterMode::Point, 1u},
+      {ETextureSamplerFilterMode::Bilinear, 1u},
+      {ETextureSamplerFilterMode::Trilinear, 1u},
+      {ETextureSamplerFilterMode::Anisotropic, 16u},
+  };
 
-  Result = Device->CreateBlendState(&BlendDesc, &Pipeline->BlendState);
-  if (FAILED(Result)) {
-    return nullptr;
-  }
-
-  D3D11_SAMPLER_DESC SamplerDesc{
-      .Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
-      .AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
-      .AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
-      .AddressW = D3D11_TEXTURE_ADDRESS_WRAP,
+  const D3D11_TEXTURE_ADDRESS_MODE Address = WrapModeMap.at(Desc.WrapMode);
+  const D3D11_SAMPLER_DESC NativeDesc{
+      .Filter = FilterModeMap.at(Desc.FilterMode),
+      .AddressU = Address,
+      .AddressV = Address,
+      .AddressW = Address,
+      .MaxAnisotropy = MaxAnisotropyMap.at(Desc.FilterMode),
       .ComparisonFunc = D3D11_COMPARISON_NEVER,
       .MaxLOD = D3D11_FLOAT32_MAX,
   };
 
-  Result = Device->CreateSamplerState(&SamplerDesc, &Pipeline->SamplerState);
-  if (FAILED(Result)) {
+  Microsoft::WRL::ComPtr<ID3D11SamplerState> State;
+  if (FAILED(Device->CreateSamplerState(&NativeDesc, &State))) {
     return nullptr;
   }
-
-  return Pipeline;
+  SamplerStateMap.emplace(Desc, State);
+  return State;
 }
 
 TSharedPtr<FTexture> FRenderer::CreateTexture(const wchar_t *path) {
   auto Texture = TSharedPtr<FTexture>{new FTexture()};
   Microsoft::WRL::ComPtr<ID3D11Resource> TempResource;
+
+  // dds first
   HRESULT hr = DirectX::CreateDDSTextureFromFile(
       Device.Get(), path, TempResource.GetAddressOf(),
-      Texture->TextureSRV.GetAddressOf());
-  if (FAILED(hr)) {
-    return nullptr;
+      Texture->TextureSRV.GetAddressOf());  
+
+  // If dds failed  
+  if (FAILED(hr)) 
+  {
+      hr = DirectX::CreateWICTextureFromFile(
+          Device.Get(), path, TempResource.GetAddressOf(),
+          Texture->TextureSRV.GetAddressOf());          
   }
 
   hr = TempResource.As(&Texture->Texture2D);
-  if (FAILED(hr)) {
-    return nullptr;
+  if (FAILED(hr))
+  {
+      return nullptr;
   }
 
   D3D11_TEXTURE2D_DESC desc;
@@ -687,28 +812,28 @@ void FRenderer::UpdateLightConstants(const FLightConstants &Constants,
   Context->PSSetConstantBuffers(2, 1, LightConstantBuffer.GetAddressOf());
 }
 
-void FRenderer::AddTextInstanceArray(const TArray<FInstanceData> &Instances,
-                                     const FName &MeshId,
-                                     const FName &MaterialId) {
-  // 빈 데이터 전달 시 조기 반환
-  if (Instances.empty()) {
-    return;
-  }
-  auto &ResLib = FRenderResourceLibrary::Get();
-  // 머티리얼 리소스 존재 여부 확인
-  if (!ResLib.GetMaterial(MaterialId)) {
-    UE_LOG_WARN("[FRenderer] 유효하지 않은 머티리얼 ID 인스턴스 등록 시도");
-    return;
-  }
-  // 메시 리소스 존재 여부 확인
-  if (!ResLib.GetMesh(MeshId)) {
-    UE_LOG_WARN("[FRenderer] 유효하지 않은 메시 ID 인스턴스 등록 시도");
+void FRenderer::Draw(const FDrawCommand &Command, uint32 Slot,
+                     bool bApplyViewMode) {
+  if (!Command.Mesh || Command.Materials.empty()) {
     return;
   }
 
-  auto &TargetArray = ResLib.GetInstancingArray(MaterialId, MeshId);
-  TargetArray.reserve(TargetArray.size() + Instances.size());
-  TargetArray.insert(TargetArray.end(), Instances.begin(), Instances.end());
+  Draw(*Command.Mesh, Command.Materials[0], Command.Constants, Slot,
+       bApplyViewMode);
+}
+
+void FRenderer::AddTextInstanceArray(const FDrawCommand &Command) {
+  // 빈 데이터 전달 시 조기 반환
+  if (!Command.Mesh || Command.Materials.empty() || Command.Instances.empty()) {
+    return;
+  }
+  auto &ResLib = FRenderResourceLibrary::Get();
+
+  auto &TargetArray =
+      ResLib.GetInstancingArray(Command.Mesh, &Command.Materials[0]);
+  TargetArray.reserve(TargetArray.size() + Command.Instances.size());
+  TargetArray.insert(TargetArray.end(), Command.Instances.begin(),
+                     Command.Instances.end());
 }
 
 void FRenderer::DrawInstances(const FCamera &Camera) {
@@ -723,8 +848,7 @@ void FRenderer::DrawInstances(const FCamera &Camera) {
       continue;
 
     SC.DisableShading =
-        CurrentRenderMode == EViewModeIndex::VMI_Unlit ||
-        BatchKey.MaterialID == FName("Instance_Simple") ? 1.0f : 0.0f;
+        CurrentRenderMode == EViewModeIndex::VMI_Unlit ? 1.0f : 0.0f;
     UpdateBuffer(SC);
 
     const UINT InstanceCount = static_cast<UINT>(InstanceData.size());
@@ -758,18 +882,18 @@ void FRenderer::DrawInstances(const FCamera &Camera) {
     Context->Unmap(InstanceBuffer.Get(), 0);
 
     // 머티리얼 및 파이프라인 바인딩
-    auto Material = ResLib.GetMaterial(BatchKey.MaterialID);
+    const FMaterial *Material = BatchKey.Material;
     if (!Material)
       continue;
 
-    TSharedPtr<FRenderPipeline> Pipeline = Material->GetPipeline();
+    FRenderPipeline *Pipeline = Material->GetPipeline();
     if (Pipeline) {
       Pipeline->Bind(*Context.Get());
     }
     Material->BindResources(*Context.Get());
 
     // 메시 조회 및 바인딩
-    auto Mesh = ResLib.GetMesh(BatchKey.MeshID);
+    const FMesh *Mesh = BatchKey.Mesh;
     if (!Mesh)
       continue;
     Mesh->BindResources(*Context.Get());
@@ -790,17 +914,17 @@ void FRenderer::DrawInstances(const FCamera &Camera) {
   }
 }
 
-void FRenderer::DrawTextInstances(const FCamera &Camera, const FName &MeshId,
-                                  const FName &MaterialId) {
+void FRenderer::DrawTextInstances(const FDrawCommand &Command) {
+  if (!Command.Mesh || Command.Materials.empty()) {
+    return;
+  }
+
   auto &ResLib = FRenderResourceLibrary::Get();
 
-  // 상수 버퍼 업데이트
-  FObjectConstants SC{};
-  SC.MVP = Camera.CreateViewProjectionMatrix();
-  UpdateBuffer(SC);
+  UpdateBuffer(Command.Constants);
 
   TArray<FInstanceData> InstanceData =
-      FRenderResourceLibrary::Get().GetInstancingArray(MaterialId, MeshId);
+      ResLib.GetInstancingArray(Command.Mesh, &Command.Materials[0]);
 
   if (InstanceData.empty())
     return;
@@ -836,20 +960,16 @@ void FRenderer::DrawTextInstances(const FCamera &Camera, const FName &MeshId,
   Context->Unmap(InstanceBuffer.Get(), 0);
 
   // 머티리얼 및 파이프라인 바인딩
-  auto Material = ResLib.GetMaterial(MaterialId);
-  if (!Material)
-    return;
+  const FMaterial *Material = &Command.Materials[0];
 
-  TSharedPtr<FRenderPipeline> Pipeline = Material->GetPipeline();
+  FRenderPipeline *Pipeline = Material->GetPipeline();
   if (Pipeline) {
     Pipeline->Bind(*Context.Get());
   }
   Material->BindResources(*Context.Get());
 
   // 메시 조회 및 바인딩
-  auto Mesh = ResLib.GetMesh(MeshId);
-  if (!Mesh)
-    return;
+  const FMesh *Mesh = Command.Mesh;
   Mesh->BindResources(*Context.Get());
 
   // 슬롯 1에 인스턴스 버퍼 바인딩

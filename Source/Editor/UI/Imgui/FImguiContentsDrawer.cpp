@@ -7,13 +7,14 @@
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Rendering/FRenderer.h"
 #include "Runtime/Rendering/FTexture.h"
+#include "Runtime/Utility/EngineUtil.h"
 #include "ThirdParty/stb/stb_image.h"
 #include <algorithm>
 #include <cctype>
 #include "FImguiDragDrop.h"
 FImguiContentsDrawer::FImguiContentsDrawer() : LeftPanelWidth(200.0f)
 {
-	RootPath = std::filesystem::current_path() / "Resources";
+	RootPath = EngineUtil::GetContentDirectory();
 	CurrentPath = RootPath;
 
 }
@@ -85,7 +86,7 @@ TSharedPtr<FTexture> FImguiContentsDrawer::GetOrLoadThumbnail(const FContentEntr
 		return nullptr;
 	}
 
-	// 라이브러리 키는 소문자 stem이다. (FRenderResourceLibrary::CreateTextures와 동일)
+	// 라이브러리 키는 에셋 파일명의 stem이다. (FResourceLoader와 동일)
 	FString Key = Item.Path.stem().string();
 	std::transform(Key.begin(), Key.end(), Key.begin(),
 		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
@@ -180,7 +181,7 @@ void FImguiContentsDrawer::RenderContentView()
 		TSharedPtr<FTexture> DisplayImage = Thumbnail;
 		if (Item.bIsDirectory)
 		{
-			DisplayImage = FRenderResourceLibrary::Get().GetEditTexture("foldericon");
+			DisplayImage = FRenderResourceLibrary::Get().GetTexture("foldericon");
 		}
 
 		if (DisplayImage && DisplayImage->GetSRV())          

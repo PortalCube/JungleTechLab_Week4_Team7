@@ -6,6 +6,7 @@
 #include "Runtime/Core/Log.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Engine/FSceneView.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 #include "UClass.h"
 #include <algorithm>
 #include <cctype>
@@ -16,49 +17,27 @@ UCLASS_META(UBillBoardComp, MeshName, "BillBoard")
 
 void UBillBoardComp::Initialize() {
   Super::Initialize();
-  SetMeshID(FName("Rect"));
-  SetMaterialID(FName("Billboard"));
 
-  RenderData.type = ERenderType::Texture;
+  FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+  SetMesh(Registry.Get<UStaticMesh>("Rect"));
+  SetMaterial(Registry.Get<UMaterial>("Material/Billboard.json"));
+
+  RenderData.Type = ERenderType::Texture;
 }
 
 void UBillBoardComp::Serialize(FArchive& Archive) const
 {
     Super::Serialize(Archive);
-
-    Archive.SetVector2("UVScale", UVScale);
-    Archive.SetVector2("UVOffset", UVOffset);
 }
 
 void UBillBoardComp::Deserialize(const FArchive& Archive)
 {
     Super::Deserialize(Archive);
-
-    UVScale = Archive.GetVector2("UVScale");
-    UVOffset = Archive.GetVector2("UVOffset");
 }
 
-
-void UBillBoardComp::SetTexture(
-    FString texture) // 원본 머터리얼을 건드리지 않고 instance로 생성해서 사용
+void UBillBoardComp::SetTexture(UTexture* Texture)
 {
-  auto &lib = FRenderResourceLibrary::Get();
-
-  // 소문자 변환
-  FString LowerName = texture;
-  std::transform(LowerName.begin(), LowerName.end(), LowerName.begin(),
-                 ::tolower);
-
-  FName TextureId(LowerName);
-  auto NewTex = lib.GetTexture(TextureId);
-  if (!NewTex) {
-    UE_LOG("There is no such texture");
-    return;
-  }
-
-  // TextureId를 RenderData에 기록 → FlushQueue의 Texture 큐에서 머티리얼 인스턴스 생성
-  RenderData.TextureId = TextureId;
-  RenderData.type      = ERenderType::Texture;
+    RenderData.Materials[0].Texture = Texture;
 }
 
 FMatrix UBillBoardComp::GetRenderMatrix(const FCamera& Camera) const
@@ -80,4 +59,24 @@ FMatrix UBillBoardComp::GetRenderMatrix(const FCamera& Camera) const
         FVector4{ Up, 0.0f },
         FVector4{ Transform.Location, 1.0f },
     };
+}
+
+void UBillBoardComp::SetUVScale(FVector2 Value)
+{
+    RenderData.Materials[0].UVScale = Value;
+}
+
+void UBillBoardComp::SetUVOffset(FVector2 Value)
+{
+    RenderData.Materials[0].UVOffset = Value;
+}
+
+FVector2 UBillBoardComp::GetUVScale() const
+{
+    return RenderData.Materials[0].UVScale;
+}
+
+FVector2 UBillBoardComp::GetUVOffset() const
+{
+    return RenderData.Materials[0].UVOffset;
 }

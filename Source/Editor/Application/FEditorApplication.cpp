@@ -1,11 +1,7 @@
 #include "FEditorApplication.h"
 
-#include "Runtime/CoreUObject/FGarbageCollector.h"
-#include "Runtime/CoreUObject/FReferenceCollector.h"
 #include "Runtime/CoreUObject/UAnimatedBillboardComp.h"
 #include "Runtime/CoreUObject/UBillBoardComp.h"
-#include "Runtime/CoreUObject/UCubeComp.h"
-#include "Runtime/CoreUObject/UCylinderComp.h"
 #include "Runtime/CoreUObject/UObjectGlobals.h"
 #include "Runtime/CoreUObject/UPrimitiveComponent.h"
 #include "Runtime/CoreUObject/USpotLightComponent.h"
@@ -25,8 +21,7 @@
 #include "Runtime/Actors/AActor.h"
 #include "Runtime/Actors/AInstancingActor.h"
 #include "Runtime/Actors/TestTextActor.h"
-#include "Runtime/CoreUObject/UPlaneComp.h"
-#include "Runtime/CoreUObject/USphereComp.h"
+
 #include "Editor/Visualizer/IVisualizer.h"
 #include "Editor/Core/FEditor.h"
 void FEditorApplication::Initialize_ImguiWin32DX11(

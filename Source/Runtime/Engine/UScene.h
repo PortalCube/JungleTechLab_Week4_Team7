@@ -87,8 +87,6 @@ public:
   virtual void Serialize(FArchive& Archive) const override;
   virtual void Deserialize(const FArchive& Archive) override;
 
-  void AddReferencedObjects(FReferenceCollector &Collector) override;
-
   void AddRenderComponent(UPrimitiveComponent *prim);
   void RemoveRenderComponent(UPrimitiveComponent *prim);
   void RemoveActor(AActor* Actor);

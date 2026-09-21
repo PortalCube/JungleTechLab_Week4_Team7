@@ -13,10 +13,64 @@
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Rendering/FRenderer.h"
 #include "Runtime/Rendering/ShaderConstants.h"
+#include "Runtime/Engine/FRenderData.h"
 #include "Runtime/Engine/UScene.h"
 #include <fstream>
 
 FRenderView::FRenderView(FRenderer &Renderer) : Renderer(Renderer) {}
+
+namespace
+{
+    FDrawCommand GetDrawCommand(const FCamera& Camera, const FRenderData& Data)
+    {
+        if (!Data.Mesh || Data.Materials.empty())
+        {
+            return {};
+        }
+
+        FObjectConstants Constants
+        {
+            .MVP = Data.ModelMatrix * Camera.CreateViewProjectionMatrix(),
+            .Color = Data.Materials[0].Color,
+            .UVScale = Data.Materials[0].UVScale,
+            .UVOffset = Data.Materials[0].UVOffset,
+            .World = Data.ModelMatrix,
+            .DisableShading = Data.Materials[0].bDisableShading ? 1.0f : 0.0f,
+        };
+
+        TArray<FMaterial> Materials;
+
+        for (const auto& Item : Data.Materials)
+        {
+            if (!Item.Pipeline)
+            {
+                continue;
+            }
+
+            FMaterial Material{};
+            Material.SetPipeLine(Item.Pipeline->Get());
+
+            if (Item.Texture)
+            {
+                Material.SetTexture(Item.Texture->Get());
+            }
+
+            Material.SetSamplerDesc(Item.SamplerDesc);
+
+            Materials.push_back(Material);
+        }
+
+        return FDrawCommand
+        {
+            .Mesh = Data.Mesh->Get(),
+            .Materials = Materials,
+            .Constants = Constants,
+            .Type = Data.Type,
+            .Instances = Data.Instances,
+        };
+    }
+}
+
 
 void FRenderView::CollectScenePrimitives(const UScene& Scene, const FSceneView& View, const AActor* SelectedActor)
 {
@@ -36,33 +90,31 @@ void FRenderView::CollectScenePrimitives(const UScene& Scene, const FSceneView& 
             bSelected = true;
         }
 
-        FRenderData Data = PrimitiveComponent->GetRenderData(View.Camera);
-        Data.bSelected = bSelected;
+        const FRenderData& Data = PrimitiveComponent->GetRenderData(View.Camera);
+        FDrawCommand DrawCommand = GetDrawCommand(View.Camera, Data);
 
         // 인스턴싱 및 텍스트는 인스턴스 배열을 사용하므로 바로 푸시
-        if (Data.type == ERenderType::Text || Data.type == ERenderType::Instancing)
+        if (DrawCommand.Type == ERenderType::Text || DrawCommand.Type == ERenderType::Instancing)
         {
-            RenderQueue.Push(Data);
+            RenderQueue.Push(DrawCommand);
             continue;
         }
 
         const FMatrix World = PrimitiveComponent->GetRenderMatrix(View.Camera);
-        Data.Constants.MVP   = World * View.ViewProj;
-        Data.Constants.World = World;
-        Data.Constants.ColorOverride       = PrimitiveComponent->GetColor();
-        Data.Constants.ColorOverrideAmount = PrimitiveComponent->GetColorAmount();
-        Data.Constants.DisableShading      = View.ViewMode == EViewModeIndex::VMI_Unlit ? 1.0f : 0.0f;
+        DrawCommand.Constants.MVP = World * View.ViewProj;
+        DrawCommand.Constants.World = World;
+        DrawCommand.Constants.Color = { 1.0f, 1.0f, 1.0f, 0.0f };
+        DrawCommand.Constants.DisableShading = View.ViewMode == EViewModeIndex::VMI_Unlit ? 1.0f : 0.0f;
 
-        if (bSelected && Data.Constants.ColorOverrideAmount > 0.0f)
+        if (bSelected && DrawCommand.Constants.Color.W > 0.0f)
         {
-            Data.Constants.ColorOverride = Data.Constants.ColorOverride * 0.7f + FVector{ 0.3f, 0.3f, 0.3f };
+            DrawCommand.Constants.Color = DrawCommand.Constants.Color * 0.7f + FVector4{ 0.3f, 0.3f, 0.3f, 0.0f };
         }
         else if (bSelected)
         {
-            Data.Constants.ColorOverride = FVector{ 1.0f, 1.0f, 1.0f };
-            Data.Constants.ColorOverrideAmount = 0.5f;
+            DrawCommand.Constants.Color = { 1.0f, 1.0f, 1.0f, 0.5f };
         }
-        RenderQueue.Push(Data);
+        RenderQueue.Push(DrawCommand);
     }
 }
 
@@ -162,10 +214,11 @@ void FRenderView::RenderOverlayPass(const FCamera& Camera, const FSceneView& Sce
     {
         Renderer.ClearDepth();
         FRenderData Data = TextComp->GetRenderData(Camera);
+        FDrawCommand Command = GetDrawCommand(Camera, Data);
         if (!Data.Instances.empty())
         {
-            Renderer.AddTextInstanceArray(Data.Instances, Data.MeshId, Data.MaterialId);
-            Renderer.DrawTextInstances(Camera, Data.MeshId, Data.MaterialId);
+            Renderer.AddTextInstanceArray(Command);
+            Renderer.DrawTextInstances(Command);
             Renderer.ClearTextInstances();
         }
     }
@@ -239,10 +292,11 @@ void FRenderView::RenderUUIDText(const FCamera& Camera, FVector2 TopLeftUV,
 
     // BuildRenderData()로 Font 기반 인스턴스 데이터 획득 후 드로우
     FRenderData Data = textcomp->GetRenderData(Camera);
+    FDrawCommand Command = GetDrawCommand(Camera, Data);
     if (!Data.Instances.empty())
     {
-        Renderer.AddTextInstanceArray(Data.Instances, Data.MeshId, Data.MaterialId);
-        Renderer.DrawTextInstances(Camera, Data.MeshId, Data.MaterialId);
+        Renderer.AddTextInstanceArray(Command);
+        Renderer.DrawTextInstances(Command);
         Renderer.ClearTextInstances();
     }
 }
@@ -263,21 +317,20 @@ void FRenderView::DrawStencilMask(const FCamera& Camera,
     UPrimitiveComponent* PrimComp = RootComp->Cast<UPrimitiveComponent>();
     if (!PrimComp) return;
 
-    // FRenderData에서 MeshId 읽어 ResLib로 실제 Mesh 획득
-    const FRenderData& RD = PrimComp->GetPureRenderData();
-    auto Mesh = FRenderResourceLibrary::Get().GetMesh(RD.MeshId);
-    if (!Mesh) return;
-
+    FRenderData Data = PrimComp->GetRenderData(Camera);
     const FMatrix ModelMatrix = PrimComp->GetRenderMatrix(Camera);
-    FObjectConstants Constants{};
-    Constants.World = ModelMatrix;
-    Constants.MVP   = Constants.World * Camera.CreateViewProjectionMatrix();
-    Constants.DisableShading = 1.0f;
+    FDrawCommand DrawCommand = GetDrawCommand(Camera, Data);
 
-    auto OutlineMaterial = FRenderResourceLibrary::Get().GetMaterial(FName("Outline"));
-    if (OutlineMaterial) {
+    DrawCommand.Constants.DisableShading = true;
+    DrawCommand.Constants.MVP = ModelMatrix * Camera.CreateViewProjectionMatrix();
+    DrawCommand.Constants.World = ModelMatrix;
+
+    auto OutlineMaterial = FRenderResourceLibrary::Get().GetMaterial("Outline");
+    if (OutlineMaterial)
+    {
         OutlineMaterial->GetPipeline()->SetStencilRef(1);
-        Renderer.Draw(*Mesh, *OutlineMaterial, Constants, 0, false);
+        DrawCommand.Materials = { *OutlineMaterial };
+        Renderer.Draw(DrawCommand, 0, false);
     }
 }
 
@@ -325,69 +378,49 @@ void FRenderView::FlushQueue(const FCamera& Camera)
     auto& ResLib = FRenderResourceLibrary::Get();
 
     // Primitive 큐 처리
-    for (const FRenderData& Data : RenderQueue.GetPrimRenderQ())
+    for (const FDrawCommand& Data : RenderQueue.GetPrimRenderQ())
     {
-        auto Mesh     = ResLib.GetMesh(Data.MeshId);
-        auto Material = ResLib.GetMaterial(Data.MaterialId);
-        if (!Mesh || !Material) continue;
-        Renderer.Draw(*Mesh, *Material, Data.Constants);
+        Renderer.Draw(Data);
     }
 
     // Instancing 큐
     if (!RenderQueue.IsInstancingRQEmpty())
     {
-        for (const FRenderData& Data : RenderQueue.GetInstancingRenderQ())
+        for (const FDrawCommand& Data : RenderQueue.GetInstancingRenderQ())
         {
-            Renderer.AddTextInstanceArray(Data.Instances, Data.MeshId, Data.MaterialId);
+            Renderer.AddTextInstanceArray(Data);
         }
         Renderer.DrawInstances(Camera);
         Renderer.ClearTextInstances();
     }
 
     // Texture 큐: Primitive와 동일하지만 TextureId로 머티리얼 텍스처 교체 후 드로우
-    for (const FRenderData& Data : RenderQueue.GetTextureRenderQ())
+    for (const FDrawCommand& Data : RenderQueue.GetTextureRenderQ())
     {
-        auto Mesh     = ResLib.GetMesh(Data.MeshId);
-        auto Material = ResLib.GetMaterial(Data.MaterialId);
-        if (!Mesh || !Material) continue;
-
-        if (!Data.TextureId.IsNone())
-        {
-            auto Tex = ResLib.GetTexture(Data.TextureId);
-            if (Tex)
-            {
-                // 원본 머티리얼을 건드리지 않도록 인스턴스 복사
-                auto MatInst = TSharedPtr<FMaterial>(new FMaterial(*Material));
-                MatInst->SetTexture(Tex);
-                Renderer.Draw(*Mesh, *MatInst, Data.Constants);
-                continue;
-            }
-        }
-        Renderer.Draw(*Mesh, *Material, Data.Constants);
+        Renderer.Draw(Data);
     }
 
     // Spotlight 큐: 불투명 렌더링 후 가산 블렌딩 수행
-    for (const FRenderData& Data : RenderQueue.GetSpotlightRenderQ())
+    for (const FDrawCommand& Data : RenderQueue.GetSpotlightRenderQ())
     {
-        auto Mesh     = ResLib.GetMesh(Data.MeshId);
-        auto Material = ResLib.GetMaterial(Data.MaterialId);
-        if (!Mesh || !Material) continue;
-        Renderer.Draw(*Mesh, *Material, Data.Constants);
+        Renderer.Draw(Data);
     }
 
     // Text 큐: BuildRenderData()에서 이미 계산된 Instances 배열 사용
     if (!RenderQueue.IsTextRQEmpty())
     {
-        const FRenderData& First = RenderQueue.GetTextRenderQ()[0];
-        FName     TextMeshId     = First.MeshId;
-        FName     TextMaterialId = First.MaterialId;
-        
-        for (const FRenderData& Data : RenderQueue.GetTextRenderQ())
+        for (const FDrawCommand& Data : RenderQueue.GetTextRenderQ())
         {
             // Font에서 미리 계산된 글자별 쿼드 데이터를 그대로 넘김
-            Renderer.AddTextInstanceArray(Data.Instances, Data.MeshId, Data.MaterialId);
+            Renderer.AddTextInstanceArray(Data);
         }
-        Renderer.DrawTextInstances(Camera, TextMeshId, TextMaterialId);
+
+        // 각 DrawCommand의 머티리얼 주소가 인스턴스 배치 키에 포함되므로,
+        // 첫 번째 명령만 그리면 나머지 Text 배치는 렌더링되지 않는다.
+        for (const FDrawCommand& Data : RenderQueue.GetTextRenderQ())
+        {
+            Renderer.DrawTextInstances(Data);
+        }
         Renderer.ClearTextInstances();
     }
 

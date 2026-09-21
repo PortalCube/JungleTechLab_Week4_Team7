@@ -2,7 +2,6 @@
 
 #include "Runtime/Core/FString.h"
 #include "Runtime/Core/TArray.h"
-#include "Runtime/CoreUObject/FReferenceCollector.h"
 #include "Runtime/CoreUObject/UClass.h"
 #include "Runtime/CoreUObject/UPrimitiveComponent.h"
 #include "Runtime/CoreUObject/USceneComponent.h"
@@ -167,17 +166,6 @@ void UScene::Deserialize(const FArchive &Archive) {
       Actor->BeginPlay();
     }
   }
-}
-
-void UScene::AddReferencedObjects(FReferenceCollector &Collector) {
-  UObject::AddReferencedObjects(Collector);
-
-  // 액터 참조 수집
-  for (AActor *Actor : Actors)
-    Collector.AddReferencedObject(Actor);
-
-  for (USceneComponent *Component : RenderComponents)
-    Collector.AddReferencedObject(Component);
 }
 
 void UScene::AddRenderComponent(UPrimitiveComponent *prim) {

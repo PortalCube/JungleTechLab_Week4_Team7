@@ -17,30 +17,21 @@ protected:
   virtual void Serialize(FArchive& Archive) const;
   virtual void Deserialize(const FArchive& Archive);
 
-  // 텍스처 좌표 속성
-  FVector2 UVScale{1.0f, 1.0f};
-  FVector2 UVOffset{0.0f, 0.0f};
-
 public:
   void Initialize() override;
 
-
-  virtual void SetTexture(FString texture); // 원본 머터리얼을 건드리지 않고
-                                            // instance로 생성해서 사용
+  virtual void SetTexture(UTexture* Texture);
 
   // Object -> World 변환 행렬 생성
   virtual FMatrix GetRenderMatrix(const FCamera& Camera) const override;
   
-  virtual const FRenderData& GetRenderData(const FCamera& Camera) override {
-      RenderData.Constants.UVScale = UVScale;
-      RenderData.Constants.UVOffset = UVOffset;
-      return RenderData;
-  }
-
-
   virtual EEngineShowFlags GetShowFlag() const { return EEngineShowFlags::SF_BillboardText; }
-private:
-  // 시선 회전 보간용 쿼터니언
-  FQuaternion CurrentRotation = FQuaternion::Identity();
+
+  void SetUVScale(FVector2 Value);
+  void SetUVOffset(FVector2 Value);
+
+  FVector2 GetUVScale() const;
+  FVector2 GetUVOffset() const;
+
 };
 

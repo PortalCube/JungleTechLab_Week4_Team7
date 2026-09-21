@@ -62,6 +62,5 @@ private:
 	friend UObject* NewObject(UClass* ClassType);
 	friend void DestroyObject(UObject* Object);
 
-	friend class FGarbageCollector;
 	void DestroyObject(UObject* Object);
 };

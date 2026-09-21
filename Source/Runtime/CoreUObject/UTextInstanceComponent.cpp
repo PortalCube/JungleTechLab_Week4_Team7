@@ -4,6 +4,7 @@
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Rendering/FRenderer.h"
 #include "Runtime/Rendering/ShaderConstants.h"
+#include "Runtime/Asset/FAssetRegistry.h"
 #include "UClass.h"
 #include <algorithm>
 #include <limits>
@@ -26,25 +27,25 @@ FMatrix GetRenderMatrix(const FTransform &Transform, const FCamera &Camera) {
   FVector Right = ViewRight * Transform.Scale3D.Y;
 
   return FMatrix{
-      FVector4{ViewForward, 0.0f},
-      FVector4{Right, 0.0f},
-      FVector4{Up, 0.0f},
-      FVector4{Transform.Location, 1.0f},
+      FVector4{ ViewForward, 0.0f },
+      FVector4{ Right, 0.0f },
+      FVector4{ Up, 0.0f },
+      FVector4{ Transform.Location, 1.0f },
   };
 }
 } // namespace
 
 void UTextInstanceComponent::Initialize() {
-  
+  Super::Initialize();
+
+  FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+  SetMesh(Registry.Get<UStaticMesh>("Rect"));
+  SetMaterial(Registry.Get<UMaterial>("Material/Instance_Text_Bazzi.json"));
   SetFont("bazziotf");
 
-  RenderData.MeshId = FName("Rect");
-  RenderData.MaterialId = FName("Instance_Text_Bazzi");
-  RenderData.TextureId = FName("bazziotf");
-  RenderData.type = ERenderType::Text;
+  RenderData.Type = ERenderType::Text;
 
   RebuildTextMesh();
-  Super::Initialize();
 }
 
 void UTextInstanceComponent::Update(float delta) {}
@@ -185,7 +186,7 @@ FMatrix UTextInstanceComponent::GetRenderMatrix(const FCamera &Camera) const {
   return ScaleTransform * ModelMatrix;
 }
 
-const FRenderData& UTextInstanceComponent::GetRenderData(const FCamera &Camera) {
+const FRenderData& UTextInstanceComponent::GetRenderData(const FCamera &Camera) const {
 
   TArray<FInstanceData> Built;
 

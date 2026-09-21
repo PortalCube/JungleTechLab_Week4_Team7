@@ -4,7 +4,6 @@
 #include <string>
 #include <filesystem>
 #include "ThirdParty/Json/json.hpp"
-#include "Runtime/CoreUObject/FGarbageCollector.h"
 #include "Runtime/Engine/FArchive.h"
 #include "Runtime/CoreUObject/FUObjectArray.h"
 #include "Runtime/Core/Log.h"
@@ -87,17 +86,14 @@ void USceneManager::SetScene(UScene* scene)
 	if (scene == CurrentScene) { return; }
 	scene->Initialize();
 	scene->SetRenderResourceLibrary(&FRenderResourceLibrary::Get());
-	FGarbageCollector& GarbageCollector = FGarbageCollector::Get();
 
 	if (CurrentScene)
 	{
-		GarbageCollector.RemoveRoot(CurrentScene);
 		CurrentScene->EndPlay();
 		CurrentScene->Deactivate();
 		DestroyObject(CurrentScene);
 	}
 	CurrentScene = scene;
-	GarbageCollector.AddRoot(CurrentScene);
 	CurrentScene->Activate();
 	CurrentScene->BeginPlay();
 }
@@ -106,7 +102,6 @@ void USceneManager::Release()
 {
 	if (CurrentScene)
 	{
-		FGarbageCollector::Get().RemoveRoot(CurrentScene);
 		DestroyObject(CurrentScene);
 		CurrentScene = nullptr;
 	}

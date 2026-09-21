@@ -50,6 +50,7 @@ void FImguiEditorViewportWindow::Process(FEditor &Editor, float DeltaTime)
             Editor.HorizonSplitter.Ratio = Editor.HorizonSplitter2.Ratio;
         }
 
+
     // 스탯 창
 
          //CurrentViewport와 Leaf를 일치화시킨다.(Active일때만)
@@ -342,6 +343,65 @@ void FImguiEditorViewportWindow::UpdateGizmoHover(FEditor &Editor,
     Gizmo.HoveredHandle = Gizmo.HitTest(Editor.SelectedTransform, Ray, Viewport.ViewportCamera);
 }
 
+void FImguiEditorViewportWindow::ShowViewportVerticalSplitter(SSplitter& Splitter)
+{   //SplitterV용
+    const FRect& R = Splitter.Rect;
+    const ImVec2 Origin = ImGui::GetMainViewport()->Pos;
+
+    float Top = R.GetHeight() * Splitter.Ratio;
+    float Bottom = R.GetHeight() - Top;
+    const float Y = Origin.y + R.Top + Top;
+
+    ImGui::PushID(&Splitter);
+
+    const ImVec4 Color = ImGui::GetStyleColorVec4(ImGuiCol_Separator);
+    ImGui::PushStyleColor(ImGuiCol_SeparatorHovered, Color);
+    ImGui::PushStyleColor(ImGuiCol_SeparatorActive, Color);
+
+    ImGui::SplitterBehavior(
+        ImRect(ImVec2(Origin.x + R.Left, Y - 3),
+            ImVec2(Origin.x + R.Right, Y + 3)),
+        ImGui::GetID("VerticalSplitter"),
+        ImGuiAxis_Y,
+        &Top, &Bottom,
+        10.0f, 10.0f);
+
+    ImGui::PopStyleColor(2);
+    ImGui::PopID();
+
+    Splitter.Ratio = Top / R.GetHeight();
+    Splitter.OnResize(R);
+}
+void FImguiEditorViewportWindow::ShowViewportHorizontalSplitter(SSplitter& Splitter)
+{
+    const FRect& R = Splitter.Rect;
+    const ImVec2 Origin = ImGui::GetMainViewport()->Pos;
+
+    float Left = R.GetWidth() * Splitter.Ratio;
+    float Right = R.GetWidth() - Left;
+    const float X = Origin.x + R.Left + Left;
+    ImGui::PushID(&Splitter);
+
+    const ImVec4 Color = ImGui::GetStyleColorVec4(ImGuiCol_Separator);
+
+    ImGui::PushStyleColor(ImGuiCol_SeparatorHovered, Color);
+    ImGui::PushStyleColor(ImGuiCol_SeparatorActive, Color);
+
+    ImGui::SplitterBehavior(
+        ImRect(ImVec2(X - 3, Origin.y + R.Top),
+            ImVec2(X + 3, Origin.y + R.Bottom)),
+        ImGui::GetID("HorizontalSplitter"),
+        ImGuiAxis_X,
+        &Left, &Right,
+        10.0f, 10.0f);
+
+    ImGui::PopStyleColor(2);
+    ImGui::PopID();
+
+    Splitter.Ratio = Left / R.GetWidth();
+    Splitter.OnResize(R);
+}
+
 void FImguiEditorViewportWindow::DrawStatLine(ImDrawList* DrawList, const ImVec2& Position,
     float& Y, const char* Name, const char* Value, FVector4 Color)
 {
@@ -494,6 +554,7 @@ void FImguiEditorViewportWindow::ShowViewportVerticalSplitter(SSplitter& Splitte
     Splitter.Ratio = Top / R.GetHeight();
     Splitter.OnResize(R);
 }
+
 void FImguiEditorViewportWindow::ShowViewportHorizontalSplitter(SSplitter& Splitter)
 {
     const FRect& R = Splitter.Rect;

@@ -1,5 +1,6 @@
 #include "Editor/Application/FEditorApplication.h"
 #include "Runtime/Core/Log.h"
+#include "Runtime/Utility/EngineUtil.h"
 #include "Runtime/Engine/UScene.h"
 #include "Runtime/Engine/FRenderView.h"
 #include "Runtime/Input/FInputManager.h"
@@ -7,13 +8,21 @@
 #include "Runtime/Engine/USceneManager.h"
 #include "Runtime/Rendering/FRenderer.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
+#include "Runtime/Resource/FResourceLoader.h"
 #include "Runtime/Math/FVector2.h"
 #include "Runtime/CoreUObject/UClass.h"
+#include "Runtime/CoreUObject/UObjectGlobals.h"
+#include "Runtime/Asset/FAssetRegistry.h"
+#include "Runtime/Asset/UStaticMesh.h"
+#include "Runtime/Utility/WindowsUtil.h"
 #include "ThirdParty/Imgui/imgui.h"
 #include "ThirdParty/Imgui/imgui_internal.h"
 #include "Runtime/Core/FMemory.h"
 #include <Windows.h>
 #include <windowsx.h>
+
+#include "Runtime/Parser/FObjParser.h"
+#include "Runtime/Engine/ObjectViewer/FObjViewerApplication.h"
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -42,6 +51,8 @@ int WINAPI wWinMain(
 {
 	FMemory::Init();
 
+	try
+	{
 	HWND Window = CreateWindowHandle(hInstance);
 	if (!Window)
 	{
@@ -55,18 +66,28 @@ int WINAPI wWinMain(
 	FRenderer Renderer;
 	if (!Renderer.Initialize(Window))
 	{
-		return -1;
+		throw EngineUtil::CreateError("FRenderer 초기화에 실패했습니다.");
 	}
-	FRenderView RenderView(Renderer);
+	FRenderView RenderView{ Renderer };
 
 	FRenderResourceLibrary& RenderResources = FRenderResourceLibrary::Get();
 	if (!RenderResources.Initialize(Renderer))
 	{
-		return -1;
+		throw EngineUtil::CreateError("FRenderResourceLibrary 초기화에 실패했습니다.");
 	}
 
-	//RTTI를 위한 UClass 초기화
 	UClass::ResolveTypeBitsets();
+
+	FResourceLoader::LoadAssets();
+
+#if defined(_OBJVIEWER)
+	FObjViewerApplication ObjViewer(Renderer);
+
+	ID3D11Device* Device = nullptr; ID3D11DeviceContext* Context = nullptr;
+	Renderer.GetDeviceAndContext_ImplDX11(Device, Context);
+	ObjViewer.Initialize(Window, Device, Context);
+
+#else
 	//새씬 생성
 	USceneManager SceneManager;
 	SceneManager.SetScene(NewObject<UScene>());
@@ -79,6 +100,77 @@ int WINAPI wWinMain(
 	}
 	EditorApp.Initialize_Runtime(&SceneManager, &RenderView);
 
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	//// test /////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	TArray<FVertexData> TestVertices;
+	TArray<uint32> TestIndices;
+	TArray<FMeshSection> TestSections;
+
+	//FRawObjData RawData;
+	//const char* TestFilePath = "Resources/test.obj";
+	//const char* TestBinFilePath = "Resources/test.bin";
+
+	////if (FObjParser::LoadObj(TestFilePath, RawData))
+	////{
+	////	if (FObjParser::ConvertObjToVertex(RawData, TestVertices, TestIndices, TestSections))
+	////	{			
+	////		FObjParser::SaveMeshToBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
+	////	}
+	////}
+
+	// Binary Load Test
+	//FObjParser::LoadMeshFromBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
+	//// Binary Load Test
+	//FObjParser::LoadMeshFromBinary(TestBinFilePath, TestVertices, TestIndices, TestSections);
+
+	//FMeshDesc TestMeshDesc{
+	//	.VertexData = TestVertices.data(),
+	//	.VertexDataSize = static_cast<uint32>(sizeof(FVertexData) * TestVertices.size()),
+	//	.VertexStride = static_cast<uint32>(sizeof(FVertexData)),
+	//	.VertexCount = static_cast<uint32>(TestVertices.size()),
+	//	.IndexData = TestIndices.data(),
+	//	.IndexDataSize = static_cast<uint32>(sizeof(uint32) * TestIndices.size()),
+	//	.IndexCount = static_cast<uint32>(TestIndices.size()),
+	//};
+
+
+	//TSharedPtr<FMesh> TestMesh = Renderer.CreateMesh(TestMeshDesc);
+	//RenderResources.RegisterMesh(FName("MyTestMesh"), TestMesh);
+
+	//UStaticMesh* TestMeshAsset = NewObject<UStaticMesh>();
+	//UStaticMeshDesc TestMeshAssetDesc{};
+	//TestMeshAssetDesc.ID = FName("MyTestMesh");
+	//TestMeshAssetDesc.Name = "MyTestMesh";
+	//TestMeshAssetDesc.Mesh = TestMesh.get();
+	//TestMeshAsset->Load(TestMeshAssetDesc);
+	//FAssetRegistry::GetInstance().Register(FName("MyTestMesh"), TestMeshAsset);
+
+	//UScene* ActiveScene = SceneManager.CurrentScene;
+	//if (ActiveScene)
+	//{
+	//	// 1. 기본 액터 스폰
+	//	AActor* MyObjActor = ActiveScene->SpawnActor<AActor>();
+
+	//	// 2. 렌더링을 담당하는 프리미티브 컴포넌트 생성 및 루트 장착
+	//	MyObjActor->CreateRootComponent(UPrimitiveComponent::StaticClass());
+	//	if (auto* PrimComp = MyObjActor->GetRootComponent()->Cast<UPrimitiveComponent>())
+	//	{
+	//		PrimComp->SetMesh(TestMeshAsset);
+	//		PrimComp->SetMaterial(FAssetRegistry::GetInstance().Get<UMaterial>("Simple"));
+	//		PrimComp->SetRenderType(ERenderType::Primitive);   // Simple 렌더 타입
+	//		PrimComp->SetColor(FVector4(0.8f, 0.8f, 0.8f, 1.0f));
+	//	}
+	//	// 3. 크기(Scale) 및 위치(Location) 설정
+	//	FTransform Transform;
+	//	Transform.Location = FVector(0.0f, 0.0f, 0.0f);
+	//	Transform.Scale3D = FVector(1.0f, 1.0f, 1.0f); // 모델이 너무 작거나 크면 조절
+	//	MyObjActor->SetTransform(Transform);
+	//}
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////
+#endif
 	FStatsManager::Get().Initialize(Renderer.GetDevice());
 
 
@@ -97,26 +189,62 @@ int WINAPI wWinMain(
 		if (bRequestResize)
 		{
 			Renderer.OnWindowSize(ResizeWidth, ResizeHeight);
+#if defined(_OBJVIEWER)
+			ObjViewer.OnWindowSize(ResizeWidth, ResizeHeight);
+#else
 			EditorApp.OnWindowSize(ResizeWidth, ResizeHeight);
+#endif
 			bRequestResize = false;
 		}
 
 		FInputManager::Get().BeginFrame();
+#if defined(_OBJVIEWER)
+		ObjViewer.Update(FTimeManager::Get().GetDeltaTime());
+#else
 		EditorApp.Update(FTimeManager::Get().GetDeltaTime());
-
+#endif
 		Renderer.BeginFrame();
-		EditorApp.Render();
+#if defined(_OBJVIEWER)
+		ObjViewer.Render();
+		ObjViewer.RenderUI();
+#else
+		EditorApp.Render();		
+#endif
 		Renderer.SwapBuffer();
 
 		//EditorApp.CollectGarbage();
 	}
 
+#if defined(_OBJVIEWER)
+
+#else
 	EditorApp.Shutdown();
 	SceneManager.Release();
+#endif
 	//EditorApp.CollectGarbage();
 	Renderer.Shutdown();
 
 	return 0;
+	}
+	catch (const std::exception& Error)
+	{
+		UE_LOG_ERROR("[Fatal] %s", Error.what());
+		OutputDebugStringA(Error.what());
+		OutputDebugStringA("\n");
+		MessageBox(nullptr, WindowsUtil::ToWString(Error.what()).c_str(), L"MyEngine Fatal Error",
+		            MB_OK | MB_ICONERROR);
+		return -1;
+	}
+	catch (...)
+	{
+		constexpr const char* Message = "알 수 없는 치명적인 오류가 발생했습니다.";
+		UE_LOG_ERROR("[Fatal] %s", Message);
+		OutputDebugStringA(Message);
+		OutputDebugStringA("\n");
+		MessageBox(nullptr, WindowsUtil::ToWString(Message).c_str(), L"MyEngine Fatal Error",
+		            MB_OK | MB_ICONERROR);
+		return -1;
+	}
 }
 
 namespace
@@ -246,6 +374,14 @@ namespace
 			case VK_F7: bRequestNewScene = true; break;
 			}
 			break;
+
+		case WM_MOUSEWHEEL:
+		{
+			const float WheelDelta = static_cast<float>(GET_WHEEL_DELTA_WPARAM(WParam)) / static_cast<float>(WHEEL_DELTA);
+			FInputManager::Get().OnMouseWheel(WheelDelta);
+			break;
+		}		
+
 		default:
 			return DefWindowProc(Window, Message, WParam, LParam);
 		}

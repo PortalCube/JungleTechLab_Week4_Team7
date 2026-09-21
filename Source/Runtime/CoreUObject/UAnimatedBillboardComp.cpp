@@ -99,17 +99,20 @@ void UAnimatedBillboardComp::Update(float DeltaTime) {
 void UAnimatedBillboardComp::RefreshUV()
 {
   if (GridX <= 0 || GridY <= 0) {
-    UVScale = FVector2{1.0f, 1.0f};
-    UVOffset = FVector2{0.0f, 0.0f};
+    SetUVScale(FVector2{1.0f, 1.0f});
+    SetUVOffset(FVector2{0.0f, 0.0f});
     return;
   }
 
-  UVScale.X = 1.0f / static_cast<float>(GridX);
-  UVScale.Y = 1.0f / static_cast<float>(GridY);
+  const FVector2 UVScale{
+      1.0f / static_cast<float>(GridX),
+      1.0f / static_cast<float>(GridY)};
 
   const int Col = CurrentFrame % GridX;
   const int Row = CurrentFrame / GridX;
 
-  UVOffset.X = static_cast<float>(Col) * UVScale.X;
-  UVOffset.Y = static_cast<float>(Row) * UVScale.Y;
+  SetUVScale(UVScale);
+  SetUVOffset(FVector2{
+      static_cast<float>(Col) * UVScale.X,
+      static_cast<float>(Row) * UVScale.Y});
 }

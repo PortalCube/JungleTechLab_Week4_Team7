@@ -16,9 +16,9 @@ void FPrimitiveVisualizer::Draw(
 {
     if (Component.IsA<UPrimitiveComponent>() == false) { return; }
 
-    auto Mesh = FRenderResourceLibrary::Get().GetMesh(Component.GetPureRenderData().MeshId);
+    UStaticMesh* Mesh = Component.GetRenderData(Camera).Mesh;
     if (!Mesh) return;
     const FMatrix ModelMatrix = Component.GetRenderMatrix(Camera);
-    FAxisAlignedBoundingBox AABB{ *Mesh, ModelMatrix };
+    FAxisAlignedBoundingBox AABB{ *Mesh->Get(), ModelMatrix};
     RenderView.RenderBoxMinMax(AABB.Min, AABB.Max, Color);
 }
