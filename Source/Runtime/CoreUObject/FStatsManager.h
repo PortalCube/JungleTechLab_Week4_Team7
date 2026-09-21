@@ -3,6 +3,15 @@
 #include "Runtime/Core/TMap.h"
 #include <dxgi1_4.h>
 
+struct FStatUnit
+{
+    double FrameTime = 0.0;
+    double GameTime = 0.0;
+    double EditorTime = 0.0;
+    double RenderTime = 0.0;
+    double GPUTime = 0.0;
+};
+
 enum class EStatMemoryCategory
 {
     UObject,

@@ -94,18 +94,24 @@ private:
 	void ShowViewportVerticalSplitter(SSplitter& Splitter);
 	void ShowViewportHorizontalSplitter(SSplitter& Splitter);
 
+
+	const char* MakeUsageBar(double Used, double Total, int BarLength = 20);
 	// 스탯 드로우
-	void DrawStatLine(ImDrawList* DrawList, const ImVec2& Position, float& Y,
-		const char* Name, const char* Value, FVector4 Color);
-
-	void DrawRow(ImDrawList* DrawList, const ImVec2& Pos, float& Y, const char* Str, double Data, float RowColor);
-
+	void DrawRow(ImDrawList* DrawList, const ImVec2& Pos, float& Y,
+		const float& Width, const float& RowHeight,
+		const float& ValueOffsetX,
+		const char* Name, const char* Value, double Data,
+		FVector4 TextColor, FVector4 RowColor);
 	void DrawStatsMemory();
+	void DrawGPUStatsMemory();
 	void DrawStatsFPS();
 
 	float DT = 1.0f;
 	bool bOpenMemory = false;
 	bool bOpenFPS = false;
+
+	float CpuY = 0;
+	float GpuY = 0;
 
 	FCameraInputController CameraController;
 };

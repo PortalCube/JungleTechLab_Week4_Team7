@@ -2,6 +2,7 @@
 
 #include "Runtime/Core/FPoolAllocator.h"
 #include <malloc.h>
+#include <array>
 #include "Runtime/Core/Log.h"
 
 class FAllocator
@@ -18,6 +19,7 @@ public:
                 Shutdown();
                 return false;
             }
+            ++PoolCount;
         }
 
         return true;
@@ -80,16 +82,16 @@ public:
 
     void Shutdown()
     {
-        for (FPoolAllocator& Pool : Pools)
+        for (size_t i = 0; i < PoolCount; ++i)
         {
-            Pool.Shutdown();
+            FPoolAllocator& Pool = Pools[i];
         }
     }
 
 private:
     //static constexpr size_t PoolBlockSize = 256;
     // inline static FPoolAllocator PoolAllocator;
-    
+    UINT PoolCount;
     inline static constexpr std::array<size_t, 5> SizeClasses = { 16, 32, 64, 128, 256 };
     std::array<FPoolAllocator, 5> Pools;
 

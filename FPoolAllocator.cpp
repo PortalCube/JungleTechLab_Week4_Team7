@@ -16,11 +16,9 @@ bool FPoolAllocator::Init(size_t InBlockSize, size_t InBlockCount)
     BlockSize = InBlockSize;
     BlockCount = InBlockCount;
 
-    // Memory = std::malloc(BlockSize * BlockCount);
-
     const size_t TotalSize = BlockSize * BlockCount;
 
-    Memory = VirtualAlloc(
+    void* Memory = VirtualAlloc(
         nullptr,
         TotalSize,
         MEM_RESERVE | MEM_COMMIT,
@@ -46,12 +44,11 @@ bool FPoolAllocator::Init(size_t InBlockSize, size_t InBlockCount)
 
     // 마지막 Block
     FFreeBlock* LastBlock = reinterpret_cast<FFreeBlock*>(Current);
-
     LastBlock->Next = nullptr;
-
     FreeList = static_cast<FFreeBlock*>(Memory);
-
     FreeBlockCount = BlockCount;
+
+    Chunks.push_back({ Memory });
 
     FStatsManager::Get().AddMemory(
         EStatMemoryCategory::MemoryPool,
@@ -75,7 +72,10 @@ void* FPoolAllocator::Allocate()
 {
     if (!FreeList)
     {
-        return nullptr;
+        if (!AddChunk())
+        {
+            return nullptr;
+        }
     }
 
     UE_LOG("Memory Pool Alocate!");
@@ -127,30 +127,33 @@ void FPoolAllocator::Free(void* Ptr)
 
 void FPoolAllocator::Shutdown()
 {
-    if (Memory)
+    const size_t TotalMemory = BlockSize * BlockCountPerChunk * Chunks.size();
+
+    FStatsManager::Get().RemoveMemory(
+        EStatMemoryCategory::MemoryPool,
+        TotalMemory
+    );
+
+    FStatsManager::Get().RemoveMemory(
+        EStatMemoryCategory::MemoryPoolFree,
+        BlockSize * FreeBlockCount
+    );
+
+    FStatsManager::Get().RemoveMemory(
+        EStatMemoryCategory::MemoryPoolUsed,
+        BlockSize * GetUsedBlockCount()
+    );
+
+    for (const FPoolChunk& Chunk : Chunks)
     {
-        const size_t PoolSize = BlockSize * BlockCount;
-
-        FStatsManager::Get().RemoveMemory(
-            EStatMemoryCategory::MemoryPool,
-            PoolSize
-        );
-
-        FStatsManager::Get().RemoveMemory(
-            EStatMemoryCategory::MemoryPoolFree,
-            BlockSize * FreeBlockCount
-        );
-
-        FStatsManager::Get().RemoveMemory(
-            EStatMemoryCategory::MemoryPoolUsed,
-            BlockSize * GetUsedBlockCount()
-        );
-
-        // std::free(Memory);
-        VirtualFree(Memory, 0, MEM_RELEASE);
+        if (Chunk.Memory)
+        {
+            VirtualFree( Chunk.Memory, 0, MEM_RELEASE );
+        }
     }
 
-    Memory = nullptr;
+    Chunks.clear();
+
     FreeList = nullptr;
 
     BlockSize = 0;
@@ -160,23 +163,68 @@ void FPoolAllocator::Shutdown()
 
 bool FPoolAllocator::Owns(void* Ptr) const
 {
-    if (!Memory || !Ptr)
-    {
+    if (!Ptr)
         return false;
-    }
-
-    uintptr_t Start = reinterpret_cast<uintptr_t>(Memory);
-
-    uintptr_t End = Start + BlockSize * BlockCount;
 
     uintptr_t Address = reinterpret_cast<uintptr_t>(Ptr);
 
-    if (Address < Start || Address >= End)
+    for (const FPoolChunk& Chunk : Chunks)
+    {
+        uintptr_t Start = reinterpret_cast<uintptr_t>(Chunk.Memory);
+        uintptr_t End = Start + BlockSize * BlockCountPerChunk;
+
+        if (Address >= Start && Address < End)
+        {
+            return ((Address - Start) % BlockSize) == 0;
+        }
+    }
+
+    return false;
+}
+
+bool FPoolAllocator::AddChunk()
+{
+    const size_t ChunkSize = BlockSize * BlockCountPerChunk;
+
+    void* Memory = VirtualAlloc(
+        nullptr,
+        ChunkSize,
+        MEM_RESERVE | MEM_COMMIT,
+        PAGE_READWRITE
+    );
+
+    if (!Memory)
     {
         return false;
     }
 
-    uintptr_t Offset = Address - Start;
+    // 새 Chunk를 FreeList에 연결
+    char* Current = static_cast<char*>(Memory);
 
-    return (Offset % BlockSize) == 0;
+    for (size_t i = 0; i < BlockCountPerChunk - 1; ++i)
+    {
+        FFreeBlock* Block = reinterpret_cast<FFreeBlock*>(Current);
+        Block->Next = reinterpret_cast<FFreeBlock*>(Current + BlockSize);
+        Current += BlockSize;
+    }
+
+    // 마지막 Block
+    FFreeBlock* LastBlock = reinterpret_cast<FFreeBlock*>(Current);
+    LastBlock->Next = FreeList;
+    FreeList = static_cast<FFreeBlock*>(Memory);
+    FreeBlockCount += BlockCountPerChunk;
+
+    Chunks.push_back({ Memory });
+
+    FStatsManager::Get().AddMemory(
+        EStatMemoryCategory::MemoryPool,
+        BlockSize * BlockCountPerChunk
+    );
+
+    FStatsManager::Get().AddMemory(
+        EStatMemoryCategory::MemoryPoolFree,
+        BlockSize * BlockCountPerChunk
+    );
+
+    return true;
 }
