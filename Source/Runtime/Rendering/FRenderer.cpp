@@ -329,7 +329,7 @@ FRenderer::CreateRenderPipeline(const FRenderPipelineDesc &Desc, EViewModeIndex 
     return nullptr;
   }
 
-  Pipeline->SetVertexShaderSize(Blob->GetBufferSize());
+  size_t VSSize = Blob->GetBufferSize();
   FStatsManager::Get().AddMemory(EStatMemoryCategory::VertexShader, Blob->GetBufferSize());
   
   Microsoft::WRL::ComPtr<ID3D11InputLayout> InputLayout;
@@ -360,7 +360,8 @@ FRenderer::CreateRenderPipeline(const FRenderPipelineDesc &Desc, EViewModeIndex 
   if (FAILED(Result)) {
     return nullptr;
   }
-  Pipeline->SetPixelShaderSize(Blob->GetBufferSize());
+
+  size_t PSSize = Blob->GetBufferSize();
   FStatsManager::Get().AddMemory(EStatMemoryCategory::PixelShader, Blob->GetBufferSize());
 
   auto RasterizerState = GetOrCreateRasterizerState(ClonedDesc.Rasterizer);
@@ -388,7 +389,12 @@ FRenderer::CreateRenderPipeline(const FRenderPipelineDesc &Desc, EViewModeIndex 
       .BlendState           = std::move(BlendState),
   };
 
-  return MakeShared<FRenderPipeline>(std::move(CreateInfo));
+  TSharedPtr<FRenderPipeline> Pipeline = MakeShared<FRenderPipeline>(std::move(CreateInfo));
+
+  Pipeline->SetPixelShaderSize(VSSize);
+  Pipeline->SetPixelShaderSize(PSSize);
+
+  return Pipeline;
 }
 
 Microsoft::WRL::ComPtr<ID3D11RasterizerState>
