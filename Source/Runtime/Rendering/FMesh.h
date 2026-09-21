@@ -27,6 +27,8 @@ public:
 	// 버퍼 데이터 갱신
 	bool UpdateBuffers(ID3D11Device* Device, ID3D11DeviceContext* Context, const struct FMeshDesc& Desc);
 	FName MeshId{"None"};
+
+	uint32 GetBufferSize() { return VertexBufferSize + IndexBufferSize; }
 private:
 	void BindResources(ID3D11DeviceContext& Context) const;
 

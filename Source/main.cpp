@@ -49,7 +49,6 @@ int WINAPI wWinMain(
 	_In_ LPWSTR lpCmdLine,
 	_In_ int nShowCmd) 
 {
-	FMemory::Init();
 
 	try
 	{
@@ -70,6 +69,9 @@ int WINAPI wWinMain(
 	}
 	FRenderView RenderView{ Renderer };
 
+	FStatsManager::Get().Initialize(Renderer.GetDevice());
+	FMemory::Init();
+
 	FRenderResourceLibrary& RenderResources = FRenderResourceLibrary::Get();
 	if (!RenderResources.Initialize(Renderer))
 	{
@@ -79,6 +81,8 @@ int WINAPI wWinMain(
 	UClass::ResolveTypeBitsets();
 
 	FResourceLoader::LoadAssets();
+
+
 
 #if defined(_OBJVIEWER)
 	FObjViewerApplication ObjViewer(Renderer);
@@ -171,7 +175,7 @@ int WINAPI wWinMain(
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////
 #endif
-	FStatsManager::Get().Initialize(Renderer.GetDevice());
+	
 
 
 	bool bQuit = false;

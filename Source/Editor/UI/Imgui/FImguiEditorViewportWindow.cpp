@@ -463,15 +463,15 @@ void FImguiEditorViewportWindow::DrawStatsMemory()
     // Ram
     DrawRow(DrawList, Pos, Y, "Ram Used",
         static_cast<double>(FStatsManager::Get().GetSystemMemoryUsed())
-        / (1024.0 * 1024.0 * 1024.0), 10.0f);
+        / (1024.0 * 1024.0 ), 10.0f);   // GB 단위 변환 필요
     // Ram Available
     DrawRow(DrawList, Pos, Y, "Ram Available",
         static_cast<double>(FStatsManager::Get().GetSystemMemoryAvailable())
-        / (1024.0 * 1024.0 * 1024.0), 30.0f);
+        / (1024.0 * 1024.0 ), 30.0f);   // GB 단위 변환 필요
     // GPU
     DrawRow(DrawList, Pos, Y, "GPU Memory Used",
         static_cast<double>(FStatsManager::Get().GetGPUMemoryUsed())
-        / (1024.0 * 1024.0 * 1024.0), 10.0f);
+        / (1024.0 * 1024.0), 10.0f);
     // GPU Available
     DrawRow(DrawList, Pos, Y, "GPU Memory Available",
         static_cast<double>(FStatsManager::Get().GetGPUMemoryBudget())
@@ -490,17 +490,22 @@ void FImguiEditorViewportWindow::DrawStatsMemory()
         static_cast<double>(FStatsManager::Get().GetTextureMemoryUsed())
         / (1024.0 * 1024.0), 10.0f);
 
+    // Static Mesh
+    DrawRow(DrawList, Pos, Y, "Static Mesh",
+        static_cast<double>(FStatsManager::Get().GetStaticMeshMemoryUsed()) //, 10.0f);
+        / (1024.0 * 1024.0), 30.0f);
+
     DrawRow(DrawList, Pos, Y, "Total Memory Pool",
         static_cast<double>(FStatsManager::Get().GetMemoryPool()) //, 30.0f);
-        / (1024.0 * 1024.0), 30.0f);
+        / (1024.0 * 1024.0), 10.0f);
 
     DrawRow(DrawList, Pos, Y, "Memory Pool Used",
         static_cast<double>(FStatsManager::Get().GetMemoryPoolUsed()) //, 10.0f);
-        / (1024.0 * 1024.0), 10.0f);
+        / (1024.0 * 1024.0), 30.0f);
 
     DrawRow(DrawList, Pos, Y, "Memory Pool Free",
         static_cast<double>(FStatsManager::Get().GetMemoryPoolFree()) //, 30.0f);
-        / (1024.0 * 1024.0), 30.0f);
+        / (1024.0 * 1024.0), 10.0f);
 
 }
 
@@ -525,62 +530,62 @@ void FImguiEditorViewportWindow::DrawStatsFPS()
     DrawStatLine( DrawList, FPSPos, Y, "", Buffer, FPSColor);
 }
 
-void FImguiEditorViewportWindow::ShowViewportVerticalSplitter(SSplitter& Splitter)
-{   //SplitterV용
-    const FRect& R = Splitter.Rect;
-    const ImVec2 Origin = ImGui::GetMainViewport()->Pos;
+//void FImguiEditorViewportWindow::ShowViewportVerticalSplitter(SSplitter& Splitter)
+//{   //SplitterV용
+//    const FRect& R = Splitter.Rect;
+//    const ImVec2 Origin = ImGui::GetMainViewport()->Pos;
+//
+//    float Top = R.GetHeight() * Splitter.Ratio;
+//    float Bottom = R.GetHeight() - Top;
+//    const float Y = Origin.y + R.Top + Top;
+//
+//    ImGui::PushID(&Splitter);
+//
+//    const ImVec4 Color = ImGui::GetStyleColorVec4(ImGuiCol_Separator);
+//    ImGui::PushStyleColor(ImGuiCol_SeparatorHovered, Color);
+//    ImGui::PushStyleColor(ImGuiCol_SeparatorActive, Color);
+//
+//    ImGui::SplitterBehavior(
+//        ImRect(ImVec2(Origin.x + R.Left, Y - 3),
+//            ImVec2(Origin.x + R.Right, Y + 3)),
+//        ImGui::GetID("VerticalSplitter"),
+//        ImGuiAxis_Y,
+//        &Top, &Bottom,
+//        10.0f, 10.0f);
+//
+//    ImGui::PopStyleColor(2);
+//    ImGui::PopID();
+//
+//    Splitter.Ratio = Top / R.GetHeight();
+//    Splitter.OnResize(R);
+//}
 
-    float Top = R.GetHeight() * Splitter.Ratio;
-    float Bottom = R.GetHeight() - Top;
-    const float Y = Origin.y + R.Top + Top;
-
-    ImGui::PushID(&Splitter);
-
-    const ImVec4 Color = ImGui::GetStyleColorVec4(ImGuiCol_Separator);
-    ImGui::PushStyleColor(ImGuiCol_SeparatorHovered, Color);
-    ImGui::PushStyleColor(ImGuiCol_SeparatorActive, Color);
-
-    ImGui::SplitterBehavior(
-        ImRect(ImVec2(Origin.x + R.Left, Y - 3),
-            ImVec2(Origin.x + R.Right, Y + 3)),
-        ImGui::GetID("VerticalSplitter"),
-        ImGuiAxis_Y,
-        &Top, &Bottom,
-        10.0f, 10.0f);
-
-    ImGui::PopStyleColor(2);
-    ImGui::PopID();
-
-    Splitter.Ratio = Top / R.GetHeight();
-    Splitter.OnResize(R);
-}
-
-void FImguiEditorViewportWindow::ShowViewportHorizontalSplitter(SSplitter& Splitter)
-{
-    const FRect& R = Splitter.Rect;
-    const ImVec2 Origin = ImGui::GetMainViewport()->Pos;
-
-    float Left = R.GetWidth() * Splitter.Ratio;
-    float Right = R.GetWidth() - Left;
-    const float X = Origin.x + R.Left + Left;
-    ImGui::PushID(&Splitter);
-
-    const ImVec4 Color = ImGui::GetStyleColorVec4(ImGuiCol_Separator);
-
-    ImGui::PushStyleColor(ImGuiCol_SeparatorHovered, Color);
-    ImGui::PushStyleColor(ImGuiCol_SeparatorActive, Color);
-
-    ImGui::SplitterBehavior(
-        ImRect(ImVec2(X - 3, Origin.y + R.Top),
-            ImVec2(X + 3, Origin.y + R.Bottom)),
-        ImGui::GetID("HorizontalSplitter"),
-        ImGuiAxis_X,
-        &Left, &Right,
-        10.0f, 10.0f);
-
-    ImGui::PopStyleColor(2);
-    ImGui::PopID();
-
-    Splitter.Ratio = Left / R.GetWidth();
-    Splitter.OnResize(R);
-}
+//void FImguiEditorViewportWindow::ShowViewportHorizontalSplitter(SSplitter& Splitter)
+//{
+//    const FRect& R = Splitter.Rect;
+//    const ImVec2 Origin = ImGui::GetMainViewport()->Pos;
+//
+//    float Left = R.GetWidth() * Splitter.Ratio;
+//    float Right = R.GetWidth() - Left;
+//    const float X = Origin.x + R.Left + Left;
+//    ImGui::PushID(&Splitter);
+//
+//    const ImVec4 Color = ImGui::GetStyleColorVec4(ImGuiCol_Separator);
+//
+//    ImGui::PushStyleColor(ImGuiCol_SeparatorHovered, Color);
+//    ImGui::PushStyleColor(ImGuiCol_SeparatorActive, Color);
+//
+//    ImGui::SplitterBehavior(
+//        ImRect(ImVec2(X - 3, Origin.y + R.Top),
+//            ImVec2(X + 3, Origin.y + R.Bottom)),
+//        ImGui::GetID("HorizontalSplitter"),
+//        ImGuiAxis_X,
+//        &Left, &Right,
+//        10.0f, 10.0f);
+//
+//    ImGui::PopStyleColor(2);
+//    ImGui::PopID();
+//
+//    Splitter.Ratio = Left / R.GetWidth();
+//    Splitter.OnResize(R);
+//}
