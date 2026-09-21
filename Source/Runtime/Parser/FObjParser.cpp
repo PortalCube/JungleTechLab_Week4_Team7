@@ -83,7 +83,7 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
             if (NewIndexCount > 0)
             {
                 FMeshSection NewMeshSection;
-                NewMeshSection.MaterialName = CurrentMaterialName;
+                NewMeshSection.SectionName = CurrentMaterialName;
                 NewMeshSection.StartIndex = CurrentStartindex;
                 NewMeshSection.IndexCount = NewIndexCount;
 
@@ -103,7 +103,7 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
     if (FinalndexCount > 0)
     {
         FMeshSection FinalMeshSection;
-        FinalMeshSection.MaterialName = CurrentMaterialName;
+        FinalMeshSection.SectionName = CurrentMaterialName;
         FinalMeshSection.StartIndex = CurrentStartindex;
         FinalMeshSection.IndexCount = FinalndexCount;
 
@@ -179,10 +179,10 @@ bool FObjParser::SaveMeshToBinary(const char* OutFilePath, const TArray<FVertexD
 
     for (const auto& Section : InSections)
     {
-        uint32 NameLen = static_cast<uint32>(Section.MaterialName.size());
+        uint32 NameLen = static_cast<uint32>(Section.SectionName.size());
         File.write(reinterpret_cast<const char*>(&NameLen), sizeof(uint32));
 
-        File.write(Section.MaterialName.data(), NameLen);
+        File.write(Section.SectionName.data(), NameLen);
 
         File.write(reinterpret_cast<const char*>(&Section.StartIndex), sizeof(uint32));
         File.write(reinterpret_cast<const char*>(&Section.IndexCount), sizeof(uint32));
@@ -218,8 +218,8 @@ bool FObjParser::LoadMeshFromBinary(const char* InFilePath, TArray<FVertexData>&
         uint32 NameLen = 0;
         File.read(reinterpret_cast<char*>(&NameLen), sizeof(uint32));
 
-        OutSections[i].MaterialName.resize(NameLen);
-        File.read(&OutSections[i].MaterialName[0], NameLen);
+        OutSections[i].SectionName.resize(NameLen);
+        File.read(&OutSections[i].SectionName[0], NameLen);
 
         File.read(reinterpret_cast<char*>(&OutSections[i].StartIndex), sizeof(uint32));
         File.read(reinterpret_cast<char*>(&OutSections[i].IndexCount) , sizeof(uint32));

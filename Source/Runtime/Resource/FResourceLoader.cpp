@@ -438,6 +438,7 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 		.IndexData = Indices.data(),
 		.IndexDataSize = static_cast<uint32>(sizeof(uint32) * Indices.size()),
 		.IndexCount = static_cast<uint32>(Indices.size()),
+		.Sections = Sections
 	};
 
 	TSharedPtr<FMesh> Mesh = Renderer->CreateMesh(MeshDesc);
@@ -454,6 +455,13 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 
 	StaticMesh->Load(StaticMeshDesc);
 	Registry.Register(ID, StaticMesh);
+
+	// Load mtl
+	fs::path MtlPath = fs::path(MeshFilePath.substr(0, MeshFilePath.find_last_of('.')) + ".mtl");
+	if (fs::exists(MtlPath))
+	{
+		LoadMtlMaterial(MtlPath);
+	}	
 }
 
 void FResourceLoader::LoadFontAsset(const FArchive& Archive, const FName& ID)
@@ -501,10 +509,10 @@ void FResourceLoader::LoadTextureAsset(const FArchive& Archive, const FName& ID)
 	TextureDesc.Name = Archive.GetString("Name");
 
 	fs::path RawTexturePath = fs::path(EngineUtil::GetContentDirectory()) / Archive.GetString("RawTextureFilePath");
-	if (RawTexturePath.extension() != ".dds")
-	{
-		RawTexturePath.replace_extension(".dds");
-	}
+	//if (RawTexturePath.extension() != ".dds")
+	//{
+	//	RawTexturePath.replace_extension(".dds");
+	//}
 
 	FRenderResourceLibrary& ResourceLibrary = FRenderResourceLibrary::Get();
 	FRenderer* Renderer = ResourceLibrary.GetRenderer();
@@ -529,4 +537,76 @@ void FResourceLoader::LoadTextureAsset(const FArchive& Archive, const FName& ID)
 
 	TextureAsset->Load(TextureDesc);
 	Registry.Register(ID, TextureAsset);
+}
+
+void FResourceLoader::LoadMtlMaterial(const std::filesystem::path& MtlFilePath)
+{
+	TArray<FMtlData> MtlData;
+	if (!FObjParser::LoadMtl(MtlFilePath.string().c_str(), MtlData))
+	{
+		return;
+	}
+
+	std::filesystem::path ParentPath = std::filesystem::path(MtlFilePath).parent_path();
+
+	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+
+	for (const auto& Mtl : MtlData)
+	{		
+		FName TextureId = "None";
+		if (!Mtl.map_Kd.empty())
+		{
+			FArchive TextureArchive;
+			TextureArchive.SetString("Name", Mtl.map_Kd);
+
+			std::filesystem::path TexturePath = ParentPath / Mtl.map_Kd;
+			TextureArchive.SetString("RawTextureFilePath", TexturePath.generic_string());
+
+			TextureId = FName(Mtl.map_Kd);
+
+			if (!Registry.Get<UTexture>(TextureId))
+			{
+				LoadTextureAsset(TextureArchive, TextureId);
+			}
+		}
+		else
+		{
+			TextureId = FName(Mtl.MaterialName + "_Solid");
+
+			if (!Registry.Get<UTexture>(TextureId))
+			{
+				FRenderer* Renderer = FRenderResourceLibrary::Get().GetRenderer();
+				FVector4 Color(Mtl.Kd.X, Mtl.Kd.Y, Mtl.Kd.Z, 1.0f);				
+				auto RawTexture = Renderer->CreateSolidTexture(Color);
+
+				UTexture* SolidTexture = NewObject<UTexture>();
+
+				UTextureDesc TexDesc{};
+				TexDesc.ID = TextureId;
+				TexDesc.Name = TextureId.ToString();
+				TexDesc.Texture = RawTexture.get();
+
+				FRenderResourceLibrary::Get().RegisterTexture(TextureId.ToString(), RawTexture);
+				SolidTexture->Load(TexDesc);
+				Registry.Register(TextureId, SolidTexture);
+			}
+		}
+
+		FName MaterialId = FName(Mtl.MaterialName);
+		if (!Registry.Get<UMaterial>(MaterialId))
+		{
+			FArchive SamplerArchive;
+			SamplerArchive.SetString("FilterMode", "Bilinear");
+			SamplerArchive.SetString("WrapMode", "Wrap");
+
+			FArchive MaterialArchive;
+			MaterialArchive.SetString("Name", Mtl.MaterialName);
+			MaterialArchive.SetString("UPipelineID", "Pipeline/Textured.json");
+
+			MaterialArchive.SetString("UTextureID", TextureId.ToString());			
+			MaterialArchive.SetArchive("TextureSampler", SamplerArchive);
+
+			LoadMaterialAsset(MaterialArchive, MaterialId);
+		}
+	}
 }
