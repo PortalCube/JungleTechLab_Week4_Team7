@@ -356,35 +356,54 @@ void FImguiPropertyWindow::ShowStaticMeshSettings(AActor& Actor, UStaticMeshComp
 
 	if (ImGui::BeginTable(
 		"StaticMeshAssetSlots",
-		2,
+		3,
 		ImGuiTableFlags_SizingStretchSame
 	))
 	{
-		// 첫 번째 행
 		ImGui::TableNextRow();
 
 		ImGui::TableSetColumnIndex(0);
-		ShowMaterialSlot(MeshComp);
-
-		ImGui::TableSetColumnIndex(1);
-		ShowTextureSlot(MeshComp);
-
-		// 두 번째 행
-		ImGui::TableNextRow();
-
-		ImGui::TableSetColumnIndex(0);
-		ShowPipelineSlot(MeshComp);
-
-		ImGui::TableSetColumnIndex(1);
 		ShowStaticMeshSlot(MeshComp);
+
+		if (MeshComp.GetMaterialSlotLength() > 1)
+		{
+			ImGui::TableNextRow();
+
+			ImGui::TableSetColumnIndex(0);
+			ShowApplyAllMaterialSlot(MeshComp);
+
+			ImGui::TableSetColumnIndex(1);
+			ShowApplyAllTextureSlot(MeshComp);
+
+			ImGui::TableSetColumnIndex(2);
+			ShowApplyAllPipelineSlot(MeshComp);
+		}
+
+		for (int i = 0; i < MeshComp.GetMaterialSlotLength(); ++i)
+		{
+			ImGui::PushID(i);
+
+			ImGui::TableNextRow();
+
+			ImGui::TableSetColumnIndex(0);
+			ShowMaterialSlot(MeshComp, i);
+
+			ImGui::TableSetColumnIndex(1);
+			ShowTextureSlot(MeshComp, i);
+
+			ImGui::TableSetColumnIndex(2);
+			ShowPipelineSlot(MeshComp, i);
+
+			ImGui::PopID();
+		}
 
 		ImGui::EndTable();
 	}
 }
 
-void FImguiPropertyWindow::ShowMaterialSlot(UStaticMeshComponent& MeshComp) const
+void FImguiPropertyWindow::ShowMaterialSlot(UStaticMeshComponent& MeshComp, int Slot) const
 {
-	UMaterial* Material = MeshComp.GetMaterialInstance()->Material;
+	UMaterial* Material = MeshComp.GetMaterialInstance(Slot)->Material;
 
 	ImGui::Spacing();
 	ImGui::TextDisabled("Material");
@@ -406,7 +425,7 @@ void FImguiPropertyWindow::ShowMaterialSlot(UStaticMeshComponent& MeshComp) cons
 
 			if (NewMaterial)
 			{
-				MeshComp.SetMaterial(NewMaterial);
+				MeshComp.SetMaterial(NewMaterial, Slot);
 			}
 		}
 	}
@@ -414,9 +433,9 @@ void FImguiPropertyWindow::ShowMaterialSlot(UStaticMeshComponent& MeshComp) cons
 	ImGui::EndDragDropTarget();
 }
 
-void FImguiPropertyWindow::ShowPipelineSlot(UStaticMeshComponent& MeshComp) const
+void FImguiPropertyWindow::ShowPipelineSlot(UStaticMeshComponent& MeshComp, int Slot) const
 {
-	UPipeline* Pipeline = MeshComp.GetMaterialInstance()->Pipeline;
+	UPipeline* Pipeline = MeshComp.GetMaterialInstance(Slot)->Pipeline;
 
 	ImGui::Spacing();
 	ImGui::TextDisabled("Pipeline");
@@ -438,7 +457,7 @@ void FImguiPropertyWindow::ShowPipelineSlot(UStaticMeshComponent& MeshComp) cons
 
 			if (NewPipeline)
 			{
-				MeshComp.SetPipeline(NewPipeline);
+				MeshComp.SetPipeline(NewPipeline, Slot);
 			}
 		}
 	}
@@ -446,9 +465,9 @@ void FImguiPropertyWindow::ShowPipelineSlot(UStaticMeshComponent& MeshComp) cons
 	ImGui::EndDragDropTarget();
 }
 
-void FImguiPropertyWindow::ShowTextureSlot(UStaticMeshComponent& MeshComp) const
+void FImguiPropertyWindow::ShowTextureSlot(UStaticMeshComponent& MeshComp, int Slot) const
 {
-	UTexture* TextureAsset = MeshComp.GetMaterialInstance()->Texture;
+	UTexture* TextureAsset = MeshComp.GetMaterialInstance(Slot)->Texture;
 	FTexture* CurrentTexture = nullptr;
 	
 	if (TextureAsset)
@@ -484,7 +503,7 @@ void FImguiPropertyWindow::ShowTextureSlot(UStaticMeshComponent& MeshComp) const
 
 			if (Texture)
 			{
-				MeshComp.SetTexture(Texture);
+				MeshComp.SetTexture(Texture, Slot);
 			}
 		}
 	}
@@ -523,6 +542,107 @@ void FImguiPropertyWindow::ShowStaticMeshSlot(UStaticMeshComponent& MeshComp) co
 
 	ImGui::EndDragDropTarget();
 }
+
+
+void FImguiPropertyWindow::ShowApplyAllMaterialSlot(UStaticMeshComponent& MeshComp) const
+{
+	ImGui::Spacing();
+	ImGui::TextDisabled("Material");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button("Apply All Material", ImVec2(FullWidth, SlotSize));
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UMaterial* NewMaterial = Dropped->Ptr->Cast<UMaterial>();
+
+			if (NewMaterial)
+			{
+				for (int i = 0; i < MeshComp.GetMaterialSlotLength(); ++i)
+				{
+					MeshComp.SetMaterial(NewMaterial, i);
+				}
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
+}
+
+void FImguiPropertyWindow::ShowApplyAllPipelineSlot(UStaticMeshComponent& MeshComp) const
+{
+	ImGui::Spacing();
+	ImGui::TextDisabled("Pipeline");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button("Apply All Pipeline", ImVec2(FullWidth, SlotSize));
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UPipeline* NewPipeline = Dropped->Ptr->Cast<UPipeline>();
+
+			if (NewPipeline)
+			{
+				for (int i = 0; i < MeshComp.GetMaterialSlotLength(); ++i)
+				{
+					MeshComp.SetPipeline(NewPipeline, i);
+				}
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
+}
+
+void FImguiPropertyWindow::ShowApplyAllTextureSlot(UStaticMeshComponent& MeshComp) const
+{
+	ImGui::Spacing();
+	ImGui::TextDisabled("Texture");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button("Apply All Texture", ImVec2(FullWidth, SlotSize));
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UTexture* Texture = Dropped->Ptr->Cast<UTexture>();
+
+			if (Texture)
+			{
+				for (int i = 0; i < MeshComp.GetMaterialSlotLength(); ++i)
+				{
+					MeshComp.SetTexture(Texture, i);
+				}
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
+}
+
 
 void FImguiPropertyWindow::ShowGizmoSettings(FEditor& Editor) const
 {

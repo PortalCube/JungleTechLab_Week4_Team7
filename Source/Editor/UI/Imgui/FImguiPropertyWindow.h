@@ -44,10 +44,14 @@ private:
 	void ShowStaticMeshSettings(AActor& Actor, UStaticMeshComponent& MeshComp, bool bIsRoot) const;
 
 	// 머티리얼의 텍스처 미리보기 겸 드롭 타깃.
-	void ShowMaterialSlot(UStaticMeshComponent& MeshComp) const;
-	void ShowPipelineSlot(UStaticMeshComponent& MeshComp) const;
-	void ShowTextureSlot(UStaticMeshComponent& MeshComp) const;
+	void ShowMaterialSlot(UStaticMeshComponent& MeshComp, int Slot = 0) const;
+	void ShowPipelineSlot(UStaticMeshComponent& MeshComp, int Slot = 0) const;
+	void ShowTextureSlot(UStaticMeshComponent& MeshComp, int Slot = 0) const;
 	void ShowStaticMeshSlot(UStaticMeshComponent& MeshComp) const;
+
+	void ShowApplyAllMaterialSlot(UStaticMeshComponent& MeshComp) const;
+	void ShowApplyAllPipelineSlot(UStaticMeshComponent& MeshComp) const;
+	void ShowApplyAllTextureSlot(UStaticMeshComponent& MeshComp) const;
 
 	// 창 하단의 기즈모 모드/공간 선택.
 	void ShowGizmoSettings(FEditor& Editor) const;
