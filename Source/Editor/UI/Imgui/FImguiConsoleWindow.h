@@ -14,7 +14,7 @@ public:
 	FImguiConsoleWindow(const FImguiConsoleWindow&) = delete;
 	FImguiConsoleWindow& operator=(const FImguiConsoleWindow&) = delete;
 
-	void Process(FEditor& Editor);
+	void Process(FEditor& Editor, std::function<void(const char *)> f);
 
 private:
 
@@ -51,4 +51,7 @@ private:
 	ImGuiTextFilter Filter;
 	bool AutoScroll = true;
 	bool ScrollToBottom = false;
+
+	// 명령 함수
+	std::function<void(const char*)> ExecuteFunction;
 };

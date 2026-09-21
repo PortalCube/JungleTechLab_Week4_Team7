@@ -8,10 +8,12 @@
 #include "Editor/UI/Imgui/FImguiConsoleWindow.h"
 #include "Editor/UI/Imgui/FImguiWorldOutliner.h"
 #include "Editor/UI/Imgui/FImguiContentsDrawer.h"
+#include "Editor/UI/Imgui/FImguiStatsWindow.h"
 #include "Runtime/Engine/FRenderView.h"
 #include "Runtime/Input/FCameraInputController.h"
 
 #include "Editor/Visualizer/FVisualizerRegistry.h"
+#include "SWindow.h"
 
 class FEditorApplication final {
 	FEditor Editor;
@@ -28,11 +30,13 @@ class FEditorApplication final {
 	FImguiConsoleWindow ConsoleWindow;
 	FImguiWorldOutliner WorldOutliner;
 	FImguiContentsDrawer ContentsDrawer;
+	FImguiStatsWindow StatsWindow;
 
 	FVisualizerRegistry VisualizerRegistry;
 
 	FRenderView* RenderView = nullptr;
 
+	SWindow EditorViewports;
 public:
 	
 	static FEditorApplication& Get()
@@ -53,6 +57,8 @@ public:
 	void Update(float DeltaTime);
 	void Render();
 	void OnWindowSize(UINT Width, UINT Height);
+
+	void ExecuteCommand(const char* Command);
 	
 private:
 	FEditorApplication() = default;

@@ -12,6 +12,7 @@
 #include "ShaderConstants.h"
 #include "ThirdParty/DirectXTK/Inc/DDSTextureLoader.h"
 #include "Vertices.h"
+#include "Runtime/CoreUObject/FStatsManager.h"
 #include <Windows.h>
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -27,6 +28,8 @@ bool FRenderer::Initialize(HWND Window) {
   }
 
   LineBatcher.Initialize(Device.Get()); // batch line
+
+  FStatsManager::Get().Initialize(Device.Get());
 
   return true;
 }
@@ -60,7 +63,8 @@ void FRenderer::BeginFrame() {
   Context->RSSetViewports(1, &Viewport);
   BindEditorViewportRenderTargets();
 
-  constexpr float ClearColor[] = {0.05f, 0.05f, 0.08f, 1.0f};
+  constexpr float ClearColor[] = {0.5f, 0.5f, 0.5f, 1.0f};
+  //constexpr float ClearColor[] = {0.05f, 0.05f, 0.08f, 1.0f};
   Context->ClearRenderTargetView(EditorViewPortRTV.Get(), ClearColor);
   Context->ClearDepthStencilView(
       DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -181,6 +185,8 @@ TSharedPtr<FMesh> FRenderer::CreateMesh(const FMeshDesc &Desc) {
   if (FAILED(Result)) {
     return nullptr;
   }
+  FStatsManager::Get().AddMemory(EStatMemoryCategory::VertexBuffer, Desc.VertexDataSize);
+
   Mesh->VertexCount = Desc.VertexCount;
   Mesh->VertexStride = Desc.VertexStride;
 
@@ -200,6 +206,7 @@ TSharedPtr<FMesh> FRenderer::CreateMesh(const FMeshDesc &Desc) {
     if (FAILED(Result)) {
       return nullptr;
     }
+    FStatsManager::Get().AddMemory(EStatMemoryCategory::IndexBuffer, Desc.IndexDataSize);
   }
   Mesh->IndexCount = Desc.IndexCount;
 
@@ -249,6 +256,8 @@ TSharedPtr<FMesh> FRenderer::CreateDynamicMesh(const FMeshDesc &Desc) {
   if (FAILED(Result)) {
     return nullptr;
   }
+  FStatsManager::Get().AddMemory(EStatMemoryCategory::VertexBuffer, Desc.VertexDataSize);
+
   Mesh->VertexCount = Desc.VertexCount;
   Mesh->VertexStride = Desc.VertexStride;
   Mesh->VertexBufferSize = Desc.VertexDataSize;
@@ -269,6 +278,7 @@ TSharedPtr<FMesh> FRenderer::CreateDynamicMesh(const FMeshDesc &Desc) {
     if (FAILED(Result)) {
       return nullptr;
     }
+    FStatsManager::Get().AddMemory(EStatMemoryCategory::IndexBuffer, Desc.IndexDataSize);
   }
   Mesh->IndexCount = Desc.IndexCount;
   Mesh->IndexBufferSize = Desc.IndexDataSize;
@@ -744,6 +754,7 @@ bool FRenderer::InitializeConstantBuffers() {
   if (FAILED(Result)) {
     return false;
   }
+  FStatsManager::Get().AddMemory(EStatMemoryCategory::ConstantBuffer, ConstantBufferSize);
 
   D3D11_BUFFER_DESC FrameConstantBufferDesc = {
       .ByteWidth = sizeof(FFrameConstants),
@@ -758,6 +769,8 @@ bool FRenderer::InitializeConstantBuffers() {
     return false;
   }
 
+  FStatsManager::Get().AddMemory(EStatMemoryCategory::ConstantBuffer, sizeof(FFrameConstants));
+
   D3D11_BUFFER_DESC lightbufferDesc = {
       .ByteWidth = sizeof(FLightConstants),
       .Usage = D3D11_USAGE_DEFAULT,
@@ -770,6 +783,8 @@ bool FRenderer::InitializeConstantBuffers() {
   if (FAILED(Result)) {
     return false;
   }
+
+  FStatsManager::Get().AddMemory(EStatMemoryCategory::ConstantBuffer, sizeof(FLightConstants));
 
   return true;
 }
@@ -825,16 +840,33 @@ void FRenderer::DrawInstances(const FCamera &Camera) {
 
     // 버퍼 크기 부족 시 동적 확장
     if (RequiredSize > TextInstanceBufferSize) {
-      InstanceBuffer.Reset();
+      const size_t OldSize = TextInstanceBufferSize;
+      Microsoft::WRL::ComPtr<ID3D11Buffer> NewBuffer;
+
+      // InstanceBuffer.Reset();
       D3D11_BUFFER_DESC Desc{};
       Desc.ByteWidth = RequiredSize;
       Desc.Usage = D3D11_USAGE_DYNAMIC;
       Desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
       Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
-      if (FAILED(Device->CreateBuffer(&Desc, nullptr, &InstanceBuffer)))
-        continue;
+      if (FAILED(Device->CreateBuffer(&Desc, nullptr, &NewBuffer))) {
+          continue;
+      }
+      InstanceBuffer = NewBuffer;
       TextInstanceBufferSize = RequiredSize;
+
+      // 기존 메모리 제거
+      if (OldSize > 0) {
+          FStatsManager::Get().RemoveMemory(
+              EStatMemoryCategory::VertexBuffer,
+              OldSize);
+      }
+
+      // 새 메모리 추가
+      FStatsManager::Get().AddMemory(
+          EStatMemoryCategory::VertexBuffer,
+          TextInstanceBufferSize);
     }
 
     // 인스턴스 데이터 업로드
@@ -898,16 +930,32 @@ void FRenderer::DrawTextInstances(const FDrawCommand &Command) {
 
   // 버퍼 크기 부족 시 동적 확장
   if (RequiredSize > TextInstanceBufferSize) {
-    InstanceBuffer.Reset();
+    const size_t OldSize = TextInstanceBufferSize;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> NewBuffer;
+
+    // InstanceBuffer.Reset();
     D3D11_BUFFER_DESC Desc{};
     Desc.ByteWidth = RequiredSize;
     Desc.Usage = D3D11_USAGE_DYNAMIC;
     Desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
-    if (FAILED(Device->CreateBuffer(&Desc, nullptr, &InstanceBuffer)))
-      return;
+    if (FAILED(Device->CreateBuffer(&Desc, nullptr, &NewBuffer))) {
+        return;
+    }
+    InstanceBuffer = NewBuffer;
     TextInstanceBufferSize = RequiredSize;
+
+    if (OldSize > 0)
+    {
+        FStatsManager::Get().RemoveMemory(
+            EStatMemoryCategory::VertexBuffer,
+            OldSize);
+    }
+
+    FStatsManager::Get().AddMemory(
+        EStatMemoryCategory::VertexBuffer,
+        TextInstanceBufferSize);
   }
 
   // 인스턴스 데이터 업로드

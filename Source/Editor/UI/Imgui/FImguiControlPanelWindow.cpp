@@ -144,11 +144,14 @@ void FImguiControlPanelWindow::ActorSpawnSetting(FEditor& Editor)
     // 그리드 설정
 void FImguiControlPanelWindow::GridSetting(FEditor& Editor)
 {
-    float CellSize = Editor.GetGrid().GetCellSize();
+    FEditorViewportClient* Viewport = Editor.GetActiveViewport();
+    if (!Viewport) { return; }
+
+    float CellSize = Viewport->GetGrid().GetCellSize();
     ImGui::SetNextItemWidth(180.0f);
     if (ImGui::DragFloat("##GridCellSize", &CellSize, 0.05f, 0.1f, 15.0f, "%.2f"))
     {
-        Editor.GetGrid().SetCellSize(CellSize);
+        Viewport->GetGrid().SetCellSize(CellSize);
     }
     ImGui::SameLine();
     ImGui::Text("Grid Cell Size");
@@ -186,7 +189,11 @@ void FImguiControlPanelWindow::RenderModeAndShowFlagSetting(FEditor& Editor)
             {
                 ActiveViewport->ToggleShowFlag(EEngineShowFlags::SF_BillboardText);
             }
-
+            bool bGrid = ActiveViewport->HasShowFlag(EEngineShowFlags::SF_Grid);
+            if (ImGui::Checkbox("Grid", &bGrid))
+            {
+                ActiveViewport->ToggleShowFlag(EEngineShowFlags::SF_Grid);
+            }
             ImGui::EndCombo();
         }
         ImGui::SameLine();

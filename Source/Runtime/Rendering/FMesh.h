@@ -16,6 +16,7 @@ class FMesh final
 	friend class FRenderer;
 
 public:
+	~FMesh();
 	[[nodiscard]] bool HasIndices() const { return IndexCount > 0; }
 	[[nodiscard]] uint32 GetVertexCount() const { return VertexCount; }
 	[[nodiscard]] uint32 GetIndexCount() const { return IndexCount; }
