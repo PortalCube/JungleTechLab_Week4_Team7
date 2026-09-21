@@ -11,6 +11,7 @@
 #include "Runtime/Rendering/FTexture.h"
 #include "ShaderConstants.h"
 #include "ThirdParty/DirectXTK/Inc/DDSTextureLoader.h"
+#include "ThirdParty/DirectXTK/Inc/WICTextureLoader.h"
 #include "Vertices.h"
 #include "Runtime/CoreUObject/FStatsManager.h"
 #include <Windows.h>
@@ -563,16 +564,24 @@ FRenderer::GetOrCreateSamplerState(const FTextureSamplerDesc& Desc) {
 TSharedPtr<FTexture> FRenderer::CreateTexture(const wchar_t *path) {
   auto Texture = TSharedPtr<FTexture>{new FTexture()};
   Microsoft::WRL::ComPtr<ID3D11Resource> TempResource;
+
+  // dds first
   HRESULT hr = DirectX::CreateDDSTextureFromFile(
       Device.Get(), path, TempResource.GetAddressOf(),
-      Texture->TextureSRV.GetAddressOf());
-  if (FAILED(hr)) {
-    return nullptr;
+      Texture->TextureSRV.GetAddressOf());  
+
+  // If dds failed  
+  if (FAILED(hr)) 
+  {
+      hr = DirectX::CreateWICTextureFromFile(
+          Device.Get(), path, TempResource.GetAddressOf(),
+          Texture->TextureSRV.GetAddressOf());          
   }
 
   hr = TempResource.As(&Texture->Texture2D);
-  if (FAILED(hr)) {
-    return nullptr;
+  if (FAILED(hr))
+  {
+      return nullptr;
   }
 
   D3D11_TEXTURE2D_DESC desc;

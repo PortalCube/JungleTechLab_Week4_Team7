@@ -16,14 +16,9 @@ struct FObjIndex
 
 struct FMeshSection
 {
-	char MaterialName[64] = { 0 };
+	FString MaterialName;
 	uint32 StartIndex = 0;
 	uint32 IndexCount = 0;
-
-	void SetMateriaName(const FString& InName)
-	{
-		strncpy_s(MaterialName, sizeof(MaterialName), InName.c_str(), _TRUNCATE);
-	}
 };
 
 struct FRawObjData
@@ -33,6 +28,25 @@ struct FRawObjData
 	TArray<FVector> Normals; // vn
 	TArray<TArray<FObjIndex>> Faces; // f
 	TArray<FMeshSection> Sections; // Mesh Section
+};
+
+struct FMtlData
+{
+	FString MaterialName;
+	float Ns; // Specular Power
+	float Ni; // Optical Density
+	float d; // Transparency
+	float Tr; // Transparency
+	FVector Tf; // Transmission Filter
+	uint8 illum; // Illumination Model
+	FVector Ka; // Ambient Color
+	FVector Kd; // Diffuse Color
+	FVector Ks; // Specular Color
+	FVector Ke; // Emissive Color
+	FString map_Ka; // Ambient Color Map
+	FString map_Kd; // Diffuse Color Map
+	FString map_Ks; // Specular Color Map
+	FString map_bump; // Bump Map
 };
 
 #pragma pack(push, 1)
@@ -51,6 +65,8 @@ public:
 	static bool ConvertObjToVertex(const FRawObjData& InObjData, TArray<FVertexData>& OutVertices, TArray<uint32>& OutIndices, TArray<FMeshSection>& OutSections);
 	static bool SaveMeshToBinary(const char* OutFilePath, const TArray<FVertexData>& InVertices, TArray<uint32>& InIndices, TArray<FMeshSection>& InSections);
 	static bool LoadMeshFromBinary(const char* InFilePath, TArray<FVertexData>& OutVertices, TArray<uint32>& OutIndices, TArray<FMeshSection>& OutSections);
+
+	static bool LoadMtl(const char* InFilePath, TArray<FMtlData>& OutResult);
 
 	static FObjIndex ParseFaceToken(const FString& Token);
 };

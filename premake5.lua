@@ -1,6 +1,6 @@
 workspace "MyEngine"
     architecture "x86_64"
-    configurations { "Debug", "Release", "ObjViewer" }
+    configurations { "Debug", "Release", "ObjViewer"  }
     platforms { "x86", "x64" }
     startproject "MyEngine"
     system "windows"
@@ -23,6 +23,9 @@ externalproject "DirectXTK_Desktop_2026"
     uuid "E0B52AE7-E160-4D32-BF3F-910B785E5A8E"
     kind "StaticLib"
     language "C++"
+    configmap {
+        ["ObjViewer"] = "Debug"
+    }
 
 project "MyEngine"
     uuid "05383B45-2B78-451C-9197-8B61474A12BC"
@@ -33,6 +36,8 @@ project "MyEngine"
     staticruntime "Off"
 
     files {
+	"**.h",
+	"**.cpp",
         "Source/**.h",
         "Source/**.hpp",
         "Source/**.cpp",
@@ -95,8 +100,9 @@ project "MyEngine"
         symbols "On"
         linktimeoptimization "On"
 
-    filter "configurations:ObjViewer"
+   filter "configurations:ObjViewer"
         defines { "_OBJVIEWER" }
+        symbols "On"
 
     filter "platforms:x86"
         defines { "WIN32" }
