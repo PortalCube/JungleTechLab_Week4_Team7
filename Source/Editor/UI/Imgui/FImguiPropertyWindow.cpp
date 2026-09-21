@@ -322,17 +322,12 @@ void FImguiPropertyWindow::ShowPipelineSlot(UStaticMeshComponent& MeshComp) cons
 
 void FImguiPropertyWindow::ShowTextureSlot(UStaticMeshComponent& MeshComp) const
 {
-	UMaterial* Material = MeshComp.GetMaterialInstance()->Material;
+	UTexture* TextureAsset = MeshComp.GetMaterialInstance()->Texture;
 	FTexture* CurrentTexture = nullptr;
 	
-	if (Material)
+	if (TextureAsset)
 	{
-		UTexture* TextureAsset = Material->GetTexture();
-
-		if (TextureAsset)
-		{
-			CurrentTexture = TextureAsset->Get();
-		}
+		CurrentTexture = TextureAsset->Get();
 	}
 
 	ImGui::Spacing();
