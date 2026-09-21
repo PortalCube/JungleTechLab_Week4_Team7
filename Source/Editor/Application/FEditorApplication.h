@@ -8,7 +8,6 @@
 #include "Editor/UI/Imgui/FImguiConsoleWindow.h"
 #include "Editor/UI/Imgui/FImguiWorldOutliner.h"
 #include "Editor/UI/Imgui/FImguiContentsDrawer.h"
-#include "Editor/UI/Imgui/FImguiStatsWindow.h"
 #include "Runtime/Engine/FRenderView.h"
 #include "Runtime/Input/FCameraInputController.h"
 
@@ -30,7 +29,6 @@ class FEditorApplication final {
 	FImguiConsoleWindow ConsoleWindow;
 	FImguiWorldOutliner WorldOutliner;
 	FImguiContentsDrawer ContentsDrawer;
-	FImguiStatsWindow StatsWindow;
 
 	FVisualizerRegistry VisualizerRegistry;
 

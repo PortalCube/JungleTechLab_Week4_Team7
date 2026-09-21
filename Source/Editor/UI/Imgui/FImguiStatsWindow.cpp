@@ -21,10 +21,9 @@ void FImguiStatsWindow::DrawMemory() {
 
     auto& Stats = FStatsManager::Get();
 
-    const auto ToMB = [](size_t Bytes)
-        {
-            return Bytes / (1024.0 * 1024.0);
-        };
+    const auto ToMB = [](size_t Bytes) {
+        return Bytes / (1024.0 * 1024.0);
+    };
 
     ImGui::Text("CPU");
     ImGui::Text(
@@ -53,11 +52,34 @@ void FImguiStatsWindow::DrawMemory() {
         "  GPU Memory Budget: %.2f MB",
         ToMB(Stats.GetGPUMemoryBudget()));
 
+    ImGui::Separator();
+
+    ImGui::Text("Shader");
+    ImGui::Text(
+        "  VertexShader Memory Used: %.2f MB",
+        ToMB(Stats.GetVertexShaderMemoryUsed()));
+
+    ImGui::Text(
+        "  PixelShader Memory Budget: %.2f MB",
+        ToMB(Stats.GetPixelShaderMemoryUsed()));
+
+    ImGui::Text("Texture");
+    ImGui::Text(
+        "  Texture Memory Used: %.2f MB",
+        ToMB(Stats.GetTextureMemoryUsed()));
+
     ImGui::End();
 }
 
 void FImguiStatsWindow::DrawFPS() {
-    ImGui::Begin("##FPS");
+    ImGui::SetNextWindowBgAlpha(0.0f);
+
+    ImGui::Begin("##FPS",
+        nullptr,
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings
+        );
 
     ImGui::Text("%.2f FPS", 1.0f / DeltaTime);
     ImGui::Text("%.2f ms", 1000.0f * DeltaTime);

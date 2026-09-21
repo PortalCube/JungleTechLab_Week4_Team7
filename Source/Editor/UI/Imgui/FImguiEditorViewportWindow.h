@@ -4,6 +4,12 @@
 #include "Runtime/Input/FCameraInputController.h"
 #include "ThirdParty/Imgui/imgui.h"
 
+enum class EStatsWindow
+{
+	Memory,
+	FPS
+};
+
 // 3D 씬 위를 덮는 투명한 ImGui 창.
 // - 다른 패널(ControlPanel, Property 등)이 이 창 위에 그려지므로,
 //   ImGui 의 hover/active 판정이 "다른 패널에 가려지지 않은 뷰포트 영역"만 걸러준다.
@@ -23,6 +29,23 @@ public:
 
 
 	void Process(FEditor& Editor, float DeltaTime);
+
+	void SetOpen(EStatsWindow Window, bool bOpen) {
+		switch (Window) {
+		case EStatsWindow::Memory:
+			bOpenMemory = bOpen;
+			break;
+
+		case EStatsWindow::FPS:
+			bOpenFPS = bOpen;
+			break;
+		}
+	}
+
+	void SetClose() {
+		bOpenMemory = false;
+		bOpenFPS = false;
+	}
 
 private:
 	// 이 프레임의 뷰포트 입력 상태.
@@ -70,6 +93,19 @@ private:
 		const FVector2& LocalMousePixels, const FVector2& ViewportSizePixels);
 	void ShowViewportVerticalSplitter(SSplitter& Splitter);
 	void ShowViewportHorizontalSplitter(SSplitter& Splitter);
+
+	// 스탯 드로우
+	void DrawStatLine(ImDrawList* DrawList, const ImVec2& Position, float& Y,
+		const char* Name, const char* Value, FVector4 Color);
+
+	void DrawRow(ImDrawList* DrawList, const ImVec2& Pos, float& Y, const char* Str, double Data, float RowColor);
+
+	void DrawStatsMemory();
+	void DrawStatsFPS();
+
+	float DT = 1.0f;
+	bool bOpenMemory = false;
+	bool bOpenFPS = false;
 
 	FCameraInputController CameraController;
 };

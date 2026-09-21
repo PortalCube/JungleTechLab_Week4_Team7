@@ -1,5 +1,4 @@
 #include "FMesh.h"
-#include "Runtime/CoreUObject/FStatsManager.h"
 
 #include <d3d11.h>
 #include <wrl/client.h>
@@ -10,20 +9,12 @@ FMesh::~FMesh()
 	{
 		D3D11_BUFFER_DESC Desc{};
 		VertexBuffer->GetDesc(&Desc);
-
-		FStatsManager::Get().RemoveMemory(
-			EStatMemoryCategory::VertexBuffer,
-			Desc.ByteWidth);
 	}
 
 	if (IndexBuffer)
 	{
 		D3D11_BUFFER_DESC Desc{};
 		IndexBuffer->GetDesc(&Desc);
-
-		FStatsManager::Get().RemoveMemory(
-			EStatMemoryCategory::IndexBuffer,
-			Desc.ByteWidth);
 	}
 }
 
@@ -74,13 +65,6 @@ bool FMesh::UpdateBuffers(ID3D11Device* Device, ID3D11DeviceContext* Context, co
 
 		VertexBuffer = NewVertexBuffer;
 		VertexBufferSize = Desc.VertexDataSize;
-
-		if (OldSize > 0)
-		{
-			FStatsManager::Get().RemoveMemory( EStatMemoryCategory::VertexBuffer, OldSize);
-		}
-
-		FStatsManager::Get().AddMemory( EStatMemoryCategory::VertexBuffer, VertexBufferSize);
 	}
 
 	VertexCount = Desc.VertexCount;
@@ -112,13 +96,6 @@ bool FMesh::UpdateBuffers(ID3D11Device* Device, ID3D11DeviceContext* Context, co
 
 			IndexBuffer = NewIndexBuffer;
 			IndexBufferSize = Desc.IndexDataSize;
-
-			if (OldSize > 0)
-			{
-				FStatsManager::Get().RemoveMemory(EStatMemoryCategory::IndexBuffer, OldSize);
-			}
-
-			FStatsManager::Get().AddMemory(EStatMemoryCategory::IndexBuffer, IndexBufferSize);
 		}
 		IndexCount = Desc.IndexCount;
 	}

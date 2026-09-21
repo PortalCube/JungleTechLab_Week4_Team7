@@ -9,6 +9,7 @@
 #include <wrl/client.h>
 
 #include "Runtime/Core/IntTypes.h"
+#include "Runtime/CoreUObject/FStatsManager.h"
 
 struct FRenderPipelineDesc
 {
@@ -37,9 +38,9 @@ struct FRenderPipelineCreateInfo
 };
 
 class FRenderPipeline final {
-  friend class FRenderer;
-  friend class FLineBatcher;
-  friend class FRenderResourceLibrary;
+	friend class FRenderer;
+	friend class FLineBatcher;
+	friend class FRenderResourceLibrary;
 
 public:
   explicit FRenderPipeline(FRenderPipelineCreateInfo CreateInfo);
@@ -48,6 +49,10 @@ public:
   void SetStencilRef(UINT InRef) { StencilRef = InRef; }
   UINT GetStencilRef() const { return StencilRef; }
 
+	void SetVertexShaderSize(size_t Size) { VertexShaderSize = Size; }
+	size_t GetVertexShaderSize() { return VertexShaderSize; }
+    void SetPixelShaderSize(size_t Size) { PixelShaderSize = Size; }
+	size_t GetPixelShaderSize() { return PixelShaderSize; }
 private:
   FRenderPipelineDesc desc;
   UINT StencilRef = 0;
@@ -62,4 +67,7 @@ private:
   Microsoft::WRL::ComPtr<ID3D11DepthStencilState> DepthStencilState;
   Microsoft::WRL::ComPtr<ID3D11SamplerState> SamplerState;
   Microsoft::WRL::ComPtr<ID3D11BlendState> BlendState;
+
+  size_t VertexShaderSize = 0;
+  size_t PixelShaderSize = 0;
 };

@@ -17,6 +17,7 @@
 #include "Runtime/Utility/WindowsUtil.h"
 #include "ThirdParty/Imgui/imgui.h"
 #include "ThirdParty/Imgui/imgui_internal.h"
+#include "Runtime/Core/FMemory.h"
 #include <Windows.h>
 #include <windowsx.h>
 
@@ -48,6 +49,8 @@ int WINAPI wWinMain(
 	_In_ LPWSTR lpCmdLine,
 	_In_ int nShowCmd) 
 {
+	FMemory::Init();
+
 	try
 	{
 	HWND Window = CreateWindowHandle(hInstance);
@@ -168,6 +171,9 @@ int WINAPI wWinMain(
 	///////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////
 #endif
+	FStatsManager::Get().Initialize(Renderer.GetDevice());
+
+
 	bool bQuit = false;
 	while (!bQuit)
 	{

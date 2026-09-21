@@ -1,5 +1,6 @@
-#include "Runtime/CoreUObject/FStatsManager.h"
-
+#include "FStatsManager.h"
+#include "Runtime/Rendering/FRenderResourceLibrary.h"
+#include "Runtime/Core/Log.h"
 #include <d3d11.h>
 #include <windows.h>
 #include <psapi.h>
@@ -79,8 +80,15 @@ size_t FStatsManager::GetSystemMemoryAvailable() const
 
 size_t FStatsManager::GetGPUMemoryUsed() const
 {
+    /*if (!Adapter)
+        return 0;*/
+
     if (!Adapter)
+    {
+        UE_LOG("GPU Memory: Adapter is null");
         return 0;
+    }
+
 
     DXGI_QUERY_VIDEO_MEMORY_INFO Info{};
 
@@ -111,4 +119,34 @@ size_t FStatsManager::GetGPUMemoryBudget() const
     }
 
     return static_cast<size_t>(Info.Budget);
+}
+
+size_t FStatsManager::GetVertexShaderMemoryUsed() const
+{
+    return MemoryStats.at(EStatMemoryCategory::VertexShader);
+}
+
+size_t FStatsManager::GetPixelShaderMemoryUsed() const
+{
+    return MemoryStats.at(EStatMemoryCategory::PixelShader);
+}
+
+size_t FStatsManager::GetTextureMemoryUsed() const
+{
+    return MemoryStats.at(EStatMemoryCategory::Texture);
+}
+
+size_t FStatsManager::GetMemoryPool() const
+{
+    return MemoryStats.at(EStatMemoryCategory::MemoryPool);
+}
+
+size_t FStatsManager::GetMemoryPoolUsed() const
+{
+    return MemoryStats.at(EStatMemoryCategory::MemoryPoolUsed);
+}
+
+size_t FStatsManager::GetMemoryPoolFree() const
+{
+    return MemoryStats.at(EStatMemoryCategory::MemoryPoolFree);
 }
