@@ -57,6 +57,7 @@ public:
                        EViewModeIndex RenderMode = EViewModeIndex::VMI_Lit);
   [[nodiscard]]
   TSharedPtr<FTexture> CreateTexture(const wchar_t* path);
+  TSharedPtr<FTexture> CreateSolidTexture(const FVector4& Color);
   // 파이프라인 조회
   [[nodiscard]]
   TSharedPtr<FRenderPipeline> GetPipeline(const FName& Id) const;
@@ -188,10 +189,9 @@ public:
       bool bApplyViewMode = true
   )
   {
-      UpdateBuffer(Constants, 2);
-
-      // TODO: 저희 현재 FRenderPipeline* 쓰고 있어서 바꿔야 할겁니다..
-      TSharedPtr<FRenderPipeline> Pipeline = TSharedPtr<FRenderPipeline>{ Material.Pipeline };
+      UpdateBuffer(Constants, Slot);
+      
+      FRenderPipeline* Pipeline = Material.Pipeline;
       if (bApplyViewMode && CurrentRenderMode == EViewModeIndex::VMI_Wireframe) {
           Pipeline = GetPipeline(FName("#Simple_Wireframe"));
       }

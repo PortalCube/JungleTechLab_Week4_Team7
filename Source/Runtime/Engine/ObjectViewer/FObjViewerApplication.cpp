@@ -85,7 +85,7 @@ void FObjViewerApplication::Render()
 	auto TextureMaterial = FRenderResourceLibrary::Get().GetMaterial(FName("Textured"));
 	for (const auto& Section : Sections)
 	{
-		auto It = MtlMap.find(Section.MaterialName);
+		auto It = MtlMap.find(Section.SectionName);
 		if (It == MtlMap.end())
 		{
 			continue;
@@ -190,6 +190,7 @@ void FObjViewerApplication::OpenObj(const char* InPath)
 			.IndexData = Indices.data(),
 			.IndexDataSize = static_cast<uint32>(sizeof(uint32) * Indices.size()),
 			.IndexCount = static_cast<uint32>(Indices.size()),
+			.Sections = Sections
 			};
 
 			CurrentMesh = Renderer->CreateMesh(MeshDesc);
@@ -215,6 +216,7 @@ void FObjViewerApplication::ImportBinary(const char* InPath)
 		.IndexData = Indices.data(),
 		.IndexDataSize = static_cast<uint32>(sizeof(uint32) * Indices.size()),
 		.IndexCount = static_cast<uint32>(Indices.size()),
+		.Sections = Sections,
 		};
 
 		CurrentMesh = Renderer->CreateMesh(MeshDesc);

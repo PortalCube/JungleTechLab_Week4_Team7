@@ -102,7 +102,8 @@ private:
 
 	void DrawStatsMemory();
 	void DrawStatsFPS();
-
+	bool GetViewportSceneRect(const ImVec2& Origin, FRect& OutRect) const;
+	void DrawViewportHeader() const;
 	float DT = 1.0f;
 	bool bOpenMemory = false;
 	bool bOpenFPS = false;

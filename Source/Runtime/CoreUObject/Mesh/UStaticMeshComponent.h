@@ -12,6 +12,7 @@ class UStaticMeshComponent : public UMeshComponent {
     DECLARE_UCLASS(UStaticMeshComponent, UMeshComponent)
 
 public:
+    virtual void SetMesh(UStaticMesh* Mesh) override;
 
     virtual const UStaticMesh* GetMesh() override { return RenderData.Mesh; }
     virtual const UMaterial* GetMaterial(int Index = 0) const override;

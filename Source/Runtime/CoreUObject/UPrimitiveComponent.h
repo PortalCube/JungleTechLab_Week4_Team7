@@ -16,7 +16,7 @@ public:
     void Register(UScene& InScene) override;
     void Unregister() override;
 
-    void SetMesh(UStaticMesh* Mesh) { RenderData.Mesh = Mesh; }
+    virtual void SetMesh(UStaticMesh* Mesh) { RenderData.Mesh = Mesh; }
     void SetMaterial(UMaterial* Material, int32 Index = 0);
     void SetTexture(UTexture* Texture, int32 Index = 0);
     void SetRenderType(ERenderType Type) { RenderData.Type = Type; }

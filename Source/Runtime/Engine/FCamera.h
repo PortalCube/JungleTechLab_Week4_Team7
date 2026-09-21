@@ -6,6 +6,17 @@
 
 struct FCamera
 {
+
+	enum class EOrthogonalType {
+		NONE,
+		PERSPECTIVE,
+		ORTHOGRAPHIC_TOP,
+		ORTHOGRAPHIC_BOTTOM,
+		ORTHOGRAPHIC_LEFT,
+		ORTHOGRAPHIC_RIGHT,
+		ORTHOGRAPHIC_FRONT,
+		ORTHOGRAPHIC_BACK,
+	};
 	FVector Position{ 0.0f, 0.0f, 0.0f };
 	float Yaw = 0.0f;
 	float Pitch = 0.0f;

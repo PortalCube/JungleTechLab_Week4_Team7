@@ -218,6 +218,9 @@ TSharedPtr<FMesh> FRenderer::CreateMesh(const FMeshDesc &Desc) {
                                 : D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
   Mesh->LocalBounds = FAxisAlignedBoundingBox{*Mesh.get()};
+
+  Mesh->Sections = Desc.Sections;
+
   return Mesh;
 }
 
@@ -596,6 +599,54 @@ TSharedPtr<FTexture> FRenderer::CreateTexture(const wchar_t *path) {
   return Texture;
 }
 
+TSharedPtr<FTexture> FRenderer::CreateSolidTexture(const FVector4& Color)
+{
+    auto Texture = TSharedPtr<FTexture>{ new FTexture() };
+
+    D3D11_TEXTURE2D_DESC desc = {};
+    desc.Width = 1;
+    desc.Height = 1;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.SampleDesc.Count = 1;
+    desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.Usage = D3D11_USAGE_IMMUTABLE;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+    uint8_t pixel[4] = {
+        static_cast<uint8_t>(std::clamp(Color.X, 0.0f, 1.0f) * 255.0f),
+        static_cast<uint8_t>(std::clamp(Color.Y, 0.0f, 1.0f) * 255.0f),
+        static_cast<uint8_t>(std::clamp(Color.Z, 0.0f, 1.0f) * 255.0f),
+        static_cast<uint8_t>(std::clamp(Color.W, 0.0f, 1.0f) * 255.0f)
+    };
+
+    D3D11_SUBRESOURCE_DATA InitData = {};
+    InitData.pSysMem = pixel;
+    InitData.SysMemPitch = 4;
+
+    if (FAILED(Device->CreateTexture2D(&desc, &InitData, Texture->Texture2D.GetAddressOf())))
+    {
+        return nullptr;
+    }
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = desc.Format;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = 1;
+
+    if (FAILED(Device->CreateShaderResourceView(Texture->Texture2D.Get(), &srvDesc, Texture->TextureSRV.GetAddressOf())))
+    {
+        return nullptr;
+    }
+
+    Texture->Width = 1;
+    Texture->Height = 1;
+    Texture->Format = desc.Format;
+    Texture->MipLevels = 1;
+
+    return Texture;
+}
+
 TSharedPtr<FRenderPipeline> FRenderer::GetPipeline(const FName &Id) const {
   return FRenderResourceLibrary::Get().GetPipeline(Id);
 }
@@ -826,6 +877,18 @@ void FRenderer::Draw(const FDrawCommand &Command, uint32 Slot,
                      bool bApplyViewMode) {
   if (!Command.Mesh || Command.Materials.empty()) {
     return;
+  }
+
+  if (!Command.Mesh->Sections.empty())
+  {
+      for (size_t i = 0; i < Command.Mesh->Sections.size(); i++)
+      {
+          const auto& Section = Command.Mesh->Sections[i];
+
+          const FMaterial& Mat = (i < Command.Materials.size()) ? Command.Materials[i] : Command.Materials[0];         
+
+          DrawSection(*Command.Mesh, Mat, Command.Constants, Section.StartIndex, Section.IndexCount, Slot, bApplyViewMode);
+      }
   }
 
   Draw(*Command.Mesh, Command.Materials[0], Command.Constants, Slot,
