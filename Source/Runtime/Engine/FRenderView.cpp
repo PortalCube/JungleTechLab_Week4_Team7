@@ -230,9 +230,9 @@ void FRenderView::RenderOverlayPass(const FCamera& Camera, const FSceneView& Sce
     // 뷰포트 영역 재설정
     Renderer.SetViewportUV(SceneView.TopLeftUV, SceneView.LengthUV);
 
-    // 기즈모 렌더링
-    Renderer.ClearDepth();
-    Gizmo.Draw(Renderer, SelectedTransform, Camera);
+    //// 기즈모 렌더링
+    //Renderer.ClearDepth();
+    //Gizmo.Draw(Renderer, SelectedTransform, Camera);
 
     // 텍스트 오버레이 렌더링
     if (TextComp && (SceneView.ShowFlags & static_cast<uint64>(EEngineShowFlags::SF_BillboardText)))

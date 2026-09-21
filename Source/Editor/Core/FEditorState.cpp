@@ -27,6 +27,13 @@ void FEditorState::WriteToFile(FStringView FilePath) const
 	Archive.SetUInt32("Gizmo", "Space", GizmoSpace);
 	Archive.SetUInt32("Gizmo", "SelectedActor", SelectedActor);
 
+	// Splitter
+	Archive.SetFloat("view", "SplitterV", SplitterVRatio);
+	Archive.SetFloat("view", "SplitterH", SplitterHRatio);
+	Archive.SetFloat("view", "SplitterH2", SplitterH2Ratio);
+	Archive.SetUInt32("view", "viewmode", static_cast<uint32>(splitViewMode));
+
+	
 	mINI::INIFile File{ FilePath };
 	mINI::INIStructure Structure = Archive.GetConfig();
 
@@ -124,6 +131,18 @@ void FEditorState::ReadFromFile(FStringView FilePath)
 		SelectedActor = Archive.GetUInt32("Gizmo", "SelectedActor");
 	}
 
+	// ViewMode
+
+	if (!Archive.IsEmpty("view", "splitterv"))
+	{
+		SetSplitter(static_cast<float>(Archive.GetFloat("view", "splitterv")),
+			static_cast<float>(Archive.GetFloat("view", "splitterh")),
+			static_cast<float>(Archive.GetFloat("view", "splitterh2")));
+	}
+	if (!Archive.IsEmpty("view", "viewmode"))
+	{
+		SetSplitMode(static_cast<FEditorState::SplitViewMode>(Archive.GetUInt32("view","viewmode")));		
+	}
 	bDirty = false;
 	TimeSinceLastSave = 0.0f;
 }
@@ -240,3 +259,19 @@ void FEditorState::SetSelectedActor(uint32 Value)
 	SelectedActor = Value;
 	bDirty = true;
 }
+void FEditorState::SetSplitter(float SplitterV, float SplitterH, float SplitterH2)
+{
+	if (SplitterVRatio == SplitterV && SplitterHRatio == SplitterH && SplitterH2Ratio == SplitterH2) {return;}
+	SplitterVRatio = SplitterV;
+	SplitterHRatio = SplitterH;
+	SplitterH2Ratio = SplitterH2;
+	bDirty = true;
+}
+
+void FEditorState::SetSplitMode(SplitViewMode mode)
+{
+	if (splitViewMode == mode) return;
+	splitViewMode = mode;
+	bDirty = true;
+}
+
