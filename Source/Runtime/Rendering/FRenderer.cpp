@@ -890,9 +890,11 @@ void FRenderer::Draw(const FDrawCommand &Command, uint32 Slot,
           DrawSection(*Command.Mesh, Mat, Command.Constants, Section.StartIndex, Section.IndexCount, Slot, bApplyViewMode);
       }
   }
+  else
+  {
+      Draw(*Command.Mesh, Command.Materials[0], Command.Constants, Slot, bApplyViewMode);
+  }
 
-  Draw(*Command.Mesh, Command.Materials[0], Command.Constants, Slot,
-       bApplyViewMode);
 }
 
 void FRenderer::AddTextInstanceArray(const FDrawCommand &Command) {
