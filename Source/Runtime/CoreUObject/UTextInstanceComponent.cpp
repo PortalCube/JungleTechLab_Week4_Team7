@@ -1,4 +1,5 @@
 #include "UTextInstanceComponent.h"
+#include "Runtime/Asset/UFont.h"
 #include "Runtime/Engine/FArchive.h"
 #include "Runtime/Engine/UScene.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
@@ -41,7 +42,7 @@ void UTextInstanceComponent::Initialize() {
   FAssetRegistry& Registry = FAssetRegistry::GetInstance();
   SetMesh(Registry.Get<UStaticMesh>("#Rect"));
   SetMaterial(Registry.Get<UMaterial>("Material/Instance_Text_Bazzi.json"));
-  SetFont("bazziotf");
+  SetFont(Registry.Get<UFont>("Font/BazziOTF.json"));
 
   RenderData.Type = ERenderType::Text;
 
@@ -63,7 +64,20 @@ void UTextInstanceComponent::SetText(const FWString &InText) {
 
 void UTextInstanceComponent::SetFont(const FName& InName) {
   Font = FRenderResourceLibrary::Get().GetFont(InName);
+  FontAsset = nullptr;
   //RenderData.TextureId(InName);
+  RebuildTextMesh();
+}
+
+void UTextInstanceComponent::SetFont(UFont* InFont) {
+  if (!InFont || !InFont->Get()) {
+    return;
+  }
+
+  FontAsset = InFont;
+  Font = FRenderResourceLibrary::Get().GetFont(
+      std::filesystem::path(InFont->GetID().ToString()).stem().string());
+  SetTexture(InFont->GetTexture());
   RebuildTextMesh();
 }
 

@@ -29,6 +29,9 @@ public:
 
   void SetCurrentFrame(int InFrame);
   int GetCurrentFrame() const { return CurrentFrame; }
+  int GetGridX() const { return GridX; }
+  int GetGridY() const { return GridY; }
+  int GetTotalFrames() const { return TotalFrames; }
   void SetFrameRate(float InRate) { FrameRate = InRate; }
   float GetFrameRate() const { return FrameRate; }
 

@@ -6,6 +6,8 @@ class USceneComponent;
 class UStaticMeshComponent;
 class USpotLightComponent;
 class UTextInstanceComponent;
+class UBillBoardComp;
+class UAnimatedBillboardComp;
 
 // 선택된 액터의 컴포넌트 속성을 편집하는 창.
 class FImguiPropertyWindow final {
@@ -36,6 +38,8 @@ private:
 
 	// 컴포넌트 타입별 속성
 	void ShowTextSettings(UTextInstanceComponent& TextComp) const;
+	void ShowBillboardSettings(UBillBoardComp& BillboardComp) const;
+	void ShowAnimatedBillboardSettings(UAnimatedBillboardComp& BillboardComp) const;
 	void ShowSpotLightSettings(USpotLightComponent& LightComp) const;
 	void ShowStaticMeshSettings(AActor& Actor, UStaticMeshComponent& MeshComp, bool bIsRoot) const;
 

@@ -31,4 +31,5 @@ public:
 	void Load(UFontDesc& Desc);
 
 	FFont* Get() const { return Font; }
+	UTexture* GetTexture() const { return Texture; }
 };

@@ -40,6 +40,11 @@ void UBillBoardComp::SetTexture(UTexture* Texture)
     RenderData.Materials[0].Texture = Texture;
 }
 
+UTexture* UBillBoardComp::GetTexture() const
+{
+    return RenderData.Materials.empty() ? nullptr : RenderData.Materials[0].Texture;
+}
+
 FMatrix UBillBoardComp::GetRenderMatrix(const FCamera& Camera) const
 {
     FTransform Transform = GetGlobalTransform();

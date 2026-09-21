@@ -6,6 +6,7 @@
 
 
 class FArchive;
+class UFont;
 
 class UTextInstanceComponent : public UInstancePrimitiveComponent {
   GENERATED_BODY()
@@ -21,6 +22,8 @@ public:
   //void SetFont(TSharedPtr<FFont> InFont);
 
   void SetFont(const FName& InName);
+  void SetFont(UFont* InFont);
+  UFont* GetFont() const { return FontAsset; }
 
   void RebuildTextMesh();
 
@@ -40,6 +43,7 @@ public:
 
 private:
   TSharedPtr<FFont> Font;
+  UFont* FontAsset = nullptr;
   FWString Text = L"Hello Jungle World!";
 
   float Width = 0.0f;

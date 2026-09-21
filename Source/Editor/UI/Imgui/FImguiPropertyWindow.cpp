@@ -3,6 +3,8 @@
 #include "Runtime/CoreUObject/UPrimitiveComponent.h"
 #include "Runtime/CoreUObject/USpotLightComponent.h"
 #include "Runtime/CoreUObject/UTextInstanceComponent.h"
+#include "Runtime/CoreUObject/UBillBoardComp.h"
+#include "Runtime/CoreUObject/UAnimatedBillboardComp.h"
 #include "Runtime/CoreUObject/Mesh/UStaticMeshComponent.h"
 #include "Runtime/CoreUObject/UClass.h"
 #include "Runtime/Actors/AActor.h"
@@ -12,10 +14,12 @@
 #include "ThirdParty/Imgui/imgui_impl_win32.h"
 #include "ThirdParty/Imgui/imgui_stdlib.h"
 #include <string>
+#include <algorithm>
 #include "FImguiDragDrop.h"
 #include "Runtime/Rendering/FMaterial.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Asset/FAssetRegistry.h"
+#include "Runtime/Asset/UFont.h"
 
 
 namespace
@@ -121,8 +125,17 @@ void FImguiPropertyWindow::ShowComponentDetails(FEditor& Editor, AActor& Actor,
 	{
 		ShowTextSettings(static_cast<UTextInstanceComponent&>(Comp));
 	}
-
-	if (Comp.IsA<USpotLightComponent>())
+	else if (Comp.IsA<UAnimatedBillboardComp>())
+	{
+		auto& BillboardComp = static_cast<UAnimatedBillboardComp&>(Comp);
+		ShowBillboardSettings(BillboardComp);
+		ShowAnimatedBillboardSettings(BillboardComp);
+	}
+	else if (Comp.IsA<UBillBoardComp>())
+	{
+		ShowBillboardSettings(static_cast<UBillBoardComp&>(Comp));
+	}
+	else if (Comp.IsA<USpotLightComponent>())
 	{
 		ShowSpotLightSettings(static_cast<USpotLightComponent&>(Comp));
 	}
@@ -167,14 +180,26 @@ void FImguiPropertyWindow::ShowTextSettings(UTextInstanceComponent& TextComp) co
 	ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Text Settings");
 
 
-	const char* fontItems[] = { "bazziotf", "dnfbitbitv2", "maplestorybold" };
-	static int currFontIndex = 0;
-	if (ImGui::Combo("Font", &currFontIndex, fontItems, IM_ARRAYSIZE(fontItems)))
+	ImGui::TextDisabled("Font");
+	const UFont* Font = TextComp.GetFont();
+	const FString FontLabel = Font ? Font->GetID().ToString() : "No Font";
+	const float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button(FontLabel.c_str(), ImVec2(FullWidth, SlotSize));
+
+	if (ImGui::BeginDragDropTarget())
 	{
-		const FName Materials[] = { FName("Material/Instance_Text_Bazzi.json"), FName("Material/Instance_Text_DNF.json"), FName("Material/Instance_Text_Maple.json") };
-		const char* selectedFont = fontItems[currFontIndex];
-		TextComp.SetMaterial(FAssetRegistry::GetInstance().Get<UMaterial>(Materials[currFontIndex]));
-		TextComp.SetFont(FName(selectedFont));
+		if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+		{
+			const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+			if (Dropped && Dropped->Ptr)
+			{
+				if (UFont* NewFont = Dropped->Ptr->Cast<UFont>())
+				{
+					TextComp.SetFont(NewFont);
+				}
+			}
+		}
+		ImGui::EndDragDropTarget();
 	}
 
 	static char utfBuffer[512]{};
@@ -188,6 +213,107 @@ void FImguiPropertyWindow::ShowTextSettings(UTextInstanceComponent& TextComp) co
 		MultiByteToWideChar(CP_UTF8, 0, Buffer.c_str(), Buffer.length(), newText.data(), convertResult);
 		TextComp.SetText(newText);
 	}
+
+	ImGui::TextDisabled("Text Bounds");
+	ImGui::Text("Width: %.2f", TextComp.GetWidth());
+	ImGui::Text("Height: %.2f", TextComp.GetHeight());
+}
+
+void FImguiPropertyWindow::ShowBillboardSettings(UBillBoardComp& BillboardComp) const
+{
+	ImGui::Separator();
+	ImGui::TextColored(ImVec4(0.8f, 0.6f, 1.0f, 1.0f), "Billboard Settings");
+
+	UTexture* TextureAsset = BillboardComp.GetTexture();
+	FTexture* Texture = TextureAsset ? TextureAsset->Get() : nullptr;
+	const float FullWidth = ImGui::GetContentRegionAvail().x;
+
+	ImGui::TextDisabled("Texture");
+	if (Texture && Texture->GetSRV())
+	{
+		ImGui::Image(reinterpret_cast<ImTextureID>(Texture->GetSRV()), ImVec2(FullWidth, SlotSize));
+	}
+	else
+	{
+		ImGui::Button("No\nTexture", ImVec2(FullWidth, SlotSize));
+	}
+
+	if (ImGui::BeginDragDropTarget())
+	{
+		if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+		{
+			const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+			if (Dropped && Dropped->Ptr)
+			{
+				if (UTexture* NewTexture = Dropped->Ptr->Cast<UTexture>())
+				{
+					BillboardComp.SetTexture(NewTexture);
+				}
+			}
+		}
+		ImGui::EndDragDropTarget();
+	}
+
+	FVector2 UVScale = BillboardComp.GetUVScale();
+	if (ImGui::DragFloat2("UV Scale", &UVScale.X, 0.01f))
+	{
+		BillboardComp.SetUVScale(UVScale);
+	}
+
+	FVector2 UVOffset = BillboardComp.GetUVOffset();
+	if (ImGui::DragFloat2("UV Offset", &UVOffset.X, 0.01f))
+	{
+		BillboardComp.SetUVOffset(UVOffset);
+	}
+}
+
+void FImguiPropertyWindow::ShowAnimatedBillboardSettings(UAnimatedBillboardComp& BillboardComp) const
+{
+	ImGui::Separator();
+	ImGui::TextColored(ImVec4(1.0f, 0.65f, 0.25f, 1.0f), "Animation Settings");
+
+	int GridX = BillboardComp.GetGridX();
+	int GridY = BillboardComp.GetGridY();
+	int TotalFrames = BillboardComp.GetTotalFrames();
+	bool bSpriteSheetChanged = ImGui::DragInt("Grid X", &GridX, 1.0f, 1, 256);
+	bSpriteSheetChanged |= ImGui::DragInt("Grid Y", &GridY, 1.0f, 1, 256);
+	bSpriteSheetChanged |= ImGui::DragInt("Total Frames", &TotalFrames, 1.0f, 1, 65536);
+	if (bSpriteSheetChanged)
+	{
+		GridX = std::max(GridX, 1);
+		GridY = std::max(GridY, 1);
+		TotalFrames = std::clamp(TotalFrames, 1, GridX * GridY);
+		BillboardComp.SetSpriteSheet(GridX, GridY, BillboardComp.GetFrameRate(), TotalFrames);
+	}
+
+	float FrameRate = BillboardComp.GetFrameRate();
+	if (ImGui::DragFloat("Frame Rate", &FrameRate, 0.1f, 0.1f, 240.0f))
+	{
+		BillboardComp.SetFrameRate(std::max(FrameRate, 0.1f));
+	}
+
+	int CurrentFrame = BillboardComp.GetCurrentFrame();
+	if (ImGui::SliderInt("Current Frame", &CurrentFrame, 0, std::max(0, BillboardComp.GetTotalFrames() - 1)))
+	{
+		BillboardComp.SetCurrentFrame(CurrentFrame);
+	}
+
+	bool bLoop = BillboardComp.IsLooping();
+	if (ImGui::Checkbox("Loop", &bLoop))
+	{
+		BillboardComp.SetLooping(bLoop);
+	}
+
+	if (BillboardComp.IsPlaying())
+	{
+		if (ImGui::Button("Pause")) { BillboardComp.Pause(); }
+	}
+	else
+	{
+		if (ImGui::Button("Play")) { BillboardComp.Play(); }
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Stop")) { BillboardComp.Stop(); }
 }
 
 void FImguiPropertyWindow::ShowSpotLightSettings(USpotLightComponent& LightComp) const
