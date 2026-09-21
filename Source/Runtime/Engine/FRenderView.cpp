@@ -249,6 +249,14 @@ void FRenderView::RenderOverlayPass(const FCamera& Camera, const FSceneView& Sce
     }
 }
 
+void FRenderView::RenderGizmo(const FTransform &Transform,
+                              const FCamera &Camera, FVector2 TopLeftUV,
+                              FVector2 LengthUV, const FGizmo &Gizmo) {
+  Renderer.SetViewportUV(TopLeftUV, LengthUV);
+  Renderer.ClearDepth();
+  Gizmo.Draw(Renderer, Transform, Camera);
+}
+
 void FRenderView::RenderLine(const FVector &Start, const FVector &End,
                              const FVector4 &Color) {
   FLineBatcher &LineBatcher = Renderer.GetLineBatcher();

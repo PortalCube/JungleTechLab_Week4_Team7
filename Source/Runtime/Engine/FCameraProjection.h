@@ -14,7 +14,7 @@ struct FCameraProjection
 	EProjectionType ProjectionType = EProjectionType::Perspective;
 	float FOV = 60.0f; // Perspective 전용, Vertical
 	float Aspect = 1.0f; // Perspective 전용. Width / Height
-	float Height = 4.0f; // Orthographic 전용
+	float Height = 8.0f; // Orthographic 전용
 	float NearZ = 0.1f;
 	float FarZ = 100.0f;
 	
