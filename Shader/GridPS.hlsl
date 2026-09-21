@@ -1,4 +1,4 @@
-cbuffer GridLineConstants : register(b0)
+cbuffer GridLineConstants : register(b2)
 {
     row_major float4x4 MVP;
     float3 CameraPosition;

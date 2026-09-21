@@ -38,7 +38,7 @@ void FEditorApplication::Initialize_Runtime(USceneManager *SceneManager,
   //
   Editor.Initialize(SceneManager);
   Editor.InitMultiViewport(FEditorViewportClient{});
-  Editor.ChangeViewRayout(EViewportLayout::Single);
+  Editor.SetViewLayout(Editor.State.GetSplitMode());
   Editor.LoadState();
 }
 
@@ -59,13 +59,15 @@ void FEditorApplication::Tick(float DeltaTime) {
   PropertyWindow.Process(Editor);
   ConsoleWindow.Process(Editor, [this](const char* Command) {ExecuteCommand(Command);});
   ContentsDrawer.Process(Editor);
-  // StatsWindow.Process(Editor, DeltaTime); // deltatime 전달 필요
+  StatsWindow.Process(Editor, DeltaTime); // deltatime 전달 필요
   Editor.Process();
 }
 
 void FEditorApplication::Render() {
   TArray<FEditorViewportClient> &EditorViewports = Editor.GetViewports();
   
+  // 렌더 준비
+  RenderView->PrepareRender();
 
   //Active인 ViewportClient만 렌더링
   for (SWindow& Leaf : Editor.Leaf)
@@ -103,6 +105,29 @@ void FEditorApplication::Render() {
           RenderView->RenderView(sceneview, *SceneManager->CurrentScene, EditorCtx);
 
   }
+
+  //기즈모 그리기
+  if (Editor.ObjectSelected())
+  {
+      for (const SWindow& Leaf : Editor.Leaf)
+      {
+          if (!Leaf.bisActive)
+              continue;
+
+          const auto& Viewport = EditorViewports[Leaf.ViewportIndex];
+
+          // 마지막으로 그린 뷰의 렌더 모드가 남지 않도록 설정
+          RenderView->SetRenderMode(Viewport.ViewMode);
+
+          RenderView->RenderGizmo(
+              Editor.SelectedTransform,
+              Viewport.ViewportCamera,
+              Viewport.TopLeftUV,
+              Viewport.LengthUV,
+              Editor.GetGizmo());
+      }
+  }
+
   ImguiManager.RenderUI();
 }
 
@@ -126,12 +151,13 @@ void FEditorApplication::ExecuteCommand(const char* Command) {
 
     if (lowerCmd.compare("stat memory") == 0) {
         UE_LOG("Stat Memory Command is executed!");
-        EditorViewportWindow.SetOpen(EStatsWindow::Memory, true);
+        EditorViewportWindow.SetOpen(FImguiEditorViewportWindow::EStatsWindow::Memory, true);
+        //StatsWindow.SetOpen(FImguiStatsWindow::EStatsWindow::Memory, true);
     }
 
     else if (lowerCmd.compare("stat fps") == 0) {
         UE_LOG("Stat FPS Command is executed!");
-        EditorViewportWindow.SetOpen(EStatsWindow::FPS, true);
+        EditorViewportWindow.SetOpen(FImguiEditorViewportWindow::EStatsWindow::FPS, true);
     }
 
     else if (lowerCmd.compare("stat none") == 0) {

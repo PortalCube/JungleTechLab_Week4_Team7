@@ -16,6 +16,13 @@ public:
 
 	static inline FString DefaultFileName = "editor.ini";
 
+	enum class SplitViewMode {
+		SINGLE,
+		HORIZONTAL,
+		VERTICAL,
+		QUAD,
+	};
+
 private:
 	static constexpr float SaveIntervalSeconds = 5.0f;
 	float TimeSinceLastSave = 0.0f;
@@ -40,6 +47,12 @@ private:
 	uint8 GizmoMode = 1;
 	uint8 GizmoSpace = 0;
 	uint32 SelectedActor = -1;
+
+	// Viewport
+	SplitViewMode splitViewMode = SplitViewMode::SINGLE;
+	float SplitterVRatio=0.5f;
+	float SplitterHRatio = 0.5f;
+	float SplitterH2Ratio = 0.5f;
 
 public:
 	void WriteToFile(FStringView FilePath = DefaultFileName) const;
@@ -83,5 +96,11 @@ public:
 
 	void SetSelectedActor(uint32 Value);
 	uint32 GetSelectedActor() const { return SelectedActor; }
+
+	void SetSplitter(float SplitterV, float SplitterH, float SplitterH2);
+	FVector GetSplitter() const { return FVector(SplitterVRatio, SplitterHRatio, SplitterH2Ratio); }
+
+	void SetSplitMode(SplitViewMode mode);
+	SplitViewMode GetSplitMode() const { return splitViewMode; }
 
 };

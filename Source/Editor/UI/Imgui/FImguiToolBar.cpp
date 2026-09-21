@@ -107,39 +107,28 @@ void FImguiToolbar::ShowViewBar(FEditor& Editor, FImguiConsoleWindow& ConsoleWin
         {
             if (ImGui::MenuItem("Single"))
             {
-                Editor.ChangeViewRayout(EViewportLayout::Single);
-                Editor.VerticalSplitter.bisActive = false;
-                Editor.HorizonSplitter.bisActive = false;
-                Editor.HorizonSplitter2.bisActive = false;
+                Editor.SetViewLayout(FEditorState::SplitViewMode::SINGLE);
             }
             if (ImGui::MenuItem("Top | Bottom"))
             {
-                Editor.ChangeViewRayout(EViewportLayout::TopBottom);
-                Editor.VerticalSplitter.bisActive = true;
-                Editor.HorizonSplitter.bisActive = false;
-                Editor.HorizonSplitter2.bisActive = false;
+                Editor.SetViewLayout(FEditorState::SplitViewMode::VERTICAL);
 
             }
             if (ImGui::MenuItem("Left | Right"))
             {
-                Editor.ChangeViewRayout(EViewportLayout::LeftRight);
-                Editor.VerticalSplitter.bisActive = false;
-                Editor.HorizonSplitter.bisActive = true;
-                Editor.HorizonSplitter2.bisActive = false;
+                Editor.SetViewLayout(FEditorState::SplitViewMode::HORIZONTAL);
+
             }
             if (ImGui::MenuItem("2 X 2"))
             {
-                Editor.ChangeViewRayout(EViewportLayout::Four);
-                Editor.VerticalSplitter.bisActive = true;
-                Editor.HorizonSplitter.bisActive = true;
-                Editor.HorizonSplitter2.bisActive = true;
+                Editor.SetViewLayout(FEditorState::SplitViewMode::QUAD);
+
             }
 
             ImGui::EndMenu();
 
         }
 
-       
         ImGui::EndMenu();
     }
 

@@ -1,15 +1,18 @@
 #pragma once
 #include "Editor/Core/FEditor.h"
 
-enum class EStatsWindow
-{
-	Memory,
-	FPS
-};
+
 
 class FImguiStatsWindow final
 {
+	
 public:
+	enum class EStatsWindow
+	{
+		Memory,
+		FPS
+	};
+
 	FImguiStatsWindow() = default;
 	~FImguiStatsWindow() = default;
 

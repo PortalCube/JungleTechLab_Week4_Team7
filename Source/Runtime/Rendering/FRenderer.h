@@ -57,6 +57,7 @@ public:
                        EViewModeIndex RenderMode = EViewModeIndex::VMI_Lit);
   [[nodiscard]]
   TSharedPtr<FTexture> CreateTexture(const wchar_t* path);
+  TSharedPtr<FTexture> CreateSolidTexture(const FVector4& Color);
   // 파이프라인 조회
   [[nodiscard]]
   TSharedPtr<FRenderPipeline> GetPipeline(const FName& Id) const;
@@ -64,6 +65,8 @@ public:
   FLineBatcher &GetLineBatcher() { return LineBatcher; }
 
   void UpdateLightConstants(const FLightConstants &Constants, const EViewModeIndex InMode);
+  void UpdateFrameConstants(const FFrameConstants &Constants);
+  void UpdateViewConstants(const FViewConstants &Constants);
 
   // 텍스트 인스턴싱
   void AddTextInstanceArray(const FDrawCommand& Command);
@@ -71,12 +74,15 @@ public:
   void DrawTextInstances(const FDrawCommand& Command);
   void ClearTextInstances();
 
-  void Draw(const FDrawCommand& Command, uint32 Slot = 0,
+  void Draw(const FDrawCommand& Command, uint32 Slot = 2,
             bool bApplyViewMode = true);
 
   void RenderOutline();
   ID3D11RenderTargetView* GetBackBuffer() { return BackBufferRTV.Get(); }
   ID3D11DepthStencilView* GetDepthStencilView() { return DepthStencilView.Get(); }
+
+  float GetWidth() const { return Viewport.Width; }
+  float GetHeight() const { return Viewport.Height; }
 
 
 private:
@@ -104,17 +110,14 @@ private:
   Microsoft::WRL::ComPtr<ID3D11Texture2D> DepthStencilBuffer;
   Microsoft::WRL::ComPtr<ID3D11DepthStencilView> DepthStencilView;
 
-  // b0에 바인딩되는 모든 상수 타입이 공유한다.
+  // 모든 ConstantBuffer의 최대 크기
   static constexpr UINT ConstantBufferSize = 256u;
-  Microsoft::WRL::ComPtr<ID3D11Buffer> b0ConstantBuffer;
 
-  // b1뷰포트 단위. b0와 동시에 바인딩되므로 별도 버퍼가 필요하다.
+  // 상수 버퍼들
   Microsoft::WRL::ComPtr<ID3D11Buffer> FrameConstantBuffer;
-
-  // b2에 할당되는 lightbuffer
+  Microsoft::WRL::ComPtr<ID3D11Buffer> ViewConstantBuffer;
+  Microsoft::WRL::ComPtr<ID3D11Buffer> ObjectConstantBuffer;
   Microsoft::WRL::ComPtr<ID3D11Buffer> LightConstantBuffer;
-
-
 
   Microsoft::WRL::ComPtr<ID3D11RenderTargetView> EditorViewPortRTV;
   Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> EditorViewPortSRV;
@@ -141,7 +144,7 @@ public:
       const TConstants &Constants,
       const FName& PipelineId = FName("Simple_Line")
   ) {
-    UpdateBuffer(Constants);
+    UpdateBuffer(Constants, 2);
     LineBatcher.Flush(*Context.Get(), GetPipeline(PipelineId));
   }
 
@@ -151,11 +154,11 @@ public:
       const FMesh &Mesh,
       const FMaterial &Material,
       const TConstants &Constants,
-      uint32 Slot = 0,
+      uint32 Slot = 2,
       bool bApplyViewMode = true
   )
   {
-    UpdateBuffer(Constants, Slot);
+    UpdateBuffer(Constants, 2);
 
     FRenderPipeline* Pipeline = Material.Pipeline;
     if (bApplyViewMode && CurrentRenderMode == EViewModeIndex::VMI_Wireframe) {
@@ -182,16 +185,15 @@ public:
       const TConstants& Constants,
       uint32 StartIndex,
       uint32 IndexCount,
-      uint32 Slot = 0,
+      uint32 Slot = 2,
       bool bApplyViewMode = true
   )
   {
       UpdateBuffer(Constants, Slot);
-
-      // TODO: 저희 현재 FRenderPipeline* 쓰고 있어서 바꿔야 할겁니다..
-      TSharedPtr<FRenderPipeline> Pipeline = TSharedPtr<FRenderPipeline>{ Material.Pipeline };
+      
+      FRenderPipeline* Pipeline = Material.Pipeline;
       if (bApplyViewMode && CurrentRenderMode == EViewModeIndex::VMI_Wireframe) {
-          Pipeline = GetPipeline(FName("Simple_Wireframe"));
+          Pipeline = GetPipeline(FName("Simple_Wireframe")).get();
       }
       if (Pipeline) {
           Pipeline->Bind(*Context.Get());
@@ -208,36 +210,33 @@ public:
       }
   }
 
-private:
-  // 어느 상수 타입이든 b0 버퍼 하나에 써 넣는다.
+  // Constant Buffer를 갱신한다.
   // 크기가 맞는지는 컴파일 타임에 검사한다.
   template <typename TConstants>
-  void UpdateBuffer(const TConstants &Constants, uint32 Slot = 0u) {
+  void UpdateBuffer(const TConstants &Constants, uint32 Slot) {
     static_assert(sizeof(TConstants) <= ConstantBufferSize);
     static_assert(sizeof(TConstants) % 16 == 0);
 
     // 언리얼 Clip -> D3D Clip 좌표 변환.
-    // MVP를 가진 상수 타입에만 적용한다(없는 타입은 그대로 통과).
+    // MVP, VP를 가진 상수 타입에만 적용한다(없는 타입은 그대로 통과).
     TConstants ShaderConstants = Constants;
     if constexpr (requires { ShaderConstants.MVP; }) {
         ShaderConstants.MVP = ShaderConstants.MVP.ToD3DMatrix();
     }
 
-    // 언리얼 Clip -> D3D Clip 좌표 변환.
-    // MVP를 가진 상수 타입에만 적용한다(없는 타입은 그대로 통과).
     if constexpr (requires { ShaderConstants.VP; }) {
         ShaderConstants.VP = ShaderConstants.VP.ToD3DMatrix();
     }
 
     D3D11_MAPPED_SUBRESOURCE Mapped{};
-    if (FAILED(Context->Map(b0ConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD,
+    if (FAILED(Context->Map(ObjectConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD,
                             0, &Mapped))) {
       return;
     }
     std::memcpy(Mapped.pData, &ShaderConstants, sizeof(TConstants));
-    Context->Unmap(b0ConstantBuffer.Get(), 0);
+    Context->Unmap(ObjectConstantBuffer.Get(), 0);
 
-    Context->VSSetConstantBuffers(Slot, 1u, b0ConstantBuffer.GetAddressOf());
-    Context->PSSetConstantBuffers(Slot, 1u, b0ConstantBuffer.GetAddressOf());
+    Context->VSSetConstantBuffers(Slot, 1u, ObjectConstantBuffer.GetAddressOf());
+    Context->PSSetConstantBuffers(Slot, 1u, ObjectConstantBuffer.GetAddressOf());
   }
 };

@@ -4,11 +4,7 @@
 #include "Runtime/Input/FCameraInputController.h"
 #include "ThirdParty/Imgui/imgui.h"
 
-enum class EStatsWindow
-{
-	Memory,
-	FPS
-};
+
 
 // 3D 씬 위를 덮는 투명한 ImGui 창.
 // - 다른 패널(ControlPanel, Property 등)이 이 창 위에 그려지므로,
@@ -17,8 +13,15 @@ enum class EStatsWindow
 // - 뷰포트 위에서 클릭이 발생하면 피킹을 수행한다.
 class FImguiEditorViewportWindow final
 {
-
+	
 public:
+	enum class EStatsWindow
+	{
+		Memory,
+		FPS
+	};
+
+
 	FImguiEditorViewportWindow() = default;
 	~FImguiEditorViewportWindow() = default;
 
@@ -93,6 +96,7 @@ private:
 		const FVector2& LocalMousePixels, const FVector2& ViewportSizePixels);
 	void ShowViewportVerticalSplitter(SSplitter& Splitter);
 	void ShowViewportHorizontalSplitter(SSplitter& Splitter);
+	void ApplyPendingViewportMaximize(FEditor& Editor);
 
 
 	const char* MakeUsageBar(double Used, double Total, int BarLength = 20);
@@ -105,13 +109,14 @@ private:
 	void DrawStatsMemory();
 	void DrawGPUStatsMemory();
 	void DrawStatsFPS();
-
+	bool GetViewportSceneRect(const ImVec2& Origin, FRect& OutRect) const;
+	void DrawViewportHeader(int32 ViewportIndex,FEditor& Editor);
 	float DT = 1.0f;
 	bool bOpenMemory = false;
 	bool bOpenFPS = false;
 
 	float CpuY = 0;
 	float GpuY = 0;
-
+	int32 PendingMaximizeViewport = -1;
 	FCameraInputController CameraController;
 };
