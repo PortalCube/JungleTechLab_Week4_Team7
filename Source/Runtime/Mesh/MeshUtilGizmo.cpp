@@ -7,6 +7,23 @@
 #include <cmath>
 #include <numbers>
 
+namespace
+{
+TSharedPtr<FMesh> CreateInternalMesh(FRenderer& Renderer, FMeshDesc Desc)
+{
+  if (Desc.Sections.empty())
+  {
+    Desc.Sections.push_back(FMeshSection{
+        .SectionName = "",
+        .StartIndex = 0,
+        .IndexCount = Desc.IndexCount,
+    });
+  }
+
+  return Renderer.CreateMesh(Desc);
+}
+}
+
 bool MeshUtil::CreateSpotlightConeMesh(FRenderer &Renderer, FRenderResourceLibrary &Library) {
   constexpr float BottomRadius = 0.5f;
   constexpr float Height = 1.0f;
@@ -70,7 +87,7 @@ bool MeshUtil::CreateSpotlightConeMesh(FRenderer &Renderer, FRenderResourceLibra
       .IndexCount = static_cast<uint32>(Indices.size()),
   };
 
-  Library.RegisterMesh(FName("#SpotlightCone"), Renderer.CreateMesh(MeshDesc));
+  Library.RegisterMesh(FName("#SpotlightCone"), CreateInternalMesh(Renderer, MeshDesc));
   return Library.AllMeshMap[FName("#SpotlightCone")] != nullptr;
 }
 
@@ -189,7 +206,7 @@ bool MeshUtil::CreateArrowMesh(FRenderer &Renderer, FRenderResourceLibrary &Libr
       .IndexCount = static_cast<uint32>(Indices.size()),
   };
 
-  Library.RegisterMesh(FName("#Arrow"), Renderer.CreateMesh(MeshDesc));
+  Library.RegisterMesh(FName("#Arrow"), CreateInternalMesh(Renderer, MeshDesc));
   return Library.AllMeshMap[FName("#Arrow")] != nullptr;
 }
 
@@ -250,7 +267,7 @@ bool MeshUtil::CreateCircleMesh(FRenderer &Renderer, FRenderResourceLibrary &Lib
       .IndexCount = static_cast<uint32>(Indices.size()),
   };
 
-  Library.RegisterMesh(FName("#Circle"), Renderer.CreateMesh(Desc));
+  Library.RegisterMesh(FName("#Circle"), CreateInternalMesh(Renderer, Desc));
   return Library.AllMeshMap[FName("#Circle")] != nullptr;
 }
 
@@ -320,7 +337,7 @@ bool MeshUtil::CreateRotationGizmoMesh(FRenderer &Renderer, FRenderResourceLibra
       .IndexCount = static_cast<uint32>(Indices.size()),
   };
 
-  Library.RegisterMesh(FName("#RotGizmo"), Renderer.CreateMesh(Desc));
+  Library.RegisterMesh(FName("#RotGizmo"), CreateInternalMesh(Renderer, Desc));
   return Library.AllMeshMap[FName("#RotGizmo")] != nullptr;
 }
 
@@ -372,7 +389,7 @@ bool MeshUtil::CreateSquareArrowMesh(FRenderer &Renderer, FRenderResourceLibrary
       .IndexCount = static_cast<uint32>(Indices.size()),
   };
 
-  Library.RegisterMesh(FName("#SquareArrow"), Renderer.CreateMesh(Desc));
+  Library.RegisterMesh(FName("#SquareArrow"), CreateInternalMesh(Renderer, Desc));
   return Library.AllMeshMap[FName("#SquareArrow")] != nullptr;
 }
 

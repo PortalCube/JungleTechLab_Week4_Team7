@@ -379,11 +379,25 @@ void FImguiPropertyWindow::ShowStaticMeshSettings(AActor& Actor, UStaticMeshComp
 			ImGui::TableSetColumnIndex(0);
 			ShowApplyAllMaterialSlot(MeshComp);
 
-			ImGui::TableSetColumnIndex(1);
-			ShowApplyAllTextureSlot(MeshComp);
+			bool bAllSlotsHaveMaterial = true;
+			for (int i = 0; i < MeshComp.GetMaterialSlotLength(); ++i)
+			{
+				const FMaterialInstance* Instance = MeshComp.GetMaterialInstance(i);
+				if (!Instance || !Instance->Material)
+				{
+					bAllSlotsHaveMaterial = false;
+					break;
+				}
+			}
 
-			ImGui::TableSetColumnIndex(2);
-			ShowApplyAllPipelineSlot(MeshComp);
+			if (bAllSlotsHaveMaterial)
+			{
+				ImGui::TableSetColumnIndex(1);
+				ShowApplyAllTextureSlot(MeshComp);
+
+				ImGui::TableSetColumnIndex(2);
+				ShowApplyAllPipelineSlot(MeshComp);
+			}
 		}
 
 		for (int i = 0; i < MeshComp.GetMaterialSlotLength(); ++i)
@@ -395,11 +409,15 @@ void FImguiPropertyWindow::ShowStaticMeshSettings(AActor& Actor, UStaticMeshComp
 			ImGui::TableSetColumnIndex(0);
 			ShowMaterialSlot(MeshComp, i);
 
-			ImGui::TableSetColumnIndex(1);
-			ShowTextureSlot(MeshComp, i);
+			const FMaterialInstance* Instance = MeshComp.GetMaterialInstance(i);
+			if (Instance && Instance->Material)
+			{
+				ImGui::TableSetColumnIndex(1);
+				ShowTextureSlot(MeshComp, i);
 
-			ImGui::TableSetColumnIndex(2);
-			ShowPipelineSlot(MeshComp, i);
+				ImGui::TableSetColumnIndex(2);
+				ShowPipelineSlot(MeshComp, i);
+			}
 
 			ImGui::PopID();
 		}
@@ -410,14 +428,16 @@ void FImguiPropertyWindow::ShowStaticMeshSettings(AActor& Actor, UStaticMeshComp
 
 void FImguiPropertyWindow::ShowMaterialSlot(UStaticMeshComponent& MeshComp, int Slot) const
 {
-	UMaterial* Material = MeshComp.GetMaterialInstance(Slot)->Material;
+	const FMaterialInstance* Instance = MeshComp.GetMaterialInstance(Slot);
+	UMaterial* Material = Instance ? Instance->Material : nullptr;
 
 	ImGui::Spacing();
 	ImGui::TextDisabled("Material");
 
 	// 슬롯 만들기
 	float FullWidth = ImGui::GetContentRegionAvail().x;
-	ImGui::Button(Material->GetID().ToString().c_str(), ImVec2(FullWidth, SlotSize));
+	const FString Label = Material ? Material->GetID().ToString() : "No Material";
+	ImGui::Button(Label.c_str(), ImVec2(FullWidth, SlotSize));
 
 	// 드롭 타깃은 아이템을 그린 직후여야 한다.
 	if (!ImGui::BeginDragDropTarget()) { return; }

@@ -27,7 +27,7 @@ public:
 
     void ClearMaterial();
 
-    int32 GetMaterialSlotLength() const { return static_cast<int32>(RenderData.Materials.size()); }
+    int32 GetMaterialSlotLength() const;
 
     virtual EEngineShowFlags GetShowFlag() const;
 

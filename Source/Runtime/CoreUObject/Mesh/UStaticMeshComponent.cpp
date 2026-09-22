@@ -25,6 +25,12 @@ void UStaticMeshComponent::SetMesh(UStaticMesh* Mesh)
 		UMaterial* Mat = Registry.Get<UMaterial>(FName(Sections[i].SectionName));
 		SetMaterial(Mat, static_cast<int32>(i));
 	}
+
+	// 메시에서 유효한 Material 정보를 하나도 찾지 못하면 기본 Material을 사용한다.
+	if (RenderData.Materials.empty())
+	{
+		SetMaterial(Registry.Get<UMaterial>("Material/Simple.json"), 0);
+	}
 }
 
 const UMaterial* UStaticMeshComponent::GetMaterial(int Index) const
@@ -35,19 +41,30 @@ const UMaterial* UStaticMeshComponent::GetMaterial(int Index) const
 
 const FMaterialInstance* UStaticMeshComponent::GetMaterialInstance(int Index) const
 {
-	if (Index < 0 || Index >= GetMaterialSlotLength()) { return nullptr; }
+	if (Index < 0 || static_cast<size_t>(Index) >= RenderData.Materials.size()) { return nullptr; }
 	return &RenderData.Materials[static_cast<size_t>(Index)];
+}
+
+int32 UStaticMeshComponent::GetMaterialSlotLength() const
+{
+	if (RenderData.Mesh && RenderData.Mesh->Get())
+	{
+		// 잘못된 메시가 섹션 없이 들어와도 Material을 지정할 슬롯은 하나 제공한다.
+		return std::max(1, static_cast<int32>(RenderData.Mesh->Get()->GetSectionCount()));
+	}
+
+	return static_cast<int32>(RenderData.Materials.size());
 }
 
 void UStaticMeshComponent::SetMaterialInstance(const FMaterialInstance& Instance, int Index)
 {
-	if (Index < 0 || Index >= GetMaterialSlotLength()) { return; }
+	if (Index < 0 || static_cast<size_t>(Index) >= RenderData.Materials.size()) { return; }
 	RenderData.Materials[static_cast<size_t>(Index)] = Instance;
 }
 
 void UStaticMeshComponent::SetPipeline(UPipeline* Pipeline, int Index)
 {
-	if (Index < 0 || Index >= GetMaterialSlotLength()) { return; }
+	if (Index < 0 || static_cast<size_t>(Index) >= RenderData.Materials.size()) { return; }
 	FMaterialInstance& Instance = RenderData.Materials[static_cast<size_t>(Index)];
 
 	Instance.Pipeline = Pipeline;
@@ -55,7 +72,7 @@ void UStaticMeshComponent::SetPipeline(UPipeline* Pipeline, int Index)
 
 void UStaticMeshComponent::SetTexture(UTexture* Texture, int Index)
 {
-	if (Index < 0 || Index >= GetMaterialSlotLength()) { return; }
+	if (Index < 0 || static_cast<size_t>(Index) >= RenderData.Materials.size()) { return; }
 	FMaterialInstance& Instance = RenderData.Materials[static_cast<size_t>(Index)];
 
 	Instance.Texture = Texture;
