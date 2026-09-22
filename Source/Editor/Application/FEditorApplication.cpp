@@ -115,9 +115,20 @@ void FEditorApplication::Render() {
 
           const auto& Viewport = EditorViewports[Leaf.ViewportIndex];
 
-          // 마지막으로 그린 뷰의 렌더 모드가 남지 않도록 설정
-          RenderView->SetRenderMode(Viewport.ViewMode);
+          FSceneView SceneView{
+    .Camera = Viewport.ViewportCamera,
+    .ViewProj = Viewport.ViewportCamera.CreateViewProjectionMatrix(),
+    .TopLeftUV = Viewport.TopLeftUV,
+    .LengthUV = Viewport.LengthUV,
+    .ViewMode = Viewport.ViewMode,
+    .ShowFlags = Viewport.ShowFlags,
+    .LightConstants = Editor.GlobalLight
+          };
 
+          RenderView->RenderOverlayPass(Viewport.ViewportCamera, SceneView, Editor.SelectedTransform, Editor.GetGizmo(), Editor.GetTextcomp());
+          // 마지막으로 그린 뷰의 렌더 모드가 남지 않도록 설정
+
+          RenderView->SetRenderMode(Viewport.ViewMode);
           RenderView->RenderGizmo(
               Editor.SelectedTransform,
               Viewport.ViewportCamera,

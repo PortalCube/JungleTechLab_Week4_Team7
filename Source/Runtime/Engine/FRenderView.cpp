@@ -172,7 +172,7 @@ void FRenderView::RenderView(const FSceneView& View, const UScene& Scene, const 
     // 오버레이 패스
     if (EditorCtx.Gizmo && EditorCtx.SelectedActor)
     {
-        RenderOverlayPass(View.Camera, View, EditorCtx.SelectedTransform, *EditorCtx.Gizmo, EditorCtx.TextComp);
+        //RenderOverlayPass(View.Camera, View, EditorCtx.SelectedTransform, *EditorCtx.Gizmo, EditorCtx.TextComp);
     }
 }
 

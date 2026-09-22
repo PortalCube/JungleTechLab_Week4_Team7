@@ -176,7 +176,7 @@ void FResourceLoader::LoadAssets()
 	LoadCodeGeneratedRenderAssets();
 	LoadDefaultStaticMeshAssets();
 
-	const fs::path AssetPath = EngineUtil::GetContentDirectory();
+	const fs::path  AssetPath = EngineUtil::GetContentDirectory();
 
 	bool bIsExist = fs::exists(AssetPath);
 	bool bIsDirectory = fs::is_directory(AssetPath);
