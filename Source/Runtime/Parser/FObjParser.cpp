@@ -1,6 +1,5 @@
 #include "FObjParser.h"
-#include <fstream>
-#include <sstream>
+#include <filesystem>
 
 bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
 {
@@ -31,7 +30,7 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
             FVector Pos;
             float x, y, z;
             ss >> x >> y >> z;
-            Pos.X = -z; Pos.Y = x; Pos.Z = y;
+            Pos.X = -z; Pos.Y = x; Pos.Z = y; // Change Unreal Coord
             OutResult.Positions.push_back(Pos);
         }
         else if (Prefix == "vt") // Texture Coords
@@ -39,7 +38,7 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
             FVector2 Tex;
             float u, v;
             ss >> u >> v;
-            Tex.X = u; Tex.Y = 1.0f - v;
+            Tex.X = u; Tex.Y = 1.0f - v; // Change Unreal Coord
             OutResult.TexCoords.push_back(Tex);
         }
         else if (Prefix == "vn") // Normal
@@ -47,7 +46,7 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
             FVector Norm;
             float x, y, z;
             ss >> x >> y >> z;
-            Norm.X = -z; Norm.Y = x; Norm.Z = y;
+            Norm.X = -z; Norm.Y = x; Norm.Z = y; // Change Unreal Coord
             OutResult.Normals.push_back(Norm);
         }
         else if (Prefix == "f") // Faces
@@ -69,7 +68,7 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
 
             for (size_t i = 1; i + 1 < FaceIndices.size(); i++)
             {
-                OutResult.Faces.push_back({ FaceIndices[0], FaceIndices[i + 1], FaceIndices[i] });
+                OutResult.Faces.push_back({ FaceIndices[0], FaceIndices[i + 1], FaceIndices[i] });  // Change Unreal Coord
             }
         }
         else if (Prefix == "usemtl") // Mesh section
@@ -155,7 +154,7 @@ bool FObjParser::ConvertObjToVertex(const FRawObjData& InObjData, TArray<FVertex
     return true;
 }
 
-bool FObjParser::SaveMeshToBinary(const char* OutFilePath, const TArray<FVertexData>& InVertices, TArray<uint32>& InIndices, TArray<FMeshSection>& InSections)
+bool FObjParser::SaveMeshToBinary(const char* OutFilePath, uint64 InSourceHash, const TArray<FVertexData>& InVertices, TArray<uint32>& InIndices, TArray<FMeshSection>& InSections)
 {
     std::ofstream File;
     File.open(OutFilePath, std::ios::binary);
@@ -168,6 +167,7 @@ bool FObjParser::SaveMeshToBinary(const char* OutFilePath, const TArray<FVertexD
     Header.VertexCount = static_cast<uint32>(InVertices.size());
     Header.IndexCount = static_cast<uint32>(InIndices.size());
     Header.SectionCount = static_cast<uint32>(InSections.size());
+    Header.SourceHash = InSourceHash;
 
     File.write(reinterpret_cast<const char*>(&Header), sizeof(Header));
 
@@ -285,6 +285,29 @@ bool FObjParser::LoadMtl(const char* InFilePath, TArray<FMtlData>& OutResult)
     return true;
 }
 
+bool FObjParser::ValidateBinary(const char* InBinFilePath, const char* InObjFilePath)
+{
+    std::ifstream BinFile;
+    BinFile.open(InBinFilePath, std::ios::binary);
+    if (!BinFile.is_open())
+    {
+        return false;
+    }
+
+    FMeshFileHeader Header;
+    BinFile.read(reinterpret_cast<char*>(&Header), sizeof(Header));
+
+    // Check Magic number
+    if (Header.Magic != 0x4D455348)
+    {
+        return false;
+    }
+
+    uint64 ObjHash = ComputeFileHash(std::filesystem::path (InObjFilePath));
+
+    return Header.SourceHash == ObjHash;
+}
+
 FObjIndex FObjParser::ParseFaceToken(const FString& Token)
 {
     FObjIndex Result;
@@ -294,4 +317,32 @@ FObjIndex FObjParser::ParseFaceToken(const FString& Token)
     if (sscanf_s(Token.c_str(), "%d", &Result.v) == 1) return Result;
 
     return Result;
+}
+
+uint64 FObjParser::ComputeFileHash(const std::filesystem::path& FilePath)
+{
+    std::ifstream File(FilePath, std::ios::binary);
+    if (!File.is_open())
+    {
+        return 0;
+    }
+
+    constexpr uint64 FNV_OFFSET_BASIS = 14695981039346656037ULL;
+    constexpr uint64 FNV_PRIME = 1099511628211ULL;
+
+    uint64 Hash = FNV_OFFSET_BASIS;
+    char Buffer[4096]; // 4KB buffer
+
+    while (File.read(Buffer, sizeof(Buffer)) || File.gcount() > 0)
+    {
+        std::streamsize BytesRead = File.gcount();
+        for (std::streamsize i = 0; i < BytesRead; i++)
+        {
+            Hash ^= static_cast<uint8_t>(Buffer[i]);
+            Hash *= FNV_PRIME;
+        }
+
+    }
+
+    return Hash;
 }

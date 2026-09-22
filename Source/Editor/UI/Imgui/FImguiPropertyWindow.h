@@ -6,6 +6,8 @@ class USceneComponent;
 class UStaticMeshComponent;
 class USpotLightComponent;
 class UTextInstanceComponent;
+class UBillBoardComp;
+class UAnimatedBillboardComp;
 
 // 선택된 액터의 컴포넌트 속성을 편집하는 창.
 class FImguiPropertyWindow final {
@@ -36,11 +38,20 @@ private:
 
 	// 컴포넌트 타입별 속성
 	void ShowTextSettings(UTextInstanceComponent& TextComp) const;
+	void ShowBillboardSettings(UBillBoardComp& BillboardComp) const;
+	void ShowAnimatedBillboardSettings(UAnimatedBillboardComp& BillboardComp) const;
 	void ShowSpotLightSettings(USpotLightComponent& LightComp) const;
 	void ShowStaticMeshSettings(AActor& Actor, UStaticMeshComponent& MeshComp, bool bIsRoot) const;
 
 	// 머티리얼의 텍스처 미리보기 겸 드롭 타깃.
-	void ShowTextureSlot(UStaticMeshComponent& MeshComp) const;
+	void ShowMaterialSlot(UStaticMeshComponent& MeshComp, int Slot = 0) const;
+	void ShowPipelineSlot(UStaticMeshComponent& MeshComp, int Slot = 0) const;
+	void ShowTextureSlot(UStaticMeshComponent& MeshComp, int Slot = 0) const;
+	void ShowStaticMeshSlot(UStaticMeshComponent& MeshComp) const;
+
+	void ShowApplyAllMaterialSlot(UStaticMeshComponent& MeshComp) const;
+	void ShowApplyAllPipelineSlot(UStaticMeshComponent& MeshComp) const;
+	void ShowApplyAllTextureSlot(UStaticMeshComponent& MeshComp) const;
 
 	// 창 하단의 기즈모 모드/공간 선택.
 	void ShowGizmoSettings(FEditor& Editor) const;

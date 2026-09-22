@@ -891,9 +891,11 @@ void FRenderer::Draw(const FDrawCommand &Command, uint32 Slot,
           DrawSection(*Command.Mesh, Mat, Command.Constants, Section.StartIndex, Section.IndexCount, Slot, bApplyViewMode);
       }
   }
+  else
+  {
+      Draw(*Command.Mesh, Command.Materials[0], Command.Constants, Slot, bApplyViewMode);
+  }
 
-  Draw(*Command.Mesh, Command.Materials[0], Command.Constants, Slot,
-       bApplyViewMode);
 }
 
 void FRenderer::AddTextInstanceArray(const FDrawCommand &Command) {
@@ -1088,7 +1090,7 @@ void FRenderer::RenderOutline() {
   Context->PSSetShaderResources(0, 2, SRVs);
 
   FRenderResourceLibrary::Get()
-      .GetPipeline(FName("PostProcess"))
+      .GetPipeline(FName("#PostProcess"))
       ->Bind(*Context.Get());
   Context->Draw(3, 0);
 

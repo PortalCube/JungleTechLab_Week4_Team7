@@ -120,27 +120,27 @@ void FResourceLoader::LoadDefaultStaticMeshAssets()
 		Registry.Register(ID, StaticMesh);
 	};
 
-	RegisterStaticMeshAsset("Cube", MeshUtil::CreateCubeMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Cylinder", MeshUtil::CreateCylinderMesh(*Renderer, ResourceLibrary, 1.0f, 24u, 1.0f, 1.0f));
-	RegisterStaticMeshAsset("Cone", MeshUtil::CreateConeMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("SpotlightCone", MeshUtil::CreateSpotlightConeMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Arrow", MeshUtil::CreateArrowMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Circle", MeshUtil::CreateCircleMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("RotGizmo", MeshUtil::CreateRotationGizmoMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("SquareArrow", MeshUtil::CreateSquareArrowMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Grid", MeshUtil::CreateGridMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Sphere", MeshUtil::CreateSphereMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Line", MeshUtil::CreateLineMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Plane", MeshUtil::CreatePlaneMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("Rect", MeshUtil::CreateRectMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("MasterYi", MeshUtil::CreateMasterYiMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Cube", MeshUtil::CreateCubeMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Cylinder", MeshUtil::CreateCylinderMesh(*Renderer, ResourceLibrary, 1.0f, 24u, 1.0f, 1.0f));
+	RegisterStaticMeshAsset("#Cone", MeshUtil::CreateConeMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#SpotlightCone", MeshUtil::CreateSpotlightConeMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Arrow", MeshUtil::CreateArrowMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Circle", MeshUtil::CreateCircleMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#RotGizmo", MeshUtil::CreateRotationGizmoMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#SquareArrow", MeshUtil::CreateSquareArrowMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Grid", MeshUtil::CreateGridMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Sphere", MeshUtil::CreateSphereMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Line", MeshUtil::CreateLineMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Plane", MeshUtil::CreatePlaneMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#Rect", MeshUtil::CreateRectMesh(*Renderer, ResourceLibrary));
+	RegisterStaticMeshAsset("#MasterYi", MeshUtil::CreateMasterYiMesh(*Renderer, ResourceLibrary));
 }
 
 void FResourceLoader::LoadCodeGeneratedRenderAssets()
 {
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
 	FRenderResourceLibrary& Library = FRenderResourceLibrary::Get();
-	TSharedPtr<FRenderPipeline> Pipeline = Library.GetPipeline("Outline");
+	TSharedPtr<FRenderPipeline> Pipeline = Library.GetPipeline("#Outline");
 	if (!Pipeline)
 	{
 		throw EngineUtil::CreateError(
@@ -149,23 +149,23 @@ void FResourceLoader::LoadCodeGeneratedRenderAssets()
 
 	UPipeline* PipelineAsset = NewObject<UPipeline>();
 	UPipelineDesc PipelineDesc{};
-	PipelineDesc.ID = "Pipeline/Outline";
-	PipelineDesc.Name = "Outline";
+	PipelineDesc.ID = "#Pipeline/Outline";
+	PipelineDesc.Name = "#Outline";
 	PipelineDesc.Pipeline = Pipeline.get();
 	PipelineAsset->Load(PipelineDesc);
 	Registry.Register(PipelineDesc.ID, PipelineAsset);
 
 	UMaterial* MaterialAsset = NewObject<UMaterial>();
 	UMaterialDesc MaterialDesc{};
-	MaterialDesc.ID = "Material/Outline";
-	MaterialDesc.Name = "Outline";
+	MaterialDesc.ID = "#Material/Outline";
+	MaterialDesc.Name = "#Outline";
 	MaterialDesc.Pipeline = PipelineAsset;
 	MaterialAsset->Load(MaterialDesc);
 	Registry.Register(MaterialDesc.ID, MaterialAsset);
 
 	TSharedPtr<FMaterial> Material = MakeShared<FMaterial>();
 	Material->SetPipeLine(Pipeline.get());
-	Library.RegisterMaterial("Outline", Material);
+	Library.RegisterMaterial("#Outline", Material);
 }
 
 void FResourceLoader::LoadAssets()
@@ -402,26 +402,51 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 	StaticMeshDesc.ID = ID;
 	StaticMeshDesc.Name = Archive.GetString("Name");
 	FString MeshFilePath = (fs::path(EngineUtil::GetContentDirectory()) / Archive.GetString("MeshFilePath")).string();
-
-	FRawObjData RawObjData{};
-	if (!FObjParser::LoadObj(MeshFilePath.c_str(), RawObjData))
-	{
-		throw EngineUtil::CreateError(
-			"[FResourceLoader::LoadStaticMeshAsset] OBJ 파일을 불러오는데 실패했습니다. ID: {}, Path: {}",
-			ID.ToString(),
-			MeshFilePath);
-	}
+	fs::path MeshBinPath = fs::path(MeshFilePath.substr(0, MeshFilePath.find_last_of('.')) + ".bin");
 
 	TArray<FVertexData> Vertices;
 	TArray<uint32> Indices;
 	TArray<FMeshSection> Sections;
-	if (!FObjParser::ConvertObjToVertex(RawObjData, Vertices, Indices, Sections))
+
+	bool bValid = false;
+	if (fs::exists(MeshBinPath))
 	{
-		throw EngineUtil::CreateError(
-			"[FResourceLoader::LoadStaticMeshAsset] OBJ 데이터를 정점 데이터로 변환하는데 실패했습니다. ID: {}, Path: {}",
-			ID.ToString(),
-			MeshFilePath);
+		bValid = FObjParser::ValidateBinary(MeshBinPath.string().c_str(), MeshFilePath.c_str());
 	}
+	
+	if (bValid)
+	{
+		if (!FObjParser::LoadMeshFromBinary(MeshBinPath.string().c_str(), Vertices, Indices, Sections))
+		{
+			throw EngineUtil::CreateError(
+				"[FResourceLoader::LoadStaticMeshAsset] BIN 데이터를 정점 데이터로 변환하는데 실패했습니다. ID: {}, Path: {}",
+				ID.ToString(),
+				MeshBinPath.string());
+		}
+	}
+	else
+	{
+		FRawObjData RawObjData{};
+		if (!FObjParser::LoadObj(MeshFilePath.c_str(), RawObjData))
+		{
+			throw EngineUtil::CreateError(
+				"[FResourceLoader::LoadStaticMeshAsset] OBJ 파일을 불러오는데 실패했습니다. ID: {}, Path: {}",
+				ID.ToString(),
+				MeshFilePath);
+		}
+
+		if (!FObjParser::ConvertObjToVertex(RawObjData, Vertices, Indices, Sections))
+		{
+			throw EngineUtil::CreateError(
+				"[FResourceLoader::LoadStaticMeshAsset] OBJ 데이터를 정점 데이터로 변환하는데 실패했습니다. ID: {}, Path: {}",
+				ID.ToString(),
+				MeshFilePath);
+		}
+
+		// bake 
+		uint64 ObjHash = FObjParser::ComputeFileHash(MeshFilePath);
+		FObjParser::SaveMeshToBinary(MeshBinPath.string().c_str(), ObjHash, Vertices, Indices, Sections);
+	}	
 
 	FRenderResourceLibrary& ResourceLibrary = FRenderResourceLibrary::Get();
 	FRenderer* Renderer = ResourceLibrary.GetRenderer();

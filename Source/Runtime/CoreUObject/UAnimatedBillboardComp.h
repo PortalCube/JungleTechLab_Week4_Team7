@@ -12,8 +12,8 @@ class UAnimatedBillboardComp : public UBillBoardComp {
 protected:
   explicit UAnimatedBillboardComp() = default;
 
-  virtual void Serialize(FArchive& Archive) const;
-  virtual void Deserialize(const FArchive& Archive);
+  virtual void Serialize(FArchive& Archive) const override;
+  virtual void Deserialize(const FArchive& Archive) override;
 
 public:
   // 매 프레임 애니메이션 갱신
@@ -29,6 +29,9 @@ public:
 
   void SetCurrentFrame(int InFrame);
   int GetCurrentFrame() const { return CurrentFrame; }
+  int GetGridX() const { return GridX; }
+  int GetGridY() const { return GridY; }
+  int GetTotalFrames() const { return TotalFrames; }
   void SetFrameRate(float InRate) { FrameRate = InRate; }
   float GetFrameRate() const { return FrameRate; }
 

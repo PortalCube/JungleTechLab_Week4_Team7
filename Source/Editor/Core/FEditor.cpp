@@ -23,7 +23,7 @@ void FEditor::Initialize(USceneManager *SceneManager) {
     SelectedActorTextComp->Initialize();
     SelectedActorTextComp->SetInheritRotation(false);
     FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-    SelectedActorTextComp->SetMesh(Registry.Get<UStaticMesh>("Rect"));
+    SelectedActorTextComp->SetMesh(Registry.Get<UStaticMesh>("#Rect"));
     SelectedActorTextComp->SetMaterial(Registry.Get<UMaterial>("Material/SelectedActor_Text.json"));
     SelectedActorTextComp->SetFont(FName("bazziotf"));
   }

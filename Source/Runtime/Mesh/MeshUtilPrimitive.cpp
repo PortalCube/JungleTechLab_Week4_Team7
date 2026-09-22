@@ -19,8 +19,8 @@ bool MeshUtil::CreateCubeMesh(FRenderer &Renderer, FRenderResourceLibrary &Libra
       .IndexCount = static_cast<uint32>(std::size(CubeIndices)),
   };
 
-  Library.RegisterMesh(FName("Cube"), Renderer.CreateMesh(MeshDesc));
-  return Library.AllMeshMap[FName("Cube")] != nullptr;
+  Library.RegisterMesh(FName("#Cube"), Renderer.CreateMesh(MeshDesc));
+  return Library.AllMeshMap[FName("#Cube")] != nullptr;
 }
 
 bool MeshUtil::CreateCylinderMesh(FRenderer &Renderer, FRenderResourceLibrary &Library,
@@ -126,8 +126,8 @@ bool MeshUtil::CreateCylinderMesh(FRenderer &Renderer, FRenderResourceLibrary &L
       .IndexCount = static_cast<uint32>(Indices.size()),
   };
 
-  Library.RegisterMesh(FName("Cylinder"), Renderer.CreateMesh(MeshDesc));
-  return Library.AllMeshMap[FName("Cylinder")] != nullptr;
+  Library.RegisterMesh(FName("#Cylinder"), Renderer.CreateMesh(MeshDesc));
+  return Library.AllMeshMap[FName("#Cylinder")] != nullptr;
 }
 
 bool MeshUtil::CreateConeMesh(FRenderer &Renderer, FRenderResourceLibrary &Library) {
@@ -214,8 +214,8 @@ bool MeshUtil::CreateConeMesh(FRenderer &Renderer, FRenderResourceLibrary &Libra
       .IndexCount = static_cast<uint32>(Indices.size()),
   };
 
-  Library.RegisterMesh(FName("Cone"), Renderer.CreateMesh(MeshDesc));
-  return Library.AllMeshMap[FName("Cone")] != nullptr;
+  Library.RegisterMesh(FName("#Cone"), Renderer.CreateMesh(MeshDesc));
+  return Library.AllMeshMap[FName("#Cone")] != nullptr;
 }
 
 bool MeshUtil::CreateSphereMesh(FRenderer &Renderer, FRenderResourceLibrary &Library) {
@@ -229,8 +229,8 @@ bool MeshUtil::CreateSphereMesh(FRenderer &Renderer, FRenderResourceLibrary &Lib
       .VertexCount = static_cast<uint32>(Vertices.size()),
   };
 
-  Library.RegisterMesh(FName("Sphere"), Renderer.CreateMesh(MeshDesc));
-  return Library.AllMeshMap[FName("Sphere")] != nullptr;
+  Library.RegisterMesh(FName("#Sphere"), Renderer.CreateMesh(MeshDesc));
+  return Library.AllMeshMap[FName("#Sphere")] != nullptr;
 }
 
 bool MeshUtil::CreatePlaneMesh(FRenderer &Renderer, FRenderResourceLibrary &Library) {
@@ -241,21 +241,21 @@ bool MeshUtil::CreatePlaneMesh(FRenderer &Renderer, FRenderResourceLibrary &Libr
       .VertexCount = static_cast<uint32>(std::size(PlaneVertices)),
   };
 
-  Library.RegisterMesh(FName("Plane"), Renderer.CreateMesh(Desc));
-  return Library.AllMeshMap[FName("Plane")] != nullptr;
+  Library.RegisterMesh(FName("#Plane"), Renderer.CreateMesh(Desc));
+  return Library.AllMeshMap[FName("#Plane")] != nullptr;
 }
 
 bool MeshUtil::CreateRectMesh(FRenderer &Renderer, FRenderResourceLibrary &Library) {
   // 사각형 정점 배열
   const TArray<FVertexData> Vertices = {
-      {0.0f, -0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f},
-      {0.0f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f},
-      {0.0f, 0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f},
-      {0.0f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+      {0.0f, -0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f},
+      {0.0f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f},
+      {0.0f, 0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f},
+      {0.0f, -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f,
        0.0f},
   };
 
-  // 양면 인덱스 배열
+  // -X 방향을 앞면으로 하는 인덱스 배열
   const TArray<uint32> Indices = {0, 1, 2, 0, 2, 3};
 
   FMeshDesc MeshDesc{
@@ -269,7 +269,7 @@ bool MeshUtil::CreateRectMesh(FRenderer &Renderer, FRenderResourceLibrary &Libra
       .IndexCount = static_cast<uint32>(Indices.size()),
   };
 
-  Library.RegisterMesh(FName("Rect"), Renderer.CreateMesh(MeshDesc));
-  return Library.AllMeshMap[FName("Rect")] != nullptr;
+  Library.RegisterMesh(FName("#Rect"), Renderer.CreateMesh(MeshDesc));
+  return Library.AllMeshMap[FName("#Rect")] != nullptr;
 }
 

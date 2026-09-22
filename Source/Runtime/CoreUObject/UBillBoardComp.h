@@ -21,6 +21,7 @@ public:
   void Initialize() override;
 
   virtual void SetTexture(UTexture* Texture);
+  UTexture* GetTexture() const;
 
   // Object -> World 변환 행렬 생성
   virtual FMatrix GetRenderMatrix(const FCamera& Camera) const override;

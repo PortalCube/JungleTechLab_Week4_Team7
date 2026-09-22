@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <concepts>
 #include <utility>
 #include "Runtime/Core/FMemory.h"
 
@@ -77,7 +78,12 @@ public:
 
     void Reset(T* InPtr = nullptr)
     {
-        if (Ptr) { FMemory::Free(Ptr); }
+        if (Ptr)
+        {
+            Ptr->~T();
+            FMemory::Free(Ptr);
+        }
+
         Ptr = InPtr;
     }
 
@@ -95,14 +101,24 @@ private:
 template<typename T, typename... Args>
 TUniquePtr<T> MakeUnique(Args&&... InArgs)
 {
-    void* Memory = FMemory::Malloc(sizeof(T));
-    T* Object = new (Memory) T(std::forward<Args>(InArgs)...);
+    void* Memory = FMemory::Malloc(sizeof(T), alignof(T));
+
+    if (!Memory)
+    {
+        return TUniquePtr<T>();
+    }
+
+    T* Object = new (Memory) T( std::forward<Args>(InArgs)... );
+
     return TUniquePtr<T>(Object);
 }
 
 template<typename T>
 class TSharedPtr
 {
+    template<typename U>
+    friend class TSharedPtr;
+
     template<typename U>
     friend class TWeakPtr;
 
@@ -113,6 +129,14 @@ public:
         if (!InPtr) { return; }
         Ptr = InPtr;
         void* Memory = FMemory::Malloc( sizeof(TSharedControlBlock<T>));
+        
+        if (!Memory)
+        {
+            InPtr->~T();
+            FMemory::Free(InPtr);
+            return;
+        }
+        
         ControlBlock = new (Memory)TSharedControlBlock<T>();
         ControlBlock->Ptr = InPtr;
     }
@@ -129,7 +153,11 @@ public:
 
     template<typename U>
         requires std::derived_from<U, T>
-    TSharedPtr(TSharedPtr<U>&& Other) noexcept : Ptr(Other.Release()) {}
+    TSharedPtr(TSharedPtr<U>&& Other) noexcept : Ptr(Other.Release()), ControlBlock(Other.ControlBlock) 
+    {
+        Other.Ptr = nullptr;
+        Other.ControlBlock = nullptr;
+    }
 
     ~TSharedPtr() { Release(); }
 
@@ -207,6 +235,8 @@ private:
         {
             Ptr->~T();
             FMemory::Free(Ptr);
+
+            ControlBlock->Ptr = nullptr;
         }
 
         if (ControlBlock->StrongCount == 0 && ControlBlock->WeakCount == 0)
@@ -227,8 +257,19 @@ private:
 template<typename T, typename... Args>
 TSharedPtr<T> MakeShared(Args&&... InArgs)
 {
-    void* Memory = FMemory::Malloc(sizeof(T));
-    T* Object = new (Memory) T(std::forward<Args>(InArgs)...);
+    void* Memory =
+        FMemory::Malloc(sizeof(T), alignof(T));
+
+    if (!Memory)
+    {
+        return TSharedPtr<T>();
+    }
+
+    T* Object =
+        new (Memory) T(
+            std::forward<Args>(InArgs)...
+        );
+
     return TSharedPtr<T>(Object);
 }
 

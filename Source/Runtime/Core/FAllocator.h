@@ -2,6 +2,7 @@
 
 #include "Runtime/Core/FPoolAllocator.h"
 #include "Runtime/Core/Log.h"
+#include "Runtime/CoreUObject/FStatsManager.h"
 
 #include <malloc.h>
 #include <array>
@@ -33,13 +34,14 @@ public:
         {
             if (Size <= SizeClasses[i])
             {
-                if (!Pools[i].Allocate())
+                if (void* Ptr = Pools[i].Allocate())
                 {
-                    return std::malloc(Size);
+                    return Ptr;
                 }
+                return std::malloc(Size);
             }
         }
-        UE_LOG("System Allocate!")
+        UE_LOG("System Allocate!");
         return std::malloc(Size);
     }
 
@@ -59,13 +61,15 @@ public:
     void* Allocate(size_t Size, size_t Alignment)
     {
         if (Size == 0) { return nullptr; }
-        return _aligned_malloc(Size, Alignment);
+        //return _aligned_malloc(Size, Alignment);
+        return std::malloc(Size);
     }
 
     void Free(void* Ptr, size_t Alignment)
     {
         if (Ptr == 0) { return ; }
-        _aligned_free(Ptr);
+        //_aligned_free(Ptr);
+        std::free(Ptr);
     }
 
     void Shutdown()

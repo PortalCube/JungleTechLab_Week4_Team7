@@ -2,6 +2,7 @@
 
 #include "Runtime/Core/FName.h"
 #include "Runtime/Core/TMap.h"
+#include "Runtime/Core/TSet.h"
 #include "Runtime/Core/PointerTypes.h"
 #include "Runtime/Rendering/FRenderPipeline.h"
 #include "Runtime/Asset/UAsset.h"
@@ -11,12 +12,22 @@
 #include "Runtime/Asset/UPipeline.h"
 #include "Runtime/Asset/UFont.h"
 
+#include <filesystem>
+
+struct FFolderView
+{
+	TSet<std::filesystem::path> Folders;
+	TArray<UAsset*> Assets;
+};
+
 // FObjManager 역할의 클래스
 class FAssetRegistry
 {
 private:
 
 	TMap<FName, UAsset*> AssetMap;
+
+	mutable TMap<std::filesystem::path, FFolderView> DirectoryCache;
 
 public:
 
@@ -27,6 +38,10 @@ public:
 	
 	template <typename T>
 	T* Get(const FName& Name);
+
+	const TMap<FName, UAsset*>& GetAssetMap() const { return AssetMap; }
+
+	FFolderView GetAssetDirectory(const std::filesystem::path& ParentPath) const;
 	
 };
 

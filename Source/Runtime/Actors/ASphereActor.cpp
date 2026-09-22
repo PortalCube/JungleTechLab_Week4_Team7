@@ -14,6 +14,6 @@ ASphereActor::ASphereActor()
 	SetRootComponent(Object);
 
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-	Object->SetMesh(Registry.Get<UStaticMesh>("Sphere"));
+	Object->SetMesh(Registry.Get<UStaticMesh>("#Sphere"));
 	Object->SetMaterial(Registry.Get<UMaterial>("Material/Textured.json"));
 }

@@ -3,6 +3,8 @@
 #include "Runtime/CoreUObject/UPrimitiveComponent.h"
 #include "Runtime/CoreUObject/USpotLightComponent.h"
 #include "Runtime/CoreUObject/UTextInstanceComponent.h"
+#include "Runtime/CoreUObject/UBillBoardComp.h"
+#include "Runtime/CoreUObject/UAnimatedBillboardComp.h"
 #include "Runtime/CoreUObject/Mesh/UStaticMeshComponent.h"
 #include "Runtime/CoreUObject/UClass.h"
 #include "Runtime/Actors/AActor.h"
@@ -10,11 +12,21 @@
 #include "ThirdParty/Imgui/imgui_internal.h"
 #include "ThirdParty/Imgui/imgui_impl_dx11.h"
 #include "ThirdParty/Imgui/imgui_impl_win32.h"
+#include "ThirdParty/Imgui/imgui_stdlib.h"
 #include <string>
+#include <algorithm>
 #include "FImguiDragDrop.h"
 #include "Runtime/Rendering/FMaterial.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Asset/FAssetRegistry.h"
+#include "Runtime/Asset/UFont.h"
+
+
+namespace
+{
+	constexpr float SlotSize = 64.0f;
+}
+
 
 void FImguiPropertyWindow::Process(FEditor& Editor)
 {
@@ -25,10 +37,17 @@ void FImguiPropertyWindow::Process(FEditor& Editor)
 		ShowActorHeader(*SelectedActor);
 		ImGui::Separator();
 
-		ShowComponentHierarchy(*SelectedActor);
-		ImGui::Separator();
+		if (SelectedActor->GetRootComponent())
+		{
+			ShowComponentHierarchy(*SelectedActor);
+			ImGui::Separator();
 
-		ShowComponentSections(Editor, *SelectedActor);
+			ShowComponentSections(Editor, *SelectedActor);
+		}
+		else
+		{
+			ImGui::TextDisabled("No RootComponent");
+		}
 	}
 	else
 	{
@@ -113,11 +132,21 @@ void FImguiPropertyWindow::ShowComponentDetails(FEditor& Editor, AActor& Actor,
 	{
 		ShowTextSettings(static_cast<UTextInstanceComponent&>(Comp));
 	}
-
-	if (Comp.IsA<USpotLightComponent>())
+	else if (Comp.IsA<UAnimatedBillboardComp>())
+	{
+		auto& BillboardComp = static_cast<UAnimatedBillboardComp&>(Comp);
+		ShowBillboardSettings(BillboardComp);
+		ShowAnimatedBillboardSettings(BillboardComp);
+	}
+	else if (Comp.IsA<UBillBoardComp>())
+	{
+		ShowBillboardSettings(static_cast<UBillBoardComp&>(Comp));
+	}
+	else if (Comp.IsA<USpotLightComponent>())
 	{
 		ShowSpotLightSettings(static_cast<USpotLightComponent&>(Comp));
 	}
+
 	else if (Comp.IsA<UStaticMeshComponent>())
 	{
 		ShowStaticMeshSettings(Actor, static_cast<UStaticMeshComponent&>(Comp), bIsRoot);
@@ -158,14 +187,26 @@ void FImguiPropertyWindow::ShowTextSettings(UTextInstanceComponent& TextComp) co
 	ImGui::TextColored(ImVec4(0.5f, 1.0f, 0.5f, 1.0f), "Text Settings");
 
 
-	const char* fontItems[] = { "bazziotf", "dnfbitbitv2", "maplestorybold" };
-	static int currFontIndex = 0;
-	if (ImGui::Combo("Font", &currFontIndex, fontItems, IM_ARRAYSIZE(fontItems)))
+	ImGui::TextDisabled("Font");
+	const UFont* Font = TextComp.GetFont();
+	const FString FontLabel = Font ? Font->GetID().ToString() : "No Font";
+	const float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button(FontLabel.c_str(), ImVec2(FullWidth, SlotSize));
+
+	if (ImGui::BeginDragDropTarget())
 	{
-		const FName Materials[] = { FName("Material/Instance_Text_Bazzi.json"), FName("Material/Instance_Text_DNF.json"), FName("Material/Instance_Text_Maple.json") };
-		const char* selectedFont = fontItems[currFontIndex];
-		TextComp.SetMaterial(FAssetRegistry::GetInstance().Get<UMaterial>(Materials[currFontIndex]));
-		TextComp.SetFont(FName(selectedFont));
+		if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+		{
+			const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+			if (Dropped && Dropped->Ptr)
+			{
+				if (UFont* NewFont = Dropped->Ptr->Cast<UFont>())
+				{
+					TextComp.SetFont(NewFont);
+				}
+			}
+		}
+		ImGui::EndDragDropTarget();
 	}
 
 	static char utfBuffer[512]{};
@@ -179,6 +220,107 @@ void FImguiPropertyWindow::ShowTextSettings(UTextInstanceComponent& TextComp) co
 		MultiByteToWideChar(CP_UTF8, 0, Buffer.c_str(), Buffer.length(), newText.data(), convertResult);
 		TextComp.SetText(newText);
 	}
+
+	ImGui::TextDisabled("Text Bounds");
+	ImGui::Text("Width: %.2f", TextComp.GetWidth());
+	ImGui::Text("Height: %.2f", TextComp.GetHeight());
+}
+
+void FImguiPropertyWindow::ShowBillboardSettings(UBillBoardComp& BillboardComp) const
+{
+	ImGui::Separator();
+	ImGui::TextColored(ImVec4(0.8f, 0.6f, 1.0f, 1.0f), "Billboard Settings");
+
+	UTexture* TextureAsset = BillboardComp.GetTexture();
+	FTexture* Texture = TextureAsset ? TextureAsset->Get() : nullptr;
+	const float FullWidth = ImGui::GetContentRegionAvail().x;
+
+	ImGui::TextDisabled("Texture");
+	if (Texture && Texture->GetSRV())
+	{
+		ImGui::Image(reinterpret_cast<ImTextureID>(Texture->GetSRV()), ImVec2(FullWidth, SlotSize));
+	}
+	else
+	{
+		ImGui::Button("No\nTexture", ImVec2(FullWidth, SlotSize));
+	}
+
+	if (ImGui::BeginDragDropTarget())
+	{
+		if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+		{
+			const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+			if (Dropped && Dropped->Ptr)
+			{
+				if (UTexture* NewTexture = Dropped->Ptr->Cast<UTexture>())
+				{
+					BillboardComp.SetTexture(NewTexture);
+				}
+			}
+		}
+		ImGui::EndDragDropTarget();
+	}
+
+	FVector2 UVScale = BillboardComp.GetUVScale();
+	if (ImGui::DragFloat2("UV Scale", &UVScale.X, 0.01f))
+	{
+		BillboardComp.SetUVScale(UVScale);
+	}
+
+	FVector2 UVOffset = BillboardComp.GetUVOffset();
+	if (ImGui::DragFloat2("UV Offset", &UVOffset.X, 0.01f))
+	{
+		BillboardComp.SetUVOffset(UVOffset);
+	}
+}
+
+void FImguiPropertyWindow::ShowAnimatedBillboardSettings(UAnimatedBillboardComp& BillboardComp) const
+{
+	ImGui::Separator();
+	ImGui::TextColored(ImVec4(1.0f, 0.65f, 0.25f, 1.0f), "Animation Settings");
+
+	int GridX = BillboardComp.GetGridX();
+	int GridY = BillboardComp.GetGridY();
+	int TotalFrames = BillboardComp.GetTotalFrames();
+	bool bSpriteSheetChanged = ImGui::DragInt("Grid X", &GridX, 1.0f, 1, 256);
+	bSpriteSheetChanged |= ImGui::DragInt("Grid Y", &GridY, 1.0f, 1, 256);
+	bSpriteSheetChanged |= ImGui::DragInt("Total Frames", &TotalFrames, 1.0f, 1, 65536);
+	if (bSpriteSheetChanged)
+	{
+		GridX = std::max(GridX, 1);
+		GridY = std::max(GridY, 1);
+		TotalFrames = std::clamp(TotalFrames, 1, GridX * GridY);
+		BillboardComp.SetSpriteSheet(GridX, GridY, BillboardComp.GetFrameRate(), TotalFrames);
+	}
+
+	float FrameRate = BillboardComp.GetFrameRate();
+	if (ImGui::DragFloat("Frame Rate", &FrameRate, 0.1f, 0.1f, 240.0f))
+	{
+		BillboardComp.SetFrameRate(std::max(FrameRate, 0.1f));
+	}
+
+	int CurrentFrame = BillboardComp.GetCurrentFrame();
+	if (ImGui::SliderInt("Current Frame", &CurrentFrame, 0, std::max(0, BillboardComp.GetTotalFrames() - 1)))
+	{
+		BillboardComp.SetCurrentFrame(CurrentFrame);
+	}
+
+	bool bLoop = BillboardComp.IsLooping();
+	if (ImGui::Checkbox("Loop", &bLoop))
+	{
+		BillboardComp.SetLooping(bLoop);
+	}
+
+	if (BillboardComp.IsPlaying())
+	{
+		if (ImGui::Button("Pause")) { BillboardComp.Pause(); }
+	}
+	else
+	{
+		if (ImGui::Button("Play")) { BillboardComp.Play(); }
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Stop")) { BillboardComp.Stop(); }
 }
 
 void FImguiPropertyWindow::ShowSpotLightSettings(USpotLightComponent& LightComp) const
@@ -216,52 +358,298 @@ void FImguiPropertyWindow::ShowStaticMeshSettings(AActor& Actor, UStaticMeshComp
 	ImGui::Separator();
 	ImGui::TextColored(ImVec4(0.5f, 0.8f, 1.0f, 1.0f), "Static Mesh Settings");
 
-	//ShowTextureSlot(MeshComp);
+
+	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+
+	if (ImGui::BeginTable(
+		"StaticMeshAssetSlots",
+		3,
+		ImGuiTableFlags_SizingStretchSame
+	))
+	{
+		ImGui::TableNextRow();
+
+		ImGui::TableSetColumnIndex(0);
+		ShowStaticMeshSlot(MeshComp);
+
+		if (MeshComp.GetMaterialSlotLength() > 1)
+		{
+			ImGui::TableNextRow();
+
+			ImGui::TableSetColumnIndex(0);
+			ShowApplyAllMaterialSlot(MeshComp);
+
+			ImGui::TableSetColumnIndex(1);
+			ShowApplyAllTextureSlot(MeshComp);
+
+			ImGui::TableSetColumnIndex(2);
+			ShowApplyAllPipelineSlot(MeshComp);
+		}
+
+		for (int i = 0; i < MeshComp.GetMaterialSlotLength(); ++i)
+		{
+			ImGui::PushID(i);
+
+			ImGui::TableNextRow();
+
+			ImGui::TableSetColumnIndex(0);
+			ShowMaterialSlot(MeshComp, i);
+
+			ImGui::TableSetColumnIndex(1);
+			ShowTextureSlot(MeshComp, i);
+
+			ImGui::TableSetColumnIndex(2);
+			ShowPipelineSlot(MeshComp, i);
+
+			ImGui::PopID();
+		}
+
+		ImGui::EndTable();
+	}
 }
 
-void FImguiPropertyWindow::ShowTextureSlot(UStaticMeshComponent& MeshComp) const
+void FImguiPropertyWindow::ShowMaterialSlot(UStaticMeshComponent& MeshComp, int Slot) const
 {
-	//constexpr float SlotSize = 64.0f;
-	//TSharedPtr<FMaterial> Material = FRenderResourceLibrary::Get().GetMaterial(MeshComp.GetMaterial());
-	//TSharedPtr<FTexture> CurrentTexture = Material ? Material->GetTexture() : nullptr;
+	UMaterial* Material = MeshComp.GetMaterialInstance(Slot)->Material;
 
-	//ImGui::Spacing();
-	//ImGui::TextDisabled("Texture");
+	ImGui::Spacing();
+	ImGui::TextDisabled("Material");
 
-	//if (CurrentTexture && CurrentTexture->GetSRV())
-	//{
-	//	// ImGui 1.93의 ImTextureID는 ImU64라서 포인터를 정수로 한 번 거친다.
-	//	const ImTextureID TexId = static_cast<ImTextureID>(
-	//		reinterpret_cast<intptr_t>(CurrentTexture->GetSRV()));
-	//	ImGui::Image(TexId, ImVec2(SlotSize, SlotSize));
-	//}
-	//else
-	//{
-	//	// 비어 있어도 드롭받을 아이템은 있어야 하므로 자리를 만든다.
-	//	ImGui::Button("No\nTexture", ImVec2(SlotSize, SlotSize));
-	//}
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button(Material->GetID().ToString().c_str(), ImVec2(FullWidth, SlotSize));
 
-	//// 드롭 타깃은 아이템을 그린 직후여야 한다.
-	//if (!ImGui::BeginDragDropTarget())
-	//{
-	//	return;
-	//}
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
 
-	//if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
-	//{
-	//	// 타입 이름이 같아도 크기가 다르면 다른 구조체일 수 있다.
-	//	if (Material && Payload->DataSize == static_cast<int>(sizeof(FContentDragPayload)))
-	//	{
-	//		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
 
-	//		if (Dropped->Kind == FContentDragPayload::EKind::Texture)
-	//		{
-	//			Material->SetTextureByName(Dropped->Key);
-	//		}
-	//	}
-	//}
-	//ImGui::EndDragDropTarget();
+		if (Dropped->Ptr)
+		{
+			UMaterial* NewMaterial = Dropped->Ptr->Cast<UMaterial>();
+
+			if (NewMaterial)
+			{
+				MeshComp.SetMaterial(NewMaterial, Slot);
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
 }
+
+void FImguiPropertyWindow::ShowPipelineSlot(UStaticMeshComponent& MeshComp, int Slot) const
+{
+	UPipeline* Pipeline = MeshComp.GetMaterialInstance(Slot)->Pipeline;
+
+	ImGui::Spacing();
+	ImGui::TextDisabled("Pipeline");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button(Pipeline->GetID().ToString().c_str(), ImVec2(FullWidth, SlotSize));
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UPipeline* NewPipeline = Dropped->Ptr->Cast<UPipeline>();
+
+			if (NewPipeline)
+			{
+				MeshComp.SetPipeline(NewPipeline, Slot);
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
+}
+
+void FImguiPropertyWindow::ShowTextureSlot(UStaticMeshComponent& MeshComp, int Slot) const
+{
+	UTexture* TextureAsset = MeshComp.GetMaterialInstance(Slot)->Texture;
+	FTexture* CurrentTexture = nullptr;
+	
+	if (TextureAsset)
+	{
+		CurrentTexture = TextureAsset->Get();
+	}
+
+	ImGui::Spacing();
+	ImGui::TextDisabled("Texture");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	if (CurrentTexture && CurrentTexture->GetSRV())
+	{
+		const ImTextureID TexId = reinterpret_cast<ImTextureID>(CurrentTexture->GetSRV());
+		ImGui::Image(TexId, ImVec2(FullWidth, SlotSize));
+	}
+	else
+	{
+		ImGui::Button("No\nTexture", ImVec2(FullWidth, SlotSize));
+	}
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UTexture* Texture = Dropped->Ptr->Cast<UTexture>();
+
+			if (Texture)
+			{
+				MeshComp.SetTexture(Texture, Slot);
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
+}
+
+void FImguiPropertyWindow::ShowStaticMeshSlot(UStaticMeshComponent& MeshComp) const
+{
+	const UStaticMesh* StaticMesh = MeshComp.GetMesh();
+
+	ImGui::Spacing();
+	ImGui::TextDisabled("StaticMesh");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button(StaticMesh->GetID().ToString().c_str(), ImVec2(FullWidth, SlotSize));
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UStaticMesh* NewStaticMesh = Dropped->Ptr->Cast<UStaticMesh>();
+
+			if (NewStaticMesh)
+			{
+				MeshComp.SetMesh(NewStaticMesh);
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
+}
+
+
+void FImguiPropertyWindow::ShowApplyAllMaterialSlot(UStaticMeshComponent& MeshComp) const
+{
+	ImGui::Spacing();
+	ImGui::TextDisabled("Material");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button("Apply All Material", ImVec2(FullWidth, SlotSize));
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UMaterial* NewMaterial = Dropped->Ptr->Cast<UMaterial>();
+
+			if (NewMaterial)
+			{
+				for (int i = 0; i < MeshComp.GetMaterialSlotLength(); ++i)
+				{
+					MeshComp.SetMaterial(NewMaterial, i);
+				}
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
+}
+
+void FImguiPropertyWindow::ShowApplyAllPipelineSlot(UStaticMeshComponent& MeshComp) const
+{
+	ImGui::Spacing();
+	ImGui::TextDisabled("Pipeline");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button("Apply All Pipeline", ImVec2(FullWidth, SlotSize));
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UPipeline* NewPipeline = Dropped->Ptr->Cast<UPipeline>();
+
+			if (NewPipeline)
+			{
+				for (int i = 0; i < MeshComp.GetMaterialSlotLength(); ++i)
+				{
+					MeshComp.SetPipeline(NewPipeline, i);
+				}
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
+}
+
+void FImguiPropertyWindow::ShowApplyAllTextureSlot(UStaticMeshComponent& MeshComp) const
+{
+	ImGui::Spacing();
+	ImGui::TextDisabled("Texture");
+
+	// 슬롯 만들기
+	float FullWidth = ImGui::GetContentRegionAvail().x;
+	ImGui::Button("Apply All Texture", ImVec2(FullWidth, SlotSize));
+
+	// 드롭 타깃은 아이템을 그린 직후여야 한다.
+	if (!ImGui::BeginDragDropTarget()) { return; }
+
+	if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(ContentDragPayloadType))
+	{
+		const auto* Dropped = static_cast<const FContentDragPayload*>(Payload->Data);
+
+		if (Dropped->Ptr)
+		{
+			UTexture* Texture = Dropped->Ptr->Cast<UTexture>();
+
+			if (Texture)
+			{
+				for (int i = 0; i < MeshComp.GetMaterialSlotLength(); ++i)
+				{
+					MeshComp.SetTexture(Texture, i);
+				}
+			}
+		}
+	}
+
+	ImGui::EndDragDropTarget();
+}
+
 
 void FImguiPropertyWindow::ShowGizmoSettings(FEditor& Editor) const
 {

@@ -7,6 +7,7 @@
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Engine/FSceneView.h"
 #include "Runtime/Asset/FAssetRegistry.h"
+#include "Runtime/Asset/UTexture.h"
 #include "UClass.h"
 #include <algorithm>
 #include <cctype>
@@ -19,7 +20,7 @@ void UBillBoardComp::Initialize() {
   Super::Initialize();
 
   FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-  SetMesh(Registry.Get<UStaticMesh>("Rect"));
+  SetMesh(Registry.Get<UStaticMesh>("#Rect"));
   SetMaterial(Registry.Get<UMaterial>("Material/Billboard.json"));
 
   RenderData.Type = ERenderType::Texture;
@@ -28,16 +29,41 @@ void UBillBoardComp::Initialize() {
 void UBillBoardComp::Serialize(FArchive& Archive) const
 {
     Super::Serialize(Archive);
+
+    UTexture* Texture = GetTexture();
+    if (Texture)
+    {
+        Archive.SetString("TextureAsset", Texture->GetID().ToString());
+    }
 }
 
 void UBillBoardComp::Deserialize(const FArchive& Archive)
 {
     Super::Deserialize(Archive);
+
+    if (Archive.IsNull("TextureAsset"))
+    {
+        return;
+    }
+
+    FAssetRegistry& Registry = FAssetRegistry::GetInstance();
+    FString TextureAssetID = Archive.GetString("TextureAsset");
+    UTexture* Texture = Registry.Get<UTexture>(TextureAssetID);
+
+    if (Texture)
+    {
+        SetTexture(Texture);
+    }
 }
 
 void UBillBoardComp::SetTexture(UTexture* Texture)
 {
     RenderData.Materials[0].Texture = Texture;
+}
+
+UTexture* UBillBoardComp::GetTexture() const
+{
+    return RenderData.Materials.empty() ? nullptr : RenderData.Materials[0].Texture;
 }
 
 FMatrix UBillBoardComp::GetRenderMatrix(const FCamera& Camera) const

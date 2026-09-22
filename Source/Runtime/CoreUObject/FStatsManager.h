@@ -22,6 +22,7 @@ enum class EStatMemoryCategory
     MemoryPool, 
     MemoryPoolUsed,
     MemoryPoolFree,
+    MemorySystem,
 
     COUNT
 };

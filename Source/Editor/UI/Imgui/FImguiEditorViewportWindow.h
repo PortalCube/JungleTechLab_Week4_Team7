@@ -98,8 +98,6 @@ private:
 	void ShowViewportHorizontalSplitter(SSplitter& Splitter);
 	void ApplyPendingViewportMaximize(FEditor& Editor);
 
-
-	const char* MakeUsageBar(double Used, double Total, int BarLength = 20);
 	// 스탯 드로우
 	void DrawRow(ImDrawList* DrawList, const ImVec2& Pos, float& Y,
 		const float& Width, const float& RowHeight,

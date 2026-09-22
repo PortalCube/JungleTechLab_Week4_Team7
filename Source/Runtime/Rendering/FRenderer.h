@@ -162,7 +162,7 @@ public:
 
     FRenderPipeline* Pipeline = Material.Pipeline;
     if (bApplyViewMode && CurrentRenderMode == EViewModeIndex::VMI_Wireframe) {
-      Pipeline = GetPipeline(FName("Simple_Wireframe")).get();
+      Pipeline = GetPipeline(FName("#Simple_Wireframe")).get();
     }
     if (Pipeline) {
       Pipeline->Bind(*Context.Get());
@@ -193,7 +193,7 @@ public:
       
       FRenderPipeline* Pipeline = Material.Pipeline;
       if (bApplyViewMode && CurrentRenderMode == EViewModeIndex::VMI_Wireframe) {
-          Pipeline = GetPipeline(FName("Simple_Wireframe")).get();
+          Pipeline = GetPipeline(FName("#Simple_Wireframe")).get();
       }
       if (Pipeline) {
           Pipeline->Bind(*Context.Get());

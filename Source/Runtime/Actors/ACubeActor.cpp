@@ -14,6 +14,6 @@ ACubeActor::ACubeActor()
 	SetRootComponent(Object);
 	
 	FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-	Object->SetMesh(Registry.Get<UStaticMesh>("Cube"));
+	Object->SetMesh(Registry.Get<UStaticMesh>("#Cube"));
 	Object->SetMaterial(Registry.Get<UMaterial>("Material/Textured.json"));
 }

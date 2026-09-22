@@ -6,6 +6,7 @@
 #include "Runtime/Core/IntTypes.h"
 #include "Runtime/Math/FVector.h"
 #include "Runtime/Math/FVector2.h"
+#include "Runtime/Math/FVector4.h"
 #include "ThirdParty/Json/json.hpp"
 
 #include "Runtime/Utility/EngineUtil.h"
@@ -59,6 +60,9 @@ public:
 
 	FVector2 GetVector2(const FString& Key) const;
 	void SetVector2(const FString& Key, const FVector2& Value);
+
+	FVector4 GetVector4(const FString& Key) const;
+	void SetVector4(const FString& Key, const FVector4& Value);
 	
 	template <typename T>
 	TArray<T> GetArray(const FString& Key) const;
