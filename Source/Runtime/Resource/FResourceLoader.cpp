@@ -133,7 +133,6 @@ void FResourceLoader::LoadDefaultStaticMeshAssets()
 	RegisterStaticMeshAsset("#Line", MeshUtil::CreateLineMesh(*Renderer, ResourceLibrary));
 	RegisterStaticMeshAsset("#Plane", MeshUtil::CreatePlaneMesh(*Renderer, ResourceLibrary));
 	RegisterStaticMeshAsset("#Rect", MeshUtil::CreateRectMesh(*Renderer, ResourceLibrary));
-	RegisterStaticMeshAsset("#MasterYi", MeshUtil::CreateMasterYiMesh(*Renderer, ResourceLibrary));
 }
 
 void FResourceLoader::LoadCodeGeneratedRenderAssets()

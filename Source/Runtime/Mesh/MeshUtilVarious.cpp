@@ -2,7 +2,6 @@
 
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Rendering/FRenderer.h"
-#include "Resources/MasterYi/MasterYi_HeadData.h"
 #include "Runtime/Rendering/Vertices.h"
 #include "Runtime/Core/TArray.h"
 #include <cmath>
@@ -65,20 +64,5 @@ bool MeshUtil::CreateLineMesh(FRenderer &Renderer, FRenderResourceLibrary &Libra
 
   Library.RegisterMesh(FName("#Line"), CreateInternalMesh(Renderer, Desc));
   return Library.AllMeshMap[FName("#Line")] != nullptr;
-}
-
-bool MeshUtil::CreateMasterYiMesh(FRenderer &Renderer, FRenderResourceLibrary &Library) {
-  FMeshDesc MeshDesc{
-      .VertexData = MasterYiHeadVertices,
-      .VertexDataSize = static_cast<uint32>(sizeof(MasterYiHeadVertices)),
-      .VertexStride = static_cast<uint32>(sizeof(FVertexData)),
-      .VertexCount = MasterYiHeadVertexCount,
-      .IndexData = MasterYiHeadIndices,
-      .IndexDataSize = static_cast<uint32>(sizeof(MasterYiHeadIndices)),
-      .IndexCount = MasterYiHeadIndexCount,
-  };
-
-  Library.RegisterMesh(FName("#MasterYi"), CreateInternalMesh(Renderer, MeshDesc));
-  return Library.AllMeshMap[FName("#MasterYi")] != nullptr;
 }
 

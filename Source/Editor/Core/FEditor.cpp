@@ -8,7 +8,6 @@
 #include "Runtime/CoreUObject/UObject.h"
 #include "Runtime/Engine/FTimeManager.h"
 #include "Runtime/Input/FInputManager.h"
-#include "Runtime/Actors/AInstancingActor.h"
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "Runtime/Math/Random.h"
 #include "Runtime/Asset/FAssetRegistry.h"
@@ -227,61 +226,6 @@ void FEditor::SpawnActorToCurrentScene(UClass* Type, int Size) {
         NewActor->BeginPlay();
         SelectActor(NewActor);
     }
-}
-
-void FEditor::SpawnInstancingToCurrentScene(int Count)
-{
-    if (!SceneManager || !SceneManager->CurrentScene || Count <= 0) return;
-
-    // 무작위 색상 계산
-    const float Hue = static_cast<float>(std::rand()) / RAND_MAX;
-    const float S = 0.85f;
-    const float V = 1.0f;
-    const float H6 = Hue * 6.0f;
-    const int   HI = static_cast<int>(H6);
-    const float F  = H6 - static_cast<float>(HI);
-    const float P  = V * (1.0f - S);
-    const float Q  = V * (1.0f - S * F);
-    const float T  = V * (1.0f - S * (1.0f - F));
-    FVector4 Color;
-    switch (HI % 6)
-    {
-    case 0: Color = {V, T, P, 1.0f}; break;
-    case 1: Color = {Q, V, P, 1.0f}; break;
-    case 2: Color = {P, V, T, 1.0f}; break;
-    case 3: Color = {P, Q, V, 1.0f}; break;
-    case 4: Color = {T, P, V, 1.0f}; break;
-    default:Color = {V, P, Q, 1.0f}; break;
-    }
-
-    AActor* TargetActor = SceneManager->CurrentScene->SpawnActor(AInstancingActor::StaticClass());
-    
-    if (!TargetActor) return;
-    TargetActor->BeginPlay();
-
-    auto* Comp = TargetActor->GetRootComponent()->Cast<UInstancePrimitiveComponent>();
-    if (!Comp) return;
-
-    // 일정 반경 및 높이 이내 좌표 추가
-    const float MaxDistance = 25.0f;
-    const float MaxHeight = 15.0f;
-    const float TwoPi = 6.2831853f;
-    const FVector Center = TargetActor->GetTransform().Location;
-
-    for (int i = 0; i < Count; ++i)
-    {
-        float Angle = (static_cast<float>(std::rand()) / RAND_MAX) * TwoPi;
-        float Dist = std::sqrt(static_cast<float>(std::rand()) / RAND_MAX) * MaxDistance;
-        float OffsetZ = ((static_cast<float>(std::rand()) / RAND_MAX) * 2.0f - 1.0f) * MaxHeight;
-        FVector Pos;
-        Pos.X = Center.X + std::cos(Angle) * Dist;
-        Pos.Y = Center.Y + std::sin(Angle) * Dist;
-        Pos.Z = Center.Z + OffsetZ;
-        Comp->AddInstance(Pos, Color);
-    }
-
-    // 액터 선택
-    SelectActor(TargetActor);
 }
 
 void FEditor::ResizeView(FEditorState::SplitViewMode mode)
