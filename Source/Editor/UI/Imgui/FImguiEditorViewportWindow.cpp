@@ -26,7 +26,7 @@ void FImguiEditorViewportWindow::Process(FEditor& Editor, float DeltaTime)
     FEditorViewportClient* Viewport = Editor.GetActiveViewport();
 
     const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
-    const FVector2 ClientSize{MainViewport->Size.x,MainViewport->Size.y};
+    const FVector2 ClientSize{MainViewport->Size.x,MainViewport->Size.y};             
 
     BeginWindow();
 
@@ -469,7 +469,7 @@ void FImguiEditorViewportWindow::DrawRow(ImDrawList* DrawList,
 
 void FImguiEditorViewportWindow::DrawStatsMemory()
 {
-    FVector4 Color(255.0f, 255.0f, 255.0f, 255.0f);
+    FVector4 Color(0.0f, 255.0f, 0.0f, 255.0f);
     FVector4 OddRowColor(30.0f, 30.0f, 30.0f, 200.0f);
     FVector4 EvenRowColor(10.0f, 10.0f, 10.0f, 200.0f);
 
@@ -491,7 +491,7 @@ void FImguiEditorViewportWindow::DrawStatsMemory()
     DrawRow(DrawList, ImVec2(Pos.x, Pos.y - 45.0f), CpuY,
         Width, RowHeight, 240.0f,
         "[CPU Memory]", "",
-        0, Color, FVector4(0.0f, 0.0f, 0.0f, 200.0f));
+        0, FVector4(255.0f, 255.0f, 255.0f, 255.0f), FVector4(0.0f, 0.0f, 0.0f, 200.0f));
 
     DrawRow(DrawList, ImVec2(Pos.x, Pos.y - 20.0f), CpuY,
         Width, RowHeight, 240.0f,
@@ -538,7 +538,7 @@ void FImguiEditorViewportWindow::DrawStatsMemory()
 
 void FImguiEditorViewportWindow::DrawGPUStatsMemory()
 {
-    FVector4 Color(255.0f, 255.0f, 255.0f, 255.0f);
+    FVector4 Color(0, 255.0f, 0.0f, 255.0f);
     FVector4 OddRowColor(30.0f, 30.0f, 30.0f, 200.0f);
     FVector4 EvenRowColor(10.0f, 10.0f, 10.0f, 200.0f);
 
@@ -560,7 +560,7 @@ void FImguiEditorViewportWindow::DrawGPUStatsMemory()
     DrawRow(DrawList, ImVec2(Pos.x, Pos.y - 45.0f), GpuY,
         Width, RowHeight, 240.0f,
         "[GPU Memory]", "",
-        0, Color, FVector4(0.0f, 0.0f, 0.0f, 200.0f));
+        0, FVector4(255.0f, 255.0f, 255.0f, 255.0f), FVector4(0.0f, 0.0f, 0.0f, 200.0f));
 
     DrawRow(DrawList, ImVec2(Pos.x, Pos.y - 20.0f), GpuY,
         Width, RowHeight, 240.0f,
@@ -625,15 +625,11 @@ void FImguiEditorViewportWindow::DrawStatsFPS()
     FVector4 TransColor(0.0f, 0.0f, 0.0f, 0.0f);
     char Buffer[64];
 
-    DrawRow(DrawList, FPSPos, Y,
-        Width, RowHeight, 0.0f,
-        "", "%.2f FPS", 
-        1.0f / DT, FPSColor, TransColor);
+    DrawRow(DrawList, FPSPos, Y, Width, RowHeight, 0.0f,
+        "", "%.2f FPS", 1.0f / DT, FPSColor, TransColor);
 
-    DrawRow(DrawList, FPSPos, Y,
-        Width, RowHeight, 0.0f,
-        "", "%.2f ms", 
-        1000.0f * DT, FPSColor, TransColor);
+    DrawRow(DrawList, FPSPos, Y, Width, RowHeight, 0.0f,
+        "", "%.2f ms", 1000.0f * DT, FPSColor, TransColor);
 }
 
 bool FImguiEditorViewportWindow::GetViewportSceneRect(
