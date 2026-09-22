@@ -1,80 +1,149 @@
 #include "FObjParser.h"
 #include <filesystem>
 
+// Helper function
+inline const char* SkipSpaces(const char* p)
+{
+    while (*p == ' ' || *p == '\t')
+    {
+        ++p;
+    }
+    return p;
+}
+
+inline const char* SkipLine(const char* p)
+{
+    while (*p && *p != '\n' && *p != '\r')
+    {
+        ++p;
+    }
+    while (*p == '\n' || *p == '\r')
+    {
+        ++p;
+    }
+    return p;
+}
+
 bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
 {
-    std::ifstream File(InFilePath);
+    std::ifstream File(InFilePath, std::ios::binary | std::ios::ate);
     if (!File.is_open())
     {
         return false;
     }
 
+    std::streamsize FileSize = File.tellg();
+    File.seekg(0, std::ios::beg);
+
+    TArray<char> Buffer(FileSize + 1);
+    if (!File.read(Buffer.data(), FileSize))
+    {
+        return false;
+    }
+    Buffer[FileSize] = '\0'; // null
+
+    // file pointer
+    const char* p = Buffer.data();
+    char* next = nullptr;
+
     // Mesh Section
     FString CurrentMaterialName = "";
     uint32 CurrentStartindex = 0;  
 
-    FString Line;
-    while (std::getline(File, Line))
+    
+    while (*p)
     {
-        if (Line.empty() || Line[0] == '#')
+        p = SkipSpaces(p);
+        if (*p == '#' || *p == '\n' || *p == '\r')
         {
+            p = SkipLine(p);
             continue;
         }
+        
+        if (p[0] == 'v' && (p[1] == ' ' || p[1] == '\t')) // Position
+        {
+            p += 1;
 
-        std::stringstream ss(Line);
-        FString Prefix;
-        ss >> Prefix;
+            float x = strtof(p, &next); p = next;
+            float y = strtof(p, &next); p = next;
+            float z = strtof(p, &next); p = next;
 
-        if (Prefix == "v") // Position
-        {
-            FVector Pos;
-            float x, y, z;
-            ss >> x >> y >> z;
-            Pos.X = -z; Pos.Y = x; Pos.Z = y; // Change Unreal Coord
-            OutResult.Positions.push_back(Pos);
+            OutResult.Positions.push_back({ -z ,x , y }); // Change Unreal Coord
         }
-        else if (Prefix == "vt") // Texture Coords
+        else if (p[0] == 'v' && p[1] == 't' && (p[2] == ' ' || p[2] == '\t')) // Texture Coords
         {
-            FVector2 Tex;
-            float u, v;
-            ss >> u >> v;
-            Tex.X = u; Tex.Y = 1.0f - v; // Change Unreal Coord
-            OutResult.TexCoords.push_back(Tex);
+            p += 2;
+
+            float u = strtof(p, &next); p = next;
+            float v = strtof(p, &next); p = next;
+                      
+            OutResult.TexCoords.push_back({u, 1.0f - v}); // Change Unreal Coord
         }
-        else if (Prefix == "vn") // Normal
+        else if (p[0] == 'v' && p[1] == 'n' && (p[2] == ' ' || p[2] == '\t')) // Normal
         {
-            FVector Norm;
-            float x, y, z;
-            ss >> x >> y >> z;
-            Norm.X = -z; Norm.Y = x; Norm.Z = y; // Change Unreal Coord
-            OutResult.Normals.push_back(Norm);
+            p += 2;
+
+            float x = strtof(p, &next); p = next;
+            float y = strtof(p, &next); p = next;
+            float z = strtof(p, &next); p = next;
+            
+            OutResult.Normals.push_back({ -z , x , y}); // Change Unreal Coord
         }
-        else if (Prefix == "f") // Faces
+        else if (p[0] == 'f' && (p[1] == ' ' || p[1] == '\t')) // Faces
         {
-            TArray<FString> Tokens;
-            FString Word;
-            while (ss >> Word)
+            p += 1;
+
+            FObjIndex FaceIndices[8]; // for all polygon
+            int FaceIdx = 0;
+
+            while (*p != '\r' && *p != '\n' && *p != '\0' && FaceIdx < 8)
             {
-                Tokens.push_back(Word);
+                p = SkipSpaces(p);
+
+                if (*p == '\r' || *p == '\n' || *p == '\0')
+                {
+                    break;
+                }
+
+                // Face parsing
+                FObjIndex ObjIdx{};
+                ObjIdx.v = static_cast<int>(strtol(p, &next, 10));
+                p = next;
+                if (*p == '/')
+                {
+                    ++p;
+                    if (*p != '/')
+                    {
+                        ObjIdx.vt = static_cast<int>(strtol(p, &next, 10));
+                        p = next;
+                    }
+                    if (*p == '/')
+                    {
+                        ++p;
+                        ObjIdx.vn = static_cast<int>(strtol(p, &next, 10));
+                        p = next;
+                    }
+                    FaceIndices[FaceIdx++] = ObjIdx;
+                }
             }
 
-            if (Tokens.size() < 3) continue;
-
-            TArray<FObjIndex> FaceIndices;
-            for (const FString& T : Tokens)
-            {
-                FaceIndices.push_back(ParseFaceToken(T));
-            }
-
-            for (size_t i = 1; i + 1 < FaceIndices.size(); i++)
+            for (size_t i = 1; i + 1 < FaceIdx; i++)
             {
                 OutResult.Faces.push_back({ FaceIndices[0], FaceIndices[i + 1], FaceIndices[i] });  // Change Unreal Coord
             }
         }
-        else if (Prefix == "usemtl") // Mesh section
+        else if (strncmp(p, "usemtl", 6) == 0) // Mesh section
         {
-            FString NewMaterialName;
-            ss >> NewMaterialName;
+            p += 6;
+            p = SkipSpaces(p);
+
+            const char* start = p; 
+            while (*p && *p != ' ' && *p !='\t' && *p !='\r' && *p != '\n')
+            {
+                ++p;
+            }
+
+            FString NewMaterialName(start, p - start);
 
             uint32 NewStartIndex = static_cast<uint32>(OutResult.Faces.size() * 3);
             uint32 NewIndexCount = NewStartIndex - CurrentStartindex;
@@ -91,9 +160,93 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
                 CurrentStartindex = NewStartIndex;
             }
 
-            CurrentMaterialName = NewMaterialName;            
+            CurrentMaterialName = NewMaterialName;
         }
+
+        p = SkipLine(p);
     }
+
+    //FString Line;
+    //while (std::getline(File, Line))
+    //{
+    //    if (Line.empty() || Line[0] == '#')
+    //    {
+    //        continue;
+    //    }
+
+    //    std::stringstream ss(Line);
+    //    FString Prefix;
+    //    ss >> Prefix;
+
+    //    if (Prefix == "v") // Position
+    //    {
+    //        FVector Pos;
+    //        float x, y, z;
+    //        ss >> x >> y >> z;
+    //        Pos.X = -z; Pos.Y = x; Pos.Z = y; // Change Unreal Coord
+    //        OutResult.Positions.push_back(Pos);
+    //    }
+    //    else if (Prefix == "vt") // Texture Coords
+    //    {
+    //        FVector2 Tex;
+    //        float u, v;
+    //        ss >> u >> v;
+    //        Tex.X = u; Tex.Y = 1.0f - v; // Change Unreal Coord
+    //        OutResult.TexCoords.push_back(Tex);
+    //    }
+    //    else if (Prefix == "vn") // Normal
+    //    {
+    //        FVector Norm;
+    //        float x, y, z;
+    //        ss >> x >> y >> z;
+    //        Norm.X = -z; Norm.Y = x; Norm.Z = y; // Change Unreal Coord
+    //        OutResult.Normals.push_back(Norm);
+    //    }
+    //    else if (Prefix == "f") // Faces
+    //    {
+    //        TArray<FString> Tokens;
+    //        FString Word;
+    //        while (ss >> Word)
+    //        {
+    //            Tokens.push_back(Word);
+    //        }
+
+    //        if (Tokens.size() < 3) continue;
+
+    //        TArray<FObjIndex> FaceIndices;
+    //        for (const FString& T : Tokens)
+    //        {
+    //            FaceIndices.push_back(ParseFaceToken(T));
+    //        }
+
+    //        for (size_t i = 1; i + 1 < FaceIndices.size(); i++)
+    //        {
+    //            OutResult.Faces.push_back({ FaceIndices[0], FaceIndices[i + 1], FaceIndices[i] });  // Change Unreal Coord
+    //        }
+    //    }
+    //    else if (Prefix == "usemtl") // Mesh section
+    //    {
+    //        FString NewMaterialName;
+    //        ss >> NewMaterialName;
+
+    //        uint32 NewStartIndex = static_cast<uint32>(OutResult.Faces.size() * 3);
+    //        uint32 NewIndexCount = NewStartIndex - CurrentStartindex;
+
+    //        if (NewIndexCount > 0)
+    //        {
+    //            FMeshSection NewMeshSection;
+    //            NewMeshSection.SectionName = CurrentMaterialName;
+    //            NewMeshSection.StartIndex = CurrentStartindex;
+    //            NewMeshSection.IndexCount = NewIndexCount;
+
+    //            OutResult.Sections.push_back(NewMeshSection);
+
+    //            CurrentStartindex = NewStartIndex;
+    //        }
+
+    //        CurrentMaterialName = NewMaterialName;            
+    //    }
+    //}
 
     // Final mesh section
     uint32 FinalStartIndex = static_cast<uint32>(OutResult.Faces.size() * 3);

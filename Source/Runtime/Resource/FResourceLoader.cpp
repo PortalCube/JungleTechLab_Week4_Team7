@@ -398,7 +398,6 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 
 	UStaticMesh* StaticMesh = NewObject<UStaticMesh>();
 	UStaticMeshDesc StaticMeshDesc{};
-
 	StaticMeshDesc.ID = ID;
 	StaticMeshDesc.Name = Archive.GetString("Name");
 	fs::path MeshFilePath = fs::path(Archive.GetString("MeshFilePath")).lexically_normal();
