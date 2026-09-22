@@ -398,9 +398,9 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 
 	UStaticMesh* StaticMesh = NewObject<UStaticMesh>();
 	UStaticMeshDesc StaticMeshDesc{};
-
 	StaticMeshDesc.ID = ID;
 	StaticMeshDesc.Name = Archive.GetString("Name");
+
 	FString MeshFilePath = (fs::path(EngineUtil::GetContentDirectory()) / Archive.GetString("MeshFilePath")).string();
 	fs::path MeshBinPath = fs::path(MeshFilePath.substr(0, MeshFilePath.find_last_of('.')) + ".bin");
 
