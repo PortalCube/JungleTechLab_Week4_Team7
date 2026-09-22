@@ -90,9 +90,27 @@ void UStaticMeshComponent::Serialize(FArchive& Archive) const
 		ItemArchive.SetFloat("Diffuse", Item.Diffuse);
 		ItemArchive.SetFloat("Specular", Item.Specular);
 
-		ItemArchive.SetString("MaterialAsset", Item.Material->GetID().ToString());
-		ItemArchive.SetString("OverridePipelineAsset", Item.Pipeline->GetID().ToString());
-		ItemArchive.SetString("OverrideTextureAsset", Item.Texture->GetID().ToString());
+		FString MaterialID = "";
+		if (Item.Material)
+		{
+			MaterialID = Item.Material->GetID().ToString();
+		}
+		ItemArchive.SetString("MaterialAsset", MaterialID);
+
+		FString PipelineID = "";
+		if (Item.Pipeline)
+		{
+			PipelineID = Item.Pipeline->GetID().ToString();
+		}
+		ItemArchive.SetString("OverridePipelineAsset", PipelineID);
+
+		FString TextureID = "";
+		if (Item.Texture)
+		{
+			TextureID = Item.Texture->GetID().ToString();
+		}
+		ItemArchive.SetString("OverrideTextureAsset", TextureID);
+
 		ItemArchive.SetBool("DisableShading", Item.bDisableShading);
 
 		ItemArchive.SetVector4("Color", Item.Color);
