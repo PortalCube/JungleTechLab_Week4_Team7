@@ -8,6 +8,7 @@ void FEditorViewportClient::UpdateFocusedAndHovered(bool bFocused, bool bHovered
 void FEditorViewportClient::SetOrthograpihcView(FEditorViewportClient::EOrthogonalType type)
 {
 	float distance = 5.0f;
+	eOrthogonalType = type;
 	ViewportCamera.Projection.ProjectionType = EProjectionType::Orthographic;
 	switch (type)
 	{

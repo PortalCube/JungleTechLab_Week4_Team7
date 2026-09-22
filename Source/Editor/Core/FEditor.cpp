@@ -347,12 +347,25 @@ void FEditor::ResizeView(FEditorState::SplitViewMode mode)
 void FEditor::SetViewLayout(FEditorState::SplitViewMode mode) {
     ResizeView(mode);
 
+    auto SetPerspectiveView = [this](int32 ViewportIndex)
+    {
+        FEditorViewportClient& Viewport = EditorViewports[ViewportIndex];
+        Viewport.eOrthogonalType = FEditorViewportClient::EOrthogonalType::PERSPECTIVE;
+        Viewport.ViewportCamera.Projection.ProjectionType = EProjectionType::Perspective;
+    };
+
+    auto SetOrthographicView = [this](int32 ViewportIndex, FEditorViewportClient::EOrthogonalType Type)
+    {
+        EditorViewports[ViewportIndex].SetOrthograpihcView(Type);
+    };
+
     switch (mode)
     {
     case FEditorState::SplitViewMode::SINGLE:
         VerticalSplitter.bisActive = false;
         HorizonSplitter.bisActive = false;
         HorizonSplitter2.bisActive = false;
+        SetPerspectiveView(0);
         State.SetSplitMode(FEditorState::SplitViewMode::SINGLE);
         break;
 
@@ -360,6 +373,8 @@ void FEditor::SetViewLayout(FEditorState::SplitViewMode mode) {
         VerticalSplitter.bisActive = true;
         HorizonSplitter.bisActive = false;
         HorizonSplitter2.bisActive = false;
+        SetOrthographicView(0, FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_TOP);
+        SetPerspectiveView(2);
         State.SetSplitMode(FEditorState::SplitViewMode::VERTICAL);
         break;
 
@@ -367,6 +382,8 @@ void FEditor::SetViewLayout(FEditorState::SplitViewMode mode) {
         VerticalSplitter.bisActive = false;
         HorizonSplitter.bisActive = true;
         HorizonSplitter2.bisActive = false;
+        SetOrthographicView(0, FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_TOP);
+        SetPerspectiveView(1);
         State.SetSplitMode(FEditorState::SplitViewMode::HORIZONTAL);
         break;
 
@@ -374,6 +391,10 @@ void FEditor::SetViewLayout(FEditorState::SplitViewMode mode) {
         VerticalSplitter.bisActive = true;
         HorizonSplitter.bisActive = true;
         HorizonSplitter2.bisActive = true;
+        SetOrthographicView(0, FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_TOP);
+        SetPerspectiveView(1);
+        SetOrthographicView(2, FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_FRONT);
+        SetOrthographicView(3, FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_RIGHT);
         State.SetSplitMode(FEditorState::SplitViewMode::QUAD);
         break;
 
