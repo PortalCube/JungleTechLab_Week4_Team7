@@ -2,7 +2,7 @@
     "Version": 1,
     "Name": "Gizmo",
     "AssetType": "Material",
-    "UPipelineID": "Pipeline/Gizmo.json",
+    "UPipelineID": "Pipeline/Simple_Solid.json",
     "UTextureID": null,
     "TextureSampler": { "FilterMode": "Bilinear", "WrapMode": "Wrap" }
 }

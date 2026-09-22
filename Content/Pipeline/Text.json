@@ -2,7 +2,7 @@
     "Version": 1,
     "Name": "Text",
     "AssetType": "Pipeline",
-    "VertexShaderFilePath": "Shader/ExampleVS.cso",
+    "VertexShaderFilePath": "Shader/InstanceVS.cso",
     "PixelShaderFilePath": "Shader/MsdfTextPS.cso",
     "Rasterizer": {
         "FillMode": "Solid",
@@ -17,5 +17,5 @@
         "StencilEnable": true,
         "DepthWriteMode": "Enable"
     },
-    "Instancing": false
+    "Instancing": true
 }
