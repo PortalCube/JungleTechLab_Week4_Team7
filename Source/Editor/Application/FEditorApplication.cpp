@@ -19,7 +19,6 @@
 #include "Runtime/Engine/FSceneView.h"
 
 #include "Runtime/Actors/AActor.h"
-#include "Runtime/Actors/AInstancingActor.h"
 #include "Runtime/Actors/TestTextActor.h"
 
 #include "Editor/Visualizer/IVisualizer.h"

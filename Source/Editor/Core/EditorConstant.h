@@ -10,8 +10,6 @@
 #include "Runtime/Actors/AAnimatedBillboardActor.h"
 #include "Runtime/Actors/ASpotlightActor.h"
 #include "Runtime/Actors/ATextRenderActor.h"
-#include "Runtime/Actors/AInstancingActor.h"
-#include "Runtime/Actors/AMasterYi.h"
 
 namespace EditorConstant
 {
@@ -28,8 +26,6 @@ namespace EditorConstant
 	   AAnimatedBillboardActor::StaticClass(),
 	   ASpotlightActor::StaticClass(),
 	   ATextRenderActor::StaticClass(),
-	   AInstancingActor::StaticClass(),
-	   AMasterYi::StaticClass(),
 	};
 
 }

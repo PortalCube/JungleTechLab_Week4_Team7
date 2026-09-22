@@ -34,5 +34,4 @@ bool CreateSphereMesh(FRenderer &Renderer, FRenderResourceLibrary &Library);
 bool CreateLineMesh(FRenderer &Renderer, FRenderResourceLibrary &Library);
 bool CreatePlaneMesh(FRenderer &Renderer, FRenderResourceLibrary &Library);
 bool CreateRectMesh(FRenderer &Renderer, FRenderResourceLibrary &Library);
-bool CreateMasterYiMesh(FRenderer &Renderer, FRenderResourceLibrary &Library);
 }
