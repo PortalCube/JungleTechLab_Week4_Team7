@@ -576,9 +576,14 @@ TSharedPtr<FTexture> FRenderer::CreateTexture(const wchar_t *path) {
   // If dds failed  
   if (FAILED(hr)) 
   {
-      hr = DirectX::CreateWICTextureFromFile(
-          Device.Get(), path, TempResource.GetAddressOf(),
-          Texture->TextureSRV.GetAddressOf());          
+      // Grayscale images are otherwise created as R8_UNORM. Sampling an R8
+      // texture as RGBA yields (gray, 0, 0, 1), which makes grayscale base
+      // color textures appear red. Convert WIC textures to RGBA explicitly.
+      hr = DirectX::CreateWICTextureFromFileEx(
+          Device.Get(), path, 0,
+          D3D11_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE, 0, 0,
+          DirectX::WIC_LOADER_FORCE_RGBA32,
+          TempResource.GetAddressOf(), Texture->TextureSRV.GetAddressOf());
   }
 
   hr = TempResource.As(&Texture->Texture2D);
