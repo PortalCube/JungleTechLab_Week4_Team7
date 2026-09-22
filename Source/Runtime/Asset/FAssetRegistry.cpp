@@ -8,6 +8,8 @@ namespace fs = std::filesystem;
 
 namespace
 {
+	const fs::path InternalStaticMeshPath = "InternalStaticMesh";
+
 	bool IsSubpath(fs::path& OutTargetPath, bool& bOutIsDirectChild, const fs::path& Parent, const fs::path& Child)
 	{
 		fs::path ParentNormal = Parent.lexically_normal();
@@ -39,11 +41,13 @@ void FAssetRegistry::Register(const FName& Name, UAsset* Pipeline)
 	}
 
 	AssetMap.insert({ Name, Pipeline });
+	DirectoryCache.clear();
 }
 
 void FAssetRegistry::Clear()
 {
 	AssetMap.clear();
+	DirectoryCache.clear();
 }
 
 FFolderView FAssetRegistry::GetAssetDirectory(const fs::path& ParentPath) const
@@ -58,10 +62,28 @@ FFolderView FAssetRegistry::GetAssetDirectory(const fs::path& ParentPath) const
 	FFolderView Result;
 	TSet<fs::path> FolderSet;
 
+	if (ParentPath == InternalStaticMeshPath)
+	{
+		for (const auto& [AssetID, Asset] : GetAssetMap())
+		{
+			const FString AssetIDString = AssetID.ToString();
+			if (!AssetIDString.empty() && AssetIDString.front() == '#' && Asset->IsA<UStaticMesh>())
+			{
+				Result.Assets.push_back(Asset);
+			}
+		}
+	}
+	else if (ParentPath.empty())
+	{
+		// 코드에서 생성한 내부 StaticMesh는 일반 애셋 트리와 분리해 보여준다.
+		FolderSet.insert(InternalStaticMeshPath);
+	}
+
 	for (const auto& [AssetID, Asset] : GetAssetMap())
 	{
 		const FString AssetIDString = AssetID.ToString();
-		if (!AssetIDString.empty() && AssetIDString.front() == '#')
+		if (ParentPath == InternalStaticMeshPath ||
+			(!AssetIDString.empty() && AssetIDString.front() == '#'))
 		{
 			continue;
 		}
