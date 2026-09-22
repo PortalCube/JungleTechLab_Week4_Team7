@@ -12,7 +12,7 @@ void UInstancePrimitiveComponent::Initialize()
     Super::Initialize();
 
     FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-    SetMaterial(Registry.Get<UMaterial>("Material/Instance_Textured.json"));
+    //SetMaterial(Registry.Get<UMaterial>("Material/Instance_Textured.json"));
     
     RenderData.Type = ERenderType::Instancing;
 
