@@ -24,7 +24,7 @@ externalproject "DirectXTK_Desktop_2026"
     kind "StaticLib"
     language "C++"
     configmap {
-        ["ObjViewer"] = "Debug"
+        ["ObjViewer"] = "Release"
     }
 
 project "MyEngine"
@@ -109,8 +109,17 @@ project "MyEngine"
 		linktimeoptimization "Off"
 
    filter "configurations:ObjViewer"
-        defines { "_OBJVIEWER" }
-        symbols "On"
+        defines { "_OBJVIEWER", "NDEBUG" }
+        --symbols "On"
+		symbols "Off"
+		
+		-- Release 빌드에서도 컴파일러/링커 최적화를 사용하지 않음
+		-- 최적화된 바이너리가 일부 안티바이러스에서 오진되는 문제를 피하기 위함
+		optimize "Off"
+		functionlevellinking "Off"
+		intrinsics "Off"
+		stringpooling "Off"
+		linktimeoptimization "Off"
 
     filter "platforms:x86"
         defines { "WIN32" }
