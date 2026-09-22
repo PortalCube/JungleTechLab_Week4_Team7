@@ -101,9 +101,14 @@ void AActor::Deserialize(const FArchive& Archive)
 
 	if (RootComponent == nullptr)
 	{
-		UE_LOG_WARN("[%s::Deserialize] RootComponent %s를 찾을 수 없습니다.",
-			GetClass()->GetUClassName(), SavedTypeName);
-		return;
+		CreateRootComponent(SavedClass);
+
+		if (RootComponent == nullptr)
+		{
+			UE_LOG_WARN("[%s::Deserialize] RootComponent %s를 생성할 수 없습니다.",
+				GetClass()->GetUClassName(), SavedTypeName);
+			return;
+		}
 	}
 
 	if (RootComponent->GetClass() != SavedClass)

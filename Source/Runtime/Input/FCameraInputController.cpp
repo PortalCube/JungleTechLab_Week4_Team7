@@ -98,3 +98,21 @@ void FCameraInputController::UpdateMouseInput(FCamera& Camera) const
 		Camera.Pitch = std::clamp(Camera.Pitch, -89.0f, 89.0f);
 	}
 }
+
+void FCameraInputController::UpdateMouseInput_ORTHOGRAPHIC(FCamera& Camera) const
+{
+	if (FInputManager::Get().IsMouseDown(EMouseButton::Right) || FInputManager::Get().IsMouseDown(EMouseButton::Left))
+	{
+		// 마우스의 클릭에 대한 원점은 좌측 상단
+		const FVector2 Delta = FInputManager::Get().GetMouseDelta();
+		
+		const FMatrix Rotation = Camera.GetRotationMatrix();
+		//카메라 로컬 +X방향
+		const FVector Right{ Rotation.M[1][0], Rotation.M[1][1], Rotation.M[1][2] }; 
+		//카메라 로컬 +Y방향
+		const FVector Up{ Rotation.M[2][0], Rotation.M[2][1], Rotation.M[2][2] };
+		
+		const float PanSpeed = Camera.Projection.Height * 0.001f;
+		Camera.Position += (Up * Delta.Y - Right * Delta.X) * PanSpeed;
+	}
+}

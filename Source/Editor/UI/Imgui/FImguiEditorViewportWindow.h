@@ -94,7 +94,6 @@ private:
 	void ShowViewportVerticalSplitter(SSplitter& Splitter);
 	void ShowViewportHorizontalSplitter(SSplitter& Splitter);
 	void ApplyPendingViewportMaximize(FEditor& Editor);
-
 	// 스탯 드로우
 	void DrawStatLine(ImDrawList* DrawList, const ImVec2& Position, float& Y,
 		const char* Name, const char* Value, FVector4 Color);

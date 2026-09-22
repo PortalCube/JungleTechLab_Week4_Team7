@@ -11,9 +11,18 @@ class FEditorViewportClient final {
 	//Grid 이식중, ShowFlag 추가필요
 
 public:
-	
-	
-	
+	// Type에 따라 키보드,마우스 조작이 달라지기 때문에 ViewportClient에 있어야 한다고 생각함
+	enum class EOrthogonalType {
+		PERSPECTIVE,
+		ORTHOGRAPHIC,
+		ORTHOGRAPHIC_TOP,
+		ORTHOGRAPHIC_BOTTOM,
+		ORTHOGRAPHIC_LEFT,
+		ORTHOGRAPHIC_RIGHT,
+		ORTHOGRAPHIC_FRONT,
+		ORTHOGRAPHIC_BACK,
+	} eOrthogonalType = EOrthogonalType::PERSPECTIVE; 
+	void SetOrthograpihcView(EOrthogonalType type);
 	
 	FCamera ViewportCamera;
 	// 전체 클라이언트 영역 기준 고정 UV: 좌상단 (0,0), 우하단 (1,1).
