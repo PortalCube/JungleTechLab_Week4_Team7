@@ -30,7 +30,7 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
             FVector Pos;
             float x, y, z;
             ss >> x >> y >> z;
-            Pos.X = -z; Pos.Y = x; Pos.Z = y;
+            Pos.X = -z; Pos.Y = x; Pos.Z = y; // Change Unreal Coord
             OutResult.Positions.push_back(Pos);
         }
         else if (Prefix == "vt") // Texture Coords
@@ -38,7 +38,7 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
             FVector2 Tex;
             float u, v;
             ss >> u >> v;
-            Tex.X = u; Tex.Y = 1.0f - v;
+            Tex.X = u; Tex.Y = 1.0f - v; // Change Unreal Coord
             OutResult.TexCoords.push_back(Tex);
         }
         else if (Prefix == "vn") // Normal
@@ -46,7 +46,7 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
             FVector Norm;
             float x, y, z;
             ss >> x >> y >> z;
-            Norm.X = -z; Norm.Y = x; Norm.Z = y;
+            Norm.X = -z; Norm.Y = x; Norm.Z = y; // Change Unreal Coord
             OutResult.Normals.push_back(Norm);
         }
         else if (Prefix == "f") // Faces
@@ -68,7 +68,7 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
 
             for (size_t i = 1; i + 1 < FaceIndices.size(); i++)
             {
-                OutResult.Faces.push_back({ FaceIndices[0], FaceIndices[i + 1], FaceIndices[i] });
+                OutResult.Faces.push_back({ FaceIndices[0], FaceIndices[i + 1], FaceIndices[i] });  // Change Unreal Coord
             }
         }
         else if (Prefix == "usemtl") // Mesh section
