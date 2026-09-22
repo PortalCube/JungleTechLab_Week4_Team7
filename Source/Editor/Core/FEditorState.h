@@ -30,7 +30,7 @@ private:
 
 	// Camera
 	float CameraSensitivity = 0.5f;
-	float CameraSpeed = 10.0f;
+	float CameraSpeed = 5.0f;
 	FVector CameraLocation = { -8.0f, 0.0f, 4.0f };
 	float CameraYaw = 0.0f;
 	float CameraPitch = -20.0f;

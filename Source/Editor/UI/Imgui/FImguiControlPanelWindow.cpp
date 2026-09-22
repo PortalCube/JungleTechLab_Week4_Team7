@@ -224,7 +224,7 @@ void FImguiControlPanelWindow::CameraSetting(FEditor& Editor)
 
         float CameraSpeed = Editor.State.GetCameraSpeed();
         ImGui::SetNextItemWidth(180.0f);
-        ImGui::DragFloat("##Speed", &CameraSpeed, 1.0f, 1.0f, 100.0f, "%.1f");
+        ImGui::DragFloat("##Speed", &CameraSpeed, 0.1f, 0.2f, 5.0f, "%.1f");
         ImGui::SameLine();
         ImGui::Text("Speed");
         Editor.State.SetCameraSpeed(CameraSpeed);
