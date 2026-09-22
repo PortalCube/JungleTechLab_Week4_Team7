@@ -1,15 +1,15 @@
 @echo off
 setlocal
 
-rem Resolve every path from this batch file so it works from any directory.
-set "SCRIPTS_DIRECTORY=%~dp0"
-set "PREBUILD_SCRIPT=%SCRIPTS_DIRECTORY%PreBuild.ps1"
-set "POSTBUILD_SCRIPT=%SCRIPTS_DIRECTORY%PostBuild.ps1"
+rem Resolve every path from the project root so it works from any directory.
+set "PROJECT_DIRECTORY=%~dp0"
+set "PREBUILD_SCRIPT=%PROJECT_DIRECTORY%Scripts\PreBuild.ps1"
+set "POSTBUILD_SCRIPT=%PROJECT_DIRECTORY%Scripts\PostBuild.ps1"
 
 rem Use the x64 Debug output by default. Pass another directory as the first
-rem argument when updating a different platform or configuration.
+rem argument to override the target directory.
 if "%~1"=="" (
-    set "TARGET_DIRECTORY=%SCRIPTS_DIRECTORY%..\Binaries\x64\Debug"
+    set "TARGET_DIRECTORY=%PROJECT_DIRECTORY%Binaries\x64\Debug"
 ) else (
     set "TARGET_DIRECTORY=%~1"
 )
