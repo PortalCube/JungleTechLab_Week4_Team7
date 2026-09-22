@@ -105,36 +105,7 @@ int WINAPI wWinMain(
 		EditorApp.Initialize_ImguiWin32DX11(Window, Device, Context);
 	}
 	EditorApp.Initialize_Runtime(&SceneManager, &RenderView);
-
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	//// test /////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////////////
-
-	UScene* ActiveScene = SceneManager.CurrentScene;
-	if (ActiveScene)
-	{
-		// 1. 기본 액터 스폰
-		AActor* MyObjActor = ActiveScene->SpawnActor<AActor>();
-
-		// 2. 렌더링을 담당하는 프리미티브 컴포넌트 생성 및 루트 장착
-		UStaticMeshComponent* Object = NewObject<UStaticMeshComponent>();
-		MyObjActor->SetRootComponent(Object);
-		FAssetRegistry& Registry = FAssetRegistry::GetInstance();
-		Object->SetMesh(Registry.Get<UStaticMesh>("StaticMesh/Rover/Rover.json"));
-		Object->SetRenderType(ERenderType::Primitive);
-		Object->SetColor(FVector4(0.8f, 0.8f, 0.8f, 1.0f));
-		// 3. 크기(Scale) 및 위치(Location) 설정
-		FTransform Transform;
-		Transform.Location = FVector(0.0f, 0.0f, 0.0f);
-		Transform.Scale3D = FVector(1.0f, 1.0f, 1.0f); // 모델이 너무 작거나 크면 조절
-		MyObjActor->SetTransform(Transform);
-	}
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////////////
-#endif
-	
-
+#endif	
 
 	bool bQuit = false;
 	while (!bQuit)
