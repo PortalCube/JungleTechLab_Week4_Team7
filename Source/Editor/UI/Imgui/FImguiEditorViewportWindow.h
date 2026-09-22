@@ -4,11 +4,7 @@
 #include "Runtime/Input/FCameraInputController.h"
 #include "ThirdParty/Imgui/imgui.h"
 
-enum class EStatsWindow
-{
-	Memory,
-	FPS
-};
+
 
 // 3D 씬 위를 덮는 투명한 ImGui 창.
 // - 다른 패널(ControlPanel, Property 등)이 이 창 위에 그려지므로,
@@ -17,8 +13,15 @@ enum class EStatsWindow
 // - 뷰포트 위에서 클릭이 발생하면 피킹을 수행한다.
 class FImguiEditorViewportWindow final
 {
-
+	
 public:
+	enum class EStatsWindow
+	{
+		Memory,
+		FPS
+	};
+
+
 	FImguiEditorViewportWindow() = default;
 	~FImguiEditorViewportWindow() = default;
 
@@ -94,19 +97,24 @@ private:
 	void ShowViewportVerticalSplitter(SSplitter& Splitter);
 	void ShowViewportHorizontalSplitter(SSplitter& Splitter);
 	void ApplyPendingViewportMaximize(FEditor& Editor);
+
 	// 스탯 드로우
-	void DrawStatLine(ImDrawList* DrawList, const ImVec2& Position, float& Y,
-		const char* Name, const char* Value, FVector4 Color);
-
-	void DrawRow(ImDrawList* DrawList, const ImVec2& Pos, float& Y, const char* Str, double Data, float RowColor);
-
+	void DrawRow(ImDrawList* DrawList, const ImVec2& Pos, float& Y,
+		const float& Width, const float& RowHeight,
+		const float& ValueOffsetX,
+		const char* Name, const char* Value, double Data,
+		FVector4 TextColor, FVector4 RowColor);
 	void DrawStatsMemory();
+	void DrawGPUStatsMemory();
 	void DrawStatsFPS();
 	bool GetViewportSceneRect(const ImVec2& Origin, FRect& OutRect) const;
 	void DrawViewportHeader(int32 ViewportIndex,FEditor& Editor);
 	float DT = 1.0f;
 	bool bOpenMemory = false;
 	bool bOpenFPS = false;
+
+	float CpuY = 0;
+	float GpuY = 0;
 	int32 PendingMaximizeViewport = -1;
 	FCameraInputController CameraController;
 };

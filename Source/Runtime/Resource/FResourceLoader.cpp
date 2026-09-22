@@ -15,6 +15,7 @@
 #include "Runtime/Rendering/FRenderResourceLibrary.h"
 #include "ThirdParty/Json/json.hpp"
 #include "Runtime/CoreUObject/UObjectGlobals.h"
+#include "Runtime/CoreUObject/FStatsManager.h"
 
 #include "Runtime/Material/FRasterizerDesc.h"
 #include "Runtime/Material/FDepthStencilDesc.h"
@@ -106,6 +107,8 @@ void FResourceLoader::LoadDefaultStaticMeshAssets()
 				"[FResourceLoader::LoadDefaultStaticMeshAssets] 등록된 FMesh를 찾지 못했습니다. {}",
 				ID.ToString());
 		}
+
+		FStatsManager::Get().AddMemory(EStatMemoryCategory::StaticMesh, Mesh->GetBufferSize());
 
 		UStaticMesh* StaticMesh = NewObject<UStaticMesh>();
 		UStaticMeshDesc StaticMeshDesc{};
@@ -480,6 +483,12 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 
 	StaticMesh->Load(StaticMeshDesc);
 	Registry.Register(ID, StaticMesh);
+
+	const size_t VertexBufferSize = sizeof(FVertexData) * Vertices.size();
+	const size_t IndexBufferSize = sizeof(uint32) * Indices.size();
+	const size_t GPUResourceSize = VertexBufferSize + IndexBufferSize;
+
+	FStatsManager::Get().AddMemory(EStatMemoryCategory::StaticMesh, GPUResourceSize);
 
 	// Load mtl
 	fs::path MtlPath = fs::path(MeshFilePath.substr(0, MeshFilePath.find_last_of('.')) + ".mtl");

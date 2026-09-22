@@ -26,7 +26,7 @@ void FImguiEditorViewportWindow::Process(FEditor& Editor, float DeltaTime)
     FEditorViewportClient* Viewport = Editor.GetActiveViewport();
 
     const ImGuiViewport* MainViewport = ImGui::GetMainViewport();
-    const FVector2 ClientSize{MainViewport->Size.x,MainViewport->Size.y};
+    const FVector2 ClientSize{MainViewport->Size.x,MainViewport->Size.y};             
 
     BeginWindow();
 
@@ -142,7 +142,10 @@ void FImguiEditorViewportWindow::Process(FEditor& Editor, float DeltaTime)
                 }
 
                 // 각 자식 창 기준 스탯 표시
-                if (bOpenMemory) DrawStatsMemory();
+                if (bOpenMemory) {
+                    DrawStatsMemory();
+                    DrawGPUStatsMemory();
+                }
                 if (bOpenFPS) DrawStatsFPS();
               
             }
@@ -152,7 +155,7 @@ void FImguiEditorViewportWindow::Process(FEditor& Editor, float DeltaTime)
         ImGui::EndChild();
         ImGui::PopID();
     }
-
+  
     // 활성 뷰포트의 입력을 한 번만 처리
     if (Viewport && Viewport == Editor.GetActiveViewport() && bHasActiveInput)
     {
@@ -448,45 +451,42 @@ void FImguiEditorViewportWindow::ShowViewportHorizontalSplitter(SSplitter& Split
     Splitter.OnResize(R);
 }
 
-void FImguiEditorViewportWindow::DrawStatLine(ImDrawList* DrawList, const ImVec2& Position,
-    float& Y, const char* Name, const char* Value, FVector4 Color)
+void FImguiEditorViewportWindow::DrawRow(ImDrawList* DrawList, 
+    const ImVec2& Pos, float& Y,
+    const float& Width, const float& RowHeight,
+    const float& ValueOffsetX,
+     const char* Name, const char* Value, double Data,
+    FVector4 Color, FVector4 RowColor)
 {
-    const float ValueOffsetX = 240.0f;
-    const ImU32 TextColor = IM_COL32(Color.X, Color.Y, Color.Z, Color.W);
-
-    if (Name[0] != '\0'){
-        DrawList->AddText(ImVec2(Position.x, Y), TextColor, Name);
-        DrawList->AddText(ImVec2(Position.x + ValueOffsetX, Y), TextColor, Value);
-    }
-    else{
-        DrawList->AddText(ImVec2(Position.x, Y), TextColor, Value);
-    }
-
-    Y += 20.0f;
-}
-
-void FImguiEditorViewportWindow::DrawRow(ImDrawList* DrawList, const ImVec2& Pos,
-    float& Y, const char* Str, double Data, float RowColor)
-{
-    const float Width = 500.0f;
-    const float RowHeight = 20.0f;
-    FVector4 Color(255.0f, 255.0f, 255.0f, 255.0f);
     char Buffer[64];
 
     // Memory 전체 배경
     DrawList->AddRectFilled(
         ImVec2(Pos.x, Y),
         ImVec2(Pos.x + Width, Y + RowHeight),
-        IM_COL32(RowColor, RowColor, RowColor, 200)
+        IM_COL32(RowColor.X, RowColor.Y, RowColor.Y, RowColor.W)
     );
 
     // Vertex Shader
-    sprintf_s(Buffer, "%.2f MB", Data);
-    DrawStatLine(DrawList, Pos, Y, Str, Buffer, Color);
+    sprintf_s(Buffer, Value, Data);
+
+    const ImU32 TextColor = IM_COL32(Color.X, Color.Y, Color.Z, Color.W);
+
+    DrawList->AddText(ImVec2(Pos.x, Y), TextColor, Name);
+    DrawList->AddText(ImVec2(Pos.x + ValueOffsetX, Y), TextColor, Buffer); 
+
+    Y += 20.0f;
 }
 
 void FImguiEditorViewportWindow::DrawStatsMemory()
 {
+    FVector4 Color(0.0f, 255.0f, 0.0f, 255.0f);
+    FVector4 OddRowColor(30.0f, 30.0f, 30.0f, 200.0f);
+    FVector4 EvenRowColor(10.0f, 10.0f, 10.0f, 200.0f);
+
+    const float Width = 350.0f;
+    const float RowHeight = 20.0f;
+
     ImVec2 ViewportPos = ImGui::GetWindowPos();
     ImVec2 ViewportSize = ImGui::GetWindowSize();
 
@@ -497,57 +497,124 @@ void FImguiEditorViewportWindow::DrawStatsMemory()
         ViewportPos.y + ViewportSize.y * 0.2f
     };
     
-    float Y = Pos.y;
+    CpuY = Pos.y;
 
-    DrawList->AddText(ImVec2(Pos.x, Pos.y - 45.0f), IM_COL32(255, 255, 255, 255), "Memory");
-    DrawList->AddText(ImVec2(Pos.x, Pos.y - 20.0f), IM_COL32(255, 165, 0, 255), "Memory Counters");
-    DrawList->AddText(ImVec2(Pos.x + 240.0f, Pos.y - 20.0f), IM_COL32(255, 165, 0, 255), "UsedMax");
+    DrawRow(DrawList, ImVec2(Pos.x, Pos.y - 45.0f), CpuY,
+        Width, RowHeight, 240.0f,
+        "[CPU Memory]", "",
+        0, FVector4(255.0f, 255.0f, 255.0f, 255.0f), FVector4(0.0f, 0.0f, 0.0f, 200.0f));
+
+    DrawRow(DrawList, ImVec2(Pos.x, Pos.y - 20.0f), CpuY,
+        Width, RowHeight, 240.0f,
+        "Memory Counters", "UsedMax",
+        0, FVector4(255.0f, 165.0f, 0.0f, 255.0f), FVector4(0.0f, 0.0f, 0.0f, 200.0f));
+
     // CPU
-    DrawRow(DrawList, Pos, Y, "CPU Memory",
+    DrawRow(DrawList, Pos, CpuY,
+        Width, RowHeight, 240.0f,
+        "CPU Memory", "%.2f MB",
         static_cast<double>(FStatsManager::Get().GetProcessMemoryUsed())
-        / (1024.0 * 1024.0), 30.0f);
+        / (1024.0 * 1024.0), Color, OddRowColor);
     // Ram
-    DrawRow(DrawList, Pos, Y, "Ram Used",
+    DrawRow(DrawList, Pos, CpuY,
+        Width, RowHeight, 240.0f,
+        "Ram Used", "%.2f GB",
         static_cast<double>(FStatsManager::Get().GetSystemMemoryUsed())
-        / (1024.0 * 1024.0 * 1024.0), 10.0f);
+        / (1024.0 * 1024.0 * 1024.0), Color, EvenRowColor);   // GB 단위 변환 필요
     // Ram Available
-    DrawRow(DrawList, Pos, Y, "Ram Available",
+    DrawRow(DrawList, Pos, CpuY,
+        Width, RowHeight, 240.0f,
+        "Ram Available", "%.2f GB",
         static_cast<double>(FStatsManager::Get().GetSystemMemoryAvailable())
-        / (1024.0 * 1024.0 * 1024.0), 30.0f);
+        / (1024.0 * 1024.0 * 1024.0), Color, OddRowColor);   // GB 단위 변환 필요
+
+    DrawRow(DrawList, Pos, CpuY,
+        Width, RowHeight, 240.0f,
+        "Total Memory Pool", "%.2f MB",
+        static_cast<double>(FStatsManager::Get().GetMemoryPool()) //, 30.0f);
+        / (1024.0 * 1024.0), Color, EvenRowColor);
+
+    DrawRow(DrawList, Pos, CpuY,
+        Width, RowHeight, 240.0f,
+        "Memory Pool Used", "%.2f MB",
+        static_cast<double>(FStatsManager::Get().GetMemoryPoolUsed()) //, 10.0f);
+        / (1024.0 * 1024.0), Color, OddRowColor);
+
+    DrawRow(DrawList, Pos, CpuY,
+        Width, RowHeight, 240.0f,
+        "Memory Pool Free", "%.2f MB",
+        static_cast<double>(FStatsManager::Get().GetMemoryPoolFree()) //, 30.0f);
+        / (1024.0 * 1024.0), Color, EvenRowColor);
+}
+
+void FImguiEditorViewportWindow::DrawGPUStatsMemory()
+{
+    FVector4 Color(0, 255.0f, 0.0f, 255.0f);
+    FVector4 OddRowColor(30.0f, 30.0f, 30.0f, 200.0f);
+    FVector4 EvenRowColor(10.0f, 10.0f, 10.0f, 200.0f);
+
+    const float Width = 350.0f;
+    const float RowHeight = 20.0f;
+
+    ImVec2 ViewportPos = ImGui::GetWindowPos();
+    ImVec2 ViewportSize = ImGui::GetWindowSize();
+
+    ImDrawList* DrawList = ImGui::GetWindowDrawList();
+
+    const ImVec2 Pos = {
+        ViewportPos.x + ViewportSize.x * 0.2f + Width,
+        ViewportPos.y + ViewportSize.y * 0.2f
+    };
+
+    GpuY = Pos.y;
+
+    DrawRow(DrawList, ImVec2(Pos.x, Pos.y - 45.0f), GpuY,
+        Width, RowHeight, 240.0f,
+        "[GPU Memory]", "",
+        0, FVector4(255.0f, 255.0f, 255.0f, 255.0f), FVector4(0.0f, 0.0f, 0.0f, 200.0f));
+
+    DrawRow(DrawList, ImVec2(Pos.x, Pos.y - 20.0f), GpuY,
+        Width, RowHeight, 240.0f,
+        "Memory Counters", "UsedMax",
+        0, FVector4(255.0f, 165.0f, 0.0f, 255.0f), FVector4(0.0f, 0.0f, 0.0f, 200.0f));
     // GPU
-    DrawRow(DrawList, Pos, Y, "GPU Memory Used",
+    DrawRow(DrawList, Pos, GpuY,
+        Width, RowHeight, 240.0f,
+        "GPU Memory Used", "%.2f MB",
         static_cast<double>(FStatsManager::Get().GetGPUMemoryUsed())
-        / (1024.0 * 1024.0 * 1024.0), 10.0f);
+        / (1024.0 * 1024.0), Color, OddRowColor);
     // GPU Available
-    DrawRow(DrawList, Pos, Y, "GPU Memory Available",
+    DrawRow(DrawList, Pos, GpuY,
+        Width, RowHeight, 240.0f,
+        "GPU Memory Available", "%.2f GB",
         static_cast<double>(FStatsManager::Get().GetGPUMemoryBudget())
-        / (1024.0 * 1024.0), 30.0f);
+        / (1024.0 * 1024.0 * 1024.0), Color, EvenRowColor);
 
     // Vetex Shader
-    DrawRow(DrawList, Pos, Y, "VertexShader", 
+    DrawRow(DrawList, Pos, GpuY,
+        Width, RowHeight, 240.0f,
+        "VertexShader", "%.2f MB",
         static_cast<double>(FStatsManager::Get().GetVertexShaderMemoryUsed())
-        / (1024.0 * 1024.0), 10.0f);
+        / (1024.0 * 1024.0), Color, OddRowColor);
     // Pixel Shader
-    DrawRow(DrawList, Pos, Y, "Pixel Shader",
+    DrawRow(DrawList, Pos, GpuY,
+        Width, RowHeight, 240.0f,
+        "Pixel Shader", "%.2f MB",
         static_cast<double>(FStatsManager::Get().GetPixelShaderMemoryUsed())
-        / (1024.0 * 1024.0), 30.0f);
+        / (1024.0 * 1024.0), Color, EvenRowColor);
     // Texture
-    DrawRow(DrawList, Pos, Y, "Texture",
+    DrawRow(DrawList, Pos, GpuY,
+        Width, RowHeight, 240.0f,
+        "Texture", "%.2f MB",
         static_cast<double>(FStatsManager::Get().GetTextureMemoryUsed())
-        / (1024.0 * 1024.0), 10.0f);
+        / (1024.0 * 1024.0), Color, OddRowColor);
 
-    DrawRow(DrawList, Pos, Y, "Total Memory Pool",
-        static_cast<double>(FStatsManager::Get().GetMemoryPool()) //, 30.0f);
-        / (1024.0 * 1024.0), 30.0f);
-
-    DrawRow(DrawList, Pos, Y, "Memory Pool Used",
-        static_cast<double>(FStatsManager::Get().GetMemoryPoolUsed()) //, 10.0f);
-        / (1024.0 * 1024.0), 10.0f);
-
-    DrawRow(DrawList, Pos, Y, "Memory Pool Free",
-        static_cast<double>(FStatsManager::Get().GetMemoryPoolFree()) //, 30.0f);
-        / (1024.0 * 1024.0), 30.0f);
-
+    // Static Mesh
+    DrawRow(DrawList, Pos, GpuY,
+        Width, RowHeight, 240.0f,
+        "Static Mesh", "%.2f MB",
+        static_cast<double>(FStatsManager::Get().GetStaticMeshMemoryUsed()) //, 10.0f);
+        / (1024.0 * 1024.0), Color, EvenRowColor);
 }
 
 void FImguiEditorViewportWindow::DrawStatsFPS()
@@ -556,6 +623,9 @@ void FImguiEditorViewportWindow::DrawStatsFPS()
     ImVec2 ViewportSize = ImGui::GetWindowSize();
     ImDrawList* DrawList = ImGui::GetWindowDrawList();
 
+    const float Width = 500.0f;
+    const float RowHeight = 20.0f;
+
     const ImVec2 FPSPos = {
         ViewportPos.x + ViewportSize.x - 180.0f,
         ViewportPos.y + ViewportSize.y * 0.25f
@@ -563,12 +633,14 @@ void FImguiEditorViewportWindow::DrawStatsFPS()
 
     float Y = FPSPos.y;
     FVector4 FPSColor(0.0f, 255.0f, 255.0f, 255.0f);
+    FVector4 TransColor(0.0f, 0.0f, 0.0f, 0.0f);
     char Buffer[64];
 
-    sprintf_s(Buffer, "%.2f FPS", 1.0f / DT);
-    DrawStatLine(DrawList, FPSPos, Y, "", Buffer, FPSColor);
-    sprintf_s( Buffer, "%.2f ms", DT * 1000.0f);
-    DrawStatLine( DrawList, FPSPos, Y, "", Buffer, FPSColor);
+    DrawRow(DrawList, FPSPos, Y, Width, RowHeight, 0.0f,
+        "", "%.2f FPS", 1.0f / DT, FPSColor, TransColor);
+
+    DrawRow(DrawList, FPSPos, Y, Width, RowHeight, 0.0f,
+        "", "%.2f ms", 1000.0f * DT, FPSColor, TransColor);
 }
 
 bool FImguiEditorViewportWindow::GetViewportSceneRect(
