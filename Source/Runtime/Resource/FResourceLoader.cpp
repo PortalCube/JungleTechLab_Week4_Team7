@@ -400,9 +400,10 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 	UStaticMeshDesc StaticMeshDesc{};
 	StaticMeshDesc.ID = ID;
 	StaticMeshDesc.Name = Archive.GetString("Name");
-
-	FString MeshFilePath = (fs::path(EngineUtil::GetContentDirectory()) / Archive.GetString("MeshFilePath")).string();
-	fs::path MeshBinPath = fs::path(MeshFilePath.substr(0, MeshFilePath.find_last_of('.')) + ".bin");
+	fs::path MeshFilePath = fs::path(Archive.GetString("MeshFilePath")).lexically_normal();
+	fs::path MeshRootPath = MeshFilePath.parent_path();
+	fs::path MeshFileFullPath = fs::path(EngineUtil::GetContentDirectory()) / MeshFilePath;
+	fs::path MeshBinPath = fs::path(MeshFileFullPath).replace_extension("bin");
 
 	TArray<FVertexData> Vertices;
 	TArray<uint32> Indices;
@@ -411,7 +412,7 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 	bool bValid = false;
 	if (fs::exists(MeshBinPath))
 	{
-		bValid = FObjParser::ValidateBinary(MeshBinPath.string().c_str(), MeshFilePath.c_str());
+		bValid = FObjParser::ValidateBinary(MeshBinPath.string().c_str(), MeshFileFullPath.string().c_str());
 	}
 	
 	if (bValid)
@@ -427,12 +428,12 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 	else
 	{
 		FRawObjData RawObjData{};
-		if (!FObjParser::LoadObj(MeshFilePath.c_str(), RawObjData))
+		if (!FObjParser::LoadObj(MeshFileFullPath.string().c_str(), RawObjData))
 		{
 			throw EngineUtil::CreateError(
 				"[FResourceLoader::LoadStaticMeshAsset] OBJ 파일을 불러오는데 실패했습니다. ID: {}, Path: {}",
 				ID.ToString(),
-				MeshFilePath);
+				MeshFilePath.string());
 		}
 
 		if (!FObjParser::ConvertObjToVertex(RawObjData, Vertices, Indices, Sections))
@@ -440,13 +441,19 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 			throw EngineUtil::CreateError(
 				"[FResourceLoader::LoadStaticMeshAsset] OBJ 데이터를 정점 데이터로 변환하는데 실패했습니다. ID: {}, Path: {}",
 				ID.ToString(),
-				MeshFilePath);
+				MeshFilePath.string());
 		}
 
 		// bake 
-		uint64 ObjHash = FObjParser::ComputeFileHash(MeshFilePath);
+		uint64 ObjHash = FObjParser::ComputeFileHash(MeshFileFullPath);
 		FObjParser::SaveMeshToBinary(MeshBinPath.string().c_str(), ObjHash, Vertices, Indices, Sections);
-	}	
+	}
+
+	// BIN에는 OBJ의 원본 material 이름을 저장하고, 런타임에서만 애셋 Root를 붙인다.
+	for (FMeshSection& Section : Sections)
+	{
+		Section.SectionName = (MeshRootPath / fs::path(Section.SectionName)).generic_string();
+	}
 
 	FRenderResourceLibrary& ResourceLibrary = FRenderResourceLibrary::Get();
 	FRenderer* Renderer = ResourceLibrary.GetRenderer();
@@ -475,7 +482,7 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 		throw EngineUtil::CreateError(
 			"[FResourceLoader::LoadStaticMeshAsset] FMesh 생성에 실패했습니다. ID: {}, Path: {}",
 			ID.ToString(),
-			MeshFilePath);
+			MeshFilePath.string());
 	}
 
 	ResourceLibrary.RegisterMesh(ID, Mesh);
@@ -491,10 +498,11 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 	FStatsManager::Get().AddMemory(EStatMemoryCategory::StaticMesh, GPUResourceSize);
 
 	// Load mtl
-	fs::path MtlPath = fs::path(MeshFilePath.substr(0, MeshFilePath.find_last_of('.')) + ".mtl");
-	if (fs::exists(MtlPath))
+
+	fs::path MeshMaterialPath = fs::path(MeshFileFullPath).replace_extension("mtl");
+	if (fs::exists(MeshMaterialPath))
 	{
-		LoadMtlMaterial(MtlPath);
+		LoadMtlMaterial(MeshMaterialPath, MeshRootPath);
 	}	
 }
 
@@ -573,8 +581,10 @@ void FResourceLoader::LoadTextureAsset(const FArchive& Archive, const FName& ID)
 	Registry.Register(ID, TextureAsset);
 }
 
-void FResourceLoader::LoadMtlMaterial(const std::filesystem::path& MtlFilePath)
+void FResourceLoader::LoadMtlMaterial(const std::filesystem::path& MtlFilePath, const std::filesystem::path& RootPath)
 {
+	namespace fs = std::filesystem;
+
 	TArray<FMtlData> MtlData;
 	if (!FObjParser::LoadMtl(MtlFilePath.string().c_str(), MtlData))
 	{
@@ -591,12 +601,13 @@ void FResourceLoader::LoadMtlMaterial(const std::filesystem::path& MtlFilePath)
 		if (!Mtl.map_Kd.empty())
 		{
 			FArchive TextureArchive;
-			TextureArchive.SetString("Name", Mtl.map_Kd);
+			const fs::path TextureAssetPath = RootPath / fs::path(Mtl.map_Kd);
+			TextureArchive.SetString("Name", TextureAssetPath.generic_string());
 
 			std::filesystem::path TexturePath = ParentPath / Mtl.map_Kd;
 			TextureArchive.SetString("RawTextureFilePath", TexturePath.generic_string());
 
-			TextureId = FName(Mtl.map_Kd);
+			TextureId = FName(TextureAssetPath.generic_string());
 
 			if (!Registry.Get<UTexture>(TextureId))
 			{
@@ -605,7 +616,8 @@ void FResourceLoader::LoadMtlMaterial(const std::filesystem::path& MtlFilePath)
 		}
 		else
 		{
-			TextureId = FName(Mtl.MaterialName + "_Solid");
+			const fs::path TextureAssetPath = RootPath / fs::path(Mtl.MaterialName + "_Solid");
+			TextureId = FName(TextureAssetPath.generic_string());
 
 			if (!Registry.Get<UTexture>(TextureId))
 			{
@@ -617,7 +629,7 @@ void FResourceLoader::LoadMtlMaterial(const std::filesystem::path& MtlFilePath)
 
 				UTextureDesc TexDesc{};
 				TexDesc.ID = TextureId;
-				TexDesc.Name = TextureId.ToString();
+				TexDesc.Name = TextureAssetPath.generic_string();
 				TexDesc.Texture = RawTexture.get();
 
 				FRenderResourceLibrary::Get().RegisterTexture(TextureId.ToString(), RawTexture);
@@ -626,7 +638,8 @@ void FResourceLoader::LoadMtlMaterial(const std::filesystem::path& MtlFilePath)
 			}
 		}
 
-		FName MaterialId = FName(Mtl.MaterialName);
+		const fs::path MaterialAssetPath = RootPath / fs::path(Mtl.MaterialName);
+		FName MaterialId = FName(MaterialAssetPath.generic_string());
 		if (!Registry.Get<UMaterial>(MaterialId))
 		{
 			FArchive SamplerArchive;
@@ -634,7 +647,7 @@ void FResourceLoader::LoadMtlMaterial(const std::filesystem::path& MtlFilePath)
 			SamplerArchive.SetString("WrapMode", "Wrap");
 
 			FArchive MaterialArchive;
-			MaterialArchive.SetString("Name", Mtl.MaterialName);
+			MaterialArchive.SetString("Name", MaterialAssetPath.generic_string());
 			MaterialArchive.SetString("UPipelineID", "Pipeline/Textured.json");
 
 			MaterialArchive.SetString("UTextureID", TextureId.ToString());			

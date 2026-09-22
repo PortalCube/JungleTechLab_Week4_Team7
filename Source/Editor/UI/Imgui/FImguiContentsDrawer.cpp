@@ -81,7 +81,8 @@ void FImguiContentsDrawer::RenderContentView()
 
 	int Index = 0;
 
-	for (const auto& Item : FolderView.Folders)
+	// GetAssetDirectory가 정렬한 폴더를 먼저, 에셋을 그 다음에 렌더링한다.
+	for (const fs::path& Item : FolderView.Folders)
 	{
 		// 같은 이름이 있어도 ID가 겹치지 않도록 Key값으로 구분
 		ImGui::PushID(Item.c_str());
@@ -159,7 +160,7 @@ void FImguiContentsDrawer::RenderContentView()
 
 		++Index;
 	}
-	for (const auto& Item : FolderView.Assets)
+	for (UAsset* Item : FolderView.Assets)
 	{
 		FString Path = Item->GetID().ToString();
 
@@ -318,7 +319,7 @@ void FImguiContentsDrawer::RenderFolderTreeNode(const fs::path& FolderPath)
 
 	if (bOpened && bContainsDirectory)
 	{
-		for (const auto& Entry : FolderView.Folders)
+		for (const fs::path& Entry : FolderView.Folders)
 		{
 			RenderFolderTreeNode(FolderPath / Entry);
 		}

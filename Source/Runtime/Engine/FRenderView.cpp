@@ -142,7 +142,7 @@ void FRenderView::RenderView(const FSceneView& View, const UScene& Scene, const 
     FlushBasePass(View.Camera);
 
     // 에디터 라인 패스
-    if (EditorCtx.Grid) {
+    if (EditorCtx.Grid && (View.ShowFlags & static_cast<uint32>(EEngineShowFlags::SF_Grid)) != 0) {
         DrawGrid(View.Camera, *EditorCtx.Grid);
     }
 

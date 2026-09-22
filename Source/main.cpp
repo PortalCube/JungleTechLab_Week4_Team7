@@ -37,7 +37,7 @@ static UINT ResizeHeight = 0u;
 
 namespace
 {
-	constexpr LPCWSTR WindowName = L"My Engine";
+	constexpr LPCWSTR WindowName = L"OIIAII";
 
 	HWND CreateWindowHandle(HINSTANCE Instance);
 	bool ProcessWindowMessage();
