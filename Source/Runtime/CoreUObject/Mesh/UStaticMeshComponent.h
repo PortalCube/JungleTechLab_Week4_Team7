@@ -19,6 +19,7 @@ public:
     virtual const FMaterialInstance* GetMaterialInstance(int Index = 0) const override;
     virtual const TArray<FMaterialInstance>* GetAllMaterialInstance() const override { return &RenderData.Materials; }
 
+    void SetMaterialInstance(const FMaterialInstance& Instance, int Index = 0);
     void SetPipeline(UPipeline* Pipeline, int Index = 0);
     void SetTexture(UTexture* Texture, int Index = 0);
 
@@ -32,4 +33,7 @@ public:
 
 protected:
     UStaticMeshComponent() = default;
+
+    virtual void Serialize(FArchive& Archive) const override;
+    virtual void Deserialize(const FArchive& Archive) override;
 };
