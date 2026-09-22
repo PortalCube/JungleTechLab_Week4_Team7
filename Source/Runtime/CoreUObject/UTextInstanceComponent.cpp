@@ -223,12 +223,27 @@ void UTextInstanceComponent::Serialize(FArchive &Archive) const {
   Super::Serialize(Archive);
 
   Archive.SetWString("Text", Text);
+
+  if (FontAsset) {
+    Archive.SetString("FontAsset", FontAsset->GetID().ToString());
+  }
 }
 
 void UTextInstanceComponent::Deserialize(const FArchive &Archive) {
   Super::Deserialize(Archive);
 
   Text = Archive.GetWString("Text");
+
+  if (!Archive.IsNull("FontAsset")) {
+    FAssetRegistry &Registry = FAssetRegistry::GetInstance();
+    FString FontAssetID = Archive.GetString("FontAsset");
+    UFont *LoadedFont = Registry.Get<UFont>(FontAssetID);
+
+    if (LoadedFont) {
+      SetFont(LoadedFont);
+      return;
+    }
+  }
 
   RebuildTextMesh();
 }
