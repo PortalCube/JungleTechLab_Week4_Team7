@@ -101,7 +101,7 @@ void FCameraInputController::UpdateMouseInput(FCamera& Camera) const
 
 void FCameraInputController::UpdateMouseInput_ORTHOGRAPHIC(FCamera& Camera) const
 {
-	if (FInputManager::Get().IsMouseDown(EMouseButton::Right) || FInputManager::Get().IsMouseDown(EMouseButton::Left))
+	if (FInputManager::Get().IsMouseDown(EMouseButton::Right))
 	{
 		// 마우스의 클릭에 대한 원점은 좌측 상단
 		const FVector2 Delta = FInputManager::Get().GetMouseDelta();
