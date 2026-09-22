@@ -37,10 +37,17 @@ void FImguiPropertyWindow::Process(FEditor& Editor)
 		ShowActorHeader(*SelectedActor);
 		ImGui::Separator();
 
-		ShowComponentHierarchy(*SelectedActor);
-		ImGui::Separator();
+		if (SelectedActor->GetRootComponent())
+		{
+			ShowComponentHierarchy(*SelectedActor);
+			ImGui::Separator();
 
-		ShowComponentSections(Editor, *SelectedActor);
+			ShowComponentSections(Editor, *SelectedActor);
+		}
+		else
+		{
+			ImGui::TextDisabled("No RootComponent");
+		}
 	}
 	else
 	{
