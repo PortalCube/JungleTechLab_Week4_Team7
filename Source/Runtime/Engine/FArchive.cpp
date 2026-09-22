@@ -153,6 +153,32 @@ void FArchive::SetVector2(const FString& Key, const FVector2& Value)
 	SetArray(Key, Array);
 }
 
+FVector4 FArchive::GetVector4(const FString& Key) const
+{
+	TArray<float> Array = GetArray<float>(Key);
+
+	return FVector4
+	{
+		Array[0],
+		Array[1],
+		Array[2],
+		Array[3],
+	};
+}
+
+void FArchive::SetVector4(const FString& Key, const FVector4& Value)
+{
+	TArray<float> Array
+	{
+		Value.X,
+		Value.Y,
+		Value.Z,
+		Value.W,
+	};
+
+	SetArray(Key, Array);
+}
+
 TArray<FArchive> FArchive::GetArchiveArray(const FString& Key) const
 {
 	TArray<FArchive> Array;
