@@ -37,8 +37,8 @@ void FEditorApplication::Initialize_Runtime(USceneManager *SceneManager,
   //
   Editor.Initialize(SceneManager);
   Editor.InitMultiViewport(FEditorViewportClient{});
-  Editor.SetViewLayout(Editor.State.GetSplitMode());
   Editor.LoadState();
+  Editor.SetViewLayout(Editor.State.GetSplitMode());
 }
 
 void FEditorApplication::Shutdown() { Editor.Shutdown(); }

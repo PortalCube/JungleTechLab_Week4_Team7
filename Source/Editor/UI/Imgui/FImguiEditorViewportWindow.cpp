@@ -722,7 +722,7 @@ void FImguiEditorViewportWindow::DrawViewportHeader(int32 ViewportIndex,FEditor&
 
         if (bCameraOpen)
         {
-            FEditorViewportClient* Viewport = Editor.GetActiveViewport();
+            FEditorViewportClient* Viewport = &Editor.GetViewports()[ViewportIndex];
             FCamera& Camera = Viewport->ViewportCamera;
 
             ImGui::TextUnformatted("PERSPECTIVE");
@@ -731,7 +731,7 @@ void FImguiEditorViewportWindow::DrawViewportHeader(int32 ViewportIndex,FEditor&
             {
                 if (Camera.Projection.ProjectionType != EProjectionType::Perspective)
                     Camera.Projection.ProjectionType = EProjectionType::Perspective;
-
+                Viewport->eOrthogonalType = FEditorViewportClient::EOrthogonalType::PERSPECTIVE;
             }
             ImGui::TextUnformatted("ORTHOGRAPHIC");
             ImGui::Separator();
