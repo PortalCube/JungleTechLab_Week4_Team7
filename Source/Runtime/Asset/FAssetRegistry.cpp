@@ -1,6 +1,7 @@
 #include "FAssetRegistry.h"
 #include "Runtime/Utility/EngineUtil.h"
 
+#include <algorithm>
 #include <filesystem>
 
 namespace fs = std::filesystem;
@@ -55,6 +56,7 @@ FFolderView FAssetRegistry::GetAssetDirectory(const fs::path& ParentPath) const
 	}
 
 	FFolderView Result;
+	TSet<fs::path> FolderSet;
 
 	for (const auto& [AssetID, Asset] : GetAssetMap())
 	{
@@ -79,9 +81,27 @@ FFolderView FAssetRegistry::GetAssetDirectory(const fs::path& ParentPath) const
 		}
 		else
 		{
-			Result.Folders.insert(TargetPath);
+			FolderSet.insert(TargetPath);
 		}
 	}
+
+	Result.Folders.assign(FolderSet.begin(), FolderSet.end());
+	std::sort(Result.Folders.begin(), Result.Folders.end(), [](const fs::path& Left, const fs::path& Right)
+	{
+		return Left.generic_string() < Right.generic_string();
+	});
+
+	std::sort(Result.Assets.begin(), Result.Assets.end(), [](const UAsset* Left, const UAsset* Right)
+	{
+		const FString LeftName = Left->GetName().ToString();
+		const FString RightName = Right->GetName().ToString();
+		if (LeftName != RightName)
+		{
+			return LeftName < RightName;
+		}
+
+		return Left->GetID().ToString() < Right->GetID().ToString();
+	});
 
 	DirectoryCache[ParentPath] = Result;
 

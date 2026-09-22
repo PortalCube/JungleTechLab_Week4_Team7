@@ -16,7 +16,7 @@
 
 struct FFolderView
 {
-	TSet<std::filesystem::path> Folders;
+	TArray<std::filesystem::path> Folders;
 	TArray<UAsset*> Assets;
 };
 
