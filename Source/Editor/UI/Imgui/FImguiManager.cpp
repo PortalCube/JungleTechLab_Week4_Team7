@@ -56,7 +56,7 @@ void FImguiManager::NewFrame()
 		ImGuiID PropertyWindowID = ImGui::DockBuilderSplitNode(RightRemaining, ImGuiDir_Up, 0.4f, nullptr, &RightRemaining);
 		ImGuiID ControlPanelID = RightRemaining;
 
-		ImGuiID ConsoleID = ImGui::DockBuilderSplitNode(MainID, ImGuiDir_Down, 0.25f, nullptr, &MainID);
+		ImGuiID ConsoleID = ImGui::DockBuilderSplitNode(MainID, ImGuiDir_Down, 0.35f, nullptr, &MainID);
 
 		ImGui::DockBuilderDockWindow("Viewport", MainID);
 		ImGui::DockBuilderDockWindow("World Outliner", PropertyWindowID);
