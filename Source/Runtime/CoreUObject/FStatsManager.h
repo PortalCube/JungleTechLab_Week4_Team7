@@ -3,20 +3,28 @@
 #include "Runtime/Core/TMap.h"
 #include <dxgi1_4.h>
 
+struct FStatUnit
+{
+    double FrameTime = 0.0;
+    double GameTime = 0.0;
+    double EditorTime = 0.0;
+    double RenderTime = 0.0;
+    double GPUTime = 0.0;
+};
+
 enum class EStatMemoryCategory
 {
     UObject,
     Texture,
     VertexShader,
     PixelShader,
-    VertexBuffer,
-    IndexBuffer,
-    ConstantBuffer,
-    RenderTarget,
-    Editor,
+    StaticMesh,
     MemoryPool, 
     MemoryPoolUsed,
-    MemoryPoolFree
+    MemoryPoolFree,
+    MemorySystem,
+
+    COUNT
 };
 
 class FStatsManager final
@@ -105,6 +113,7 @@ public:
     size_t GetPixelShaderMemoryUsed() const;
 
     size_t GetTextureMemoryUsed() const;
+    size_t GetStaticMeshMemoryUsed() const;
 
     size_t GetMemoryPool() const;
     size_t GetMemoryPoolUsed() const;

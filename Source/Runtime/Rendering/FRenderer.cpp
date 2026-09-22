@@ -178,7 +178,7 @@ TSharedPtr<FMesh> FRenderer::CreateMesh(const FMeshDesc &Desc) {
   if (FAILED(Result)) {
     return nullptr;
   }
-
+  Mesh->VertexBufferSize = Desc.VertexDataSize;
   Mesh->VertexCount = Desc.VertexCount;
   Mesh->VertexStride = Desc.VertexStride;
 
@@ -199,6 +199,7 @@ TSharedPtr<FMesh> FRenderer::CreateMesh(const FMeshDesc &Desc) {
       return nullptr;
     }
   }
+  Mesh->IndexBufferSize = Desc.IndexDataSize;
   Mesh->IndexCount = Desc.IndexCount;
 
   const auto *vertices = static_cast<const FVertexData *>(Desc.VertexData);

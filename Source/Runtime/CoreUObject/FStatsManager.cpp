@@ -26,6 +26,11 @@ void FStatsManager::Initialize(ID3D11Device* Device)
         return;
     }
 
+    for (size_t i = 0; i < static_cast<size_t>(EStatMemoryCategory::COUNT); ++i)
+    {
+        MemoryStats[static_cast<EStatMemoryCategory>(i)] = 0;
+    }
+
     DxgiAdapter.As(&Adapter);
 }
 
@@ -80,9 +85,6 @@ size_t FStatsManager::GetSystemMemoryAvailable() const
 
 size_t FStatsManager::GetGPUMemoryUsed() const
 {
-    /*if (!Adapter)
-        return 0;*/
-
     if (!Adapter)
     {
         UE_LOG("GPU Memory: Adapter is null");
@@ -90,7 +92,7 @@ size_t FStatsManager::GetGPUMemoryUsed() const
     }
 
 
-    DXGI_QUERY_VIDEO_MEMORY_INFO Info{};
+    /*DXGI_QUERY_VIDEO_MEMORY_INFO Info{};
 
     if (FAILED(Adapter->QueryVideoMemoryInfo(
         0,
@@ -100,7 +102,32 @@ size_t FStatsManager::GetGPUMemoryUsed() const
         return 0;
     }
 
-    return static_cast<size_t>(Info.CurrentUsage);
+    return static_cast<size_t>(Info.CurrentUsage);*/
+
+    DXGI_QUERY_VIDEO_MEMORY_INFO LocalInfo{};
+    DXGI_QUERY_VIDEO_MEMORY_INFO NonLocalInfo{};
+
+    HRESULT LocalResult = Adapter->QueryVideoMemoryInfo(
+        0,
+        DXGI_MEMORY_SEGMENT_GROUP_LOCAL,
+        &LocalInfo
+    );
+
+    HRESULT NonLocalResult = Adapter->QueryVideoMemoryInfo(
+        0,
+        DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL,
+        &NonLocalInfo
+    );
+
+    if (FAILED(LocalResult) || FAILED(NonLocalResult))
+    {
+        return 0;
+    }
+
+    //UE_LOG("GPU Local: %.2f MB", LocalInfo.CurrentUsage / (1024.0 * 1024.0));
+    //UE_LOG("GPU NonLocal: %.2f MB", NonLocalInfo.CurrentUsage / (1024.0 * 1024.0));
+
+    return static_cast<size_t>(LocalInfo.CurrentUsage + NonLocalInfo.CurrentUsage);
 }
 
 size_t FStatsManager::GetGPUMemoryBudget() const
@@ -134,6 +161,11 @@ size_t FStatsManager::GetPixelShaderMemoryUsed() const
 size_t FStatsManager::GetTextureMemoryUsed() const
 {
     return MemoryStats.at(EStatMemoryCategory::Texture);
+}
+
+size_t FStatsManager::GetStaticMeshMemoryUsed() const
+{
+    return MemoryStats.at(EStatMemoryCategory::StaticMesh);
 }
 
 size_t FStatsManager::GetMemoryPool() const

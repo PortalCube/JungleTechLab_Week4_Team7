@@ -8,9 +8,6 @@ void FImguiStatsWindow::Process(FEditor& Editor, float InDeltaTime) {
     if (bOpenMemory) {
         DrawMemory();
     }
-    if (bOpenFPS) {
-        DrawFPS();
-    }
 
     DeltaTime = InDeltaTime;
     
