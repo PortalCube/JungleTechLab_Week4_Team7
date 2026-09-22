@@ -1,7 +1,8 @@
 #include "FObjParser.h"
 #include <filesystem>
 
-// Helper function
+//////////////////////////////////////////////////////////////////////////
+// Helper
 inline const char* SkipSpaces(const char* p)
 {
     while (*p == ' ' || *p == '\t')
@@ -23,6 +24,21 @@ inline const char* SkipLine(const char* p)
     }
     return p;
 }
+
+// FNV-1a
+struct FObjIndexHash
+{
+    size_t operator()(const FObjIndex& ObjIndex) const
+    {
+        size_t Hash = 14695981039346656037ULL;
+        Hash = (Hash ^ static_cast<size_t>(ObjIndex.v)) * 1099511628211ULL;
+        Hash = (Hash ^ static_cast<size_t>(ObjIndex.vn)) * 1099511628211ULL;
+        Hash = (Hash ^ static_cast<size_t>(ObjIndex.vt)) * 1099511628211ULL;
+        return Hash;
+    }
+};
+
+//////////////////////////////////////////////////////////////////////////
 
 bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
 {
@@ -267,40 +283,92 @@ bool FObjParser::LoadObj(const char* InFilePath, FRawObjData& OutResult)
 
 bool FObjParser::ConvertObjToVertex(const FRawObjData& InObjData, TArray<FVertexData>& OutVertices, TArray<uint32>& OutIndices, TArray<FMeshSection>& OutSections)
 {
-    for (size_t i = 0; i < InObjData.Faces.size(); i++)
+    std::unordered_map<FObjIndex, uint32, FObjIndexHash> UniqueVertex;
+
+    for (const auto& Face : InObjData.Faces)
     {
-        for (size_t j = 0; j < InObjData.Faces[i].size(); j++)
+        for (const auto& Corner : Face)
         {
-            FVertexData Vertex{};
+            // For changing Negative Index and 1-based Index
+            int vIdx = (Corner.v < 0) ? (static_cast<int>(InObjData.Positions.size()) + Corner.v) : (Corner.v - 1);
+            int vtIdx = (Corner.vt < 0) ? (static_cast<int>(InObjData.TexCoords.size()) + Corner.vt) : (Corner.vt - 1);
+            int vnIdx = (Corner.vn < 0) ? (static_cast<int>(InObjData.Normals.size()) + Corner.vn) : (Corner.vn - 1);
 
-            int vIdx = InObjData.Faces[i][j].v - 1;
-            int vtIdx = InObjData.Faces[i][j].vt - 1;
-            int vnIdx = InObjData.Faces[i][j].vn - 1;
+            FObjIndex Key{ vIdx, vtIdx, vnIdx };
 
-            if (vIdx >= 0 && vIdx < static_cast<int>(InObjData.Positions.size()))
+            auto It = UniqueVertex.find(Key);
+            if (It != UniqueVertex.end())
             {
-                Vertex.x = InObjData.Positions[vIdx].X;
-                Vertex.y = InObjData.Positions[vIdx].Y;
-                Vertex.z = InObjData.Positions[vIdx].Z;
+                OutIndices.push_back(It->second);
             }
-
-            if (vtIdx >= 0 && vtIdx < static_cast<int>(InObjData.TexCoords.size()))
+            else
             {
-                Vertex.u = InObjData.TexCoords[vtIdx].X;
-                Vertex.v = InObjData.TexCoords[vtIdx].Y;
-            }
+                FVertexData Vertex{};
 
-            if (vnIdx >= 0 && vnIdx < static_cast<int>(InObjData.Normals.size()))
-            {
-                Vertex.nx = InObjData.Normals[vnIdx].X;
-                Vertex.ny = InObjData.Normals[vnIdx].Y;
-                Vertex.nz = InObjData.Normals[vnIdx].Z;
-            }
+                if (vIdx >= 0 && vIdx < static_cast<int>(InObjData.Positions.size()))
+                {
+                    Vertex.x = InObjData.Positions[vIdx].X;
+                    Vertex.y = InObjData.Positions[vIdx].Y;
+                    Vertex.z = InObjData.Positions[vIdx].Z;
+                }
 
-            OutIndices.push_back(static_cast<uint32>(OutVertices.size()));
-            OutVertices.push_back(Vertex);
+                if (vtIdx >= 0 && vtIdx < static_cast<int>(InObjData.TexCoords.size()))
+                {
+                    Vertex.u = InObjData.TexCoords[vtIdx].X;
+                    Vertex.v = InObjData.TexCoords[vtIdx].Y;
+                }
+
+                if (vnIdx >= 0 && vnIdx < static_cast<int>(InObjData.Normals.size()))
+                {
+                    Vertex.nx = InObjData.Normals[vnIdx].X;
+                    Vertex.ny = InObjData.Normals[vnIdx].Y;
+                    Vertex.nz = InObjData.Normals[vnIdx].Z;
+                }
+
+                uint32 NewIndex = static_cast<uint32>(OutVertices.size());
+                OutVertices.push_back(Vertex);
+                OutIndices.push_back(NewIndex);
+
+                UniqueVertex[Key] = NewIndex;
+            }
         }
     }
+
+
+    //for (size_t i = 0; i < InObjData.Faces.size(); i++)
+    //{
+    //    for (size_t j = 0; j < InObjData.Faces[i].size(); j++)
+    //    {
+    //        FVertexData Vertex{};
+
+    //        int vIdx = InObjData.Faces[i][j].v - 1;
+    //        int vtIdx = InObjData.Faces[i][j].vt - 1;
+    //        int vnIdx = InObjData.Faces[i][j].vn - 1;
+
+    //        if (vIdx >= 0 && vIdx < static_cast<int>(InObjData.Positions.size()))
+    //        {
+    //            Vertex.x = InObjData.Positions[vIdx].X;
+    //            Vertex.y = InObjData.Positions[vIdx].Y;
+    //            Vertex.z = InObjData.Positions[vIdx].Z;
+    //        }
+
+    //        if (vtIdx >= 0 && vtIdx < static_cast<int>(InObjData.TexCoords.size()))
+    //        {
+    //            Vertex.u = InObjData.TexCoords[vtIdx].X;
+    //            Vertex.v = InObjData.TexCoords[vtIdx].Y;
+    //        }
+
+    //        if (vnIdx >= 0 && vnIdx < static_cast<int>(InObjData.Normals.size()))
+    //        {
+    //            Vertex.nx = InObjData.Normals[vnIdx].X;
+    //            Vertex.ny = InObjData.Normals[vnIdx].Y;
+    //            Vertex.nz = InObjData.Normals[vnIdx].Z;
+    //        }
+
+    //        OutIndices.push_back(static_cast<uint32>(OutVertices.size()));
+    //        OutVertices.push_back(Vertex);
+    //    }
+    //}
 
     OutSections = InObjData.Sections;
 
