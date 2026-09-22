@@ -2,8 +2,10 @@
 #include "ThirdParty/Imgui/imgui.h"
 #include "Editor/Core/FEditor.h"
 #include "FImguiEditorViewportWindow.h"
+#include "Runtime/Resource/FResourceLoader.h"
 // "표시명\0패턴\0" 이중 널 종료 필요
 constexpr wchar_t SceneFilter[] = L"Scene Files (*.Scene)\0*.Scene\0All Files (*.*)\0*.*\0";
+constexpr wchar_t ObjFilter[] = L"Scene Files (*.obj)\0*.obj\0All Files (*.*)\0*.*\0";
 
 void FImguiToolbar::Process(FEditor& Editor, FImguiConsoleWindow& ConsoleWindow, FImguiControlPanelWindow& ControlPanelWindow, FImguiPropertyWindow& PropertyWindow)
 {
@@ -94,6 +96,15 @@ void FImguiToolbar::ShowFileBar(FString CurrentScenePath, FEditor& Editor)
             }
         }
 
+        if (ImGui::MenuItem("Import Import"))
+        {
+            FString Path;
+            if (PickObjFile(Path))
+            {
+                FResourceLoader::ImportObj(Path);
+            }
+        }
+
         ImGui::EndMenu();
     }
 
@@ -140,4 +151,26 @@ void FImguiToolbar::ShowViewBar(FEditor& Editor, FImguiConsoleWindow& ConsoleWin
     {
         Gizmo.Mode = static_cast<EGizmoMode>((SelectedItem + 1) % 4);
     }
+}
+
+bool FImguiToolbar::PickObjFile(FString& OutPath)
+{
+    wchar_t Buffer[MAX_PATH]{};
+
+    OPENFILENAMEW Desc{};
+    Desc.lStructSize = sizeof(Desc);
+    Desc.hwndOwner = static_cast<HWND>(ImGui::GetMainViewport()->PlatformHandleRaw);
+    Desc.lpstrFilter = ObjFilter;
+    Desc.lpstrFile = Buffer;
+    Desc.nMaxFile = MAX_PATH;
+    Desc.lpstrDefExt = L"obj";    
+    Desc.Flags = OFN_EXPLORER | OFN_NOCHANGEDIR | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+
+    if (!GetOpenFileNameW(&Desc))
+    {
+        return false;
+    }        
+
+    OutPath = std::filesystem::path(Buffer).string();
+    return true;
 }

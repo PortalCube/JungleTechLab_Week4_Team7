@@ -259,6 +259,61 @@ void FResourceLoader::LoadAssets()
 	}
 }
 
+bool FResourceLoader::ImportObj(const std::filesystem::path& ObjFilePath)
+{
+	namespace fs = std::filesystem;
+
+	if (!fs::exists(ObjFilePath))
+	{
+		return false;
+	}
+	
+	fs::path ContentDir = EngineUtil::GetContentDirectory();
+	std::string ModelName = ObjFilePath.stem().string();
+
+	fs::path TargetObjPath;
+	fs::path RelativeMeshPath;
+	
+	auto Rel = fs::relative(ObjFilePath, ContentDir);
+	if (Rel.empty() || Rel.string().rfind("..", 0) == 0)
+	{
+		fs::path DestDir = ContentDir / "StaticMesh" / ModelName;
+		fs::create_directories(DestDir);
+		TargetObjPath = DestDir / ObjFilePath.filename();
+		fs::copy_file(ObjFilePath, TargetObjPath, fs::copy_options::overwrite_existing);
+		
+		fs::path SourceParent = ObjFilePath.parent_path();
+		for (const auto& Entry : fs::directory_iterator(SourceParent))
+		{
+			if (Entry.is_regular_file())
+			{
+				std::string Ext = Entry.path().extension().string();
+				if (Ext == ".mtl" || Ext == ".png" || Ext == ".jpg" || Ext == ".dds")
+				{
+					fs::copy_file(Entry.path(), DestDir / Entry.path().filename(), fs::copy_options::overwrite_existing);
+				}
+			}
+		}
+		RelativeMeshPath = fs::relative(TargetObjPath, ContentDir);
+	}
+	else
+	{
+		TargetObjPath = ObjFilePath;
+		RelativeMeshPath = Rel;
+	}
+
+	fs::path AssetPath = fs::path(RelativeMeshPath).replace_extension(".json");
+	FName AssetID = FName(AssetPath.generic_string());	
+
+	FArchive Archive;
+	Archive.SetString("Name", ModelName);
+	Archive.SetString("MeshFilePath", RelativeMeshPath.generic_string());
+
+	LoadStaticMeshAsset(Archive, AssetID);
+
+	return true;
+}
+
 void FResourceLoader::LoadPipelineAsset(const FArchive& Archive, const FName& ID)
 {
 	namespace fs = std::filesystem;

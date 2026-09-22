@@ -35,4 +35,7 @@ public:
 	/// </summary>
 	static void LoadAssets();
 
+	// Import Obj by UI
+	static bool ImportObj(const std::filesystem::path& ObjFilePath);
+
 };
