@@ -175,6 +175,7 @@ void FObjViewerApplication::OpenObj(const char* InPath)
 	Indices.clear();
 	Sections.clear();
 	CurrentMesh = nullptr;
+	CurrentObjHash = 0;
 
 	if (FObjParser::LoadObj(InPath, RawObjData))
 	{
@@ -193,6 +194,7 @@ void FObjViewerApplication::OpenObj(const char* InPath)
 			.Sections = Sections
 			};
 
+			CurrentObjHash = FObjParser::ComputeFileHash(InPath);
 			CurrentMesh = Renderer->CreateMesh(MeshDesc);
 		}
 	}
@@ -225,7 +227,7 @@ void FObjViewerApplication::ImportBinary(const char* InPath)
 
 void FObjViewerApplication::ExportObjToBinary(const char* OutPath)
 {
-	FObjParser::SaveMeshToBinary(OutPath, Vertices, Indices, Sections);
+	FObjParser::SaveMeshToBinary(OutPath, CurrentObjHash, Vertices, Indices, Sections);
 }
 
 void FObjViewerApplication::OpenMtl(const char* InFilePath)
@@ -339,7 +341,8 @@ void FObjViewerApplication::RenderToolbar()
 				OpenMtl(MtlPath.c_str());
 
 				auto End = std::chrono::high_resolution_clock::now();
-				float Elapsed = std::chrono::duration<float, std::milli>(End - Start).count();
+				float Elapsed = std::chrono::duration<float, std::milli>(End - Start).count();				
+
 				AddLog("[Open Obj]" + Path + " " + std::to_string(Elapsed) + "ms");
 			}
 			

@@ -8,6 +8,9 @@
 #include "Source/Runtime/Rendering/Vertices.h"
 #include "Source/Runtime/Rendering/FMesh.h"
 
+#include <fstream>
+#include <sstream>
+
 struct FObjIndex
 {
 	int v = 0;
@@ -46,6 +49,9 @@ struct FMtlData
 #pragma pack(push, 1)
 struct FMeshFileHeader
 {
+	uint32 Magic = 0x4D455348; // Magin number : 'MESH'
+	uint64 SourceHash = 0; // Compare with Source obj hash
+
 	uint32 VertexCount = 0;
 	uint32 IndexCount = 0;
 	uint32 SectionCount = 0;
@@ -57,10 +63,15 @@ class FObjParser
 public:
 	static bool LoadObj(const char* InFilePath, FRawObjData& OutResult);
 	static bool ConvertObjToVertex(const FRawObjData& InObjData, TArray<FVertexData>& OutVertices, TArray<uint32>& OutIndices, TArray<FMeshSection>& OutSections);
-	static bool SaveMeshToBinary(const char* OutFilePath, const TArray<FVertexData>& InVertices, TArray<uint32>& InIndices, TArray<FMeshSection>& InSections);
+	static bool SaveMeshToBinary(const char* OutFilePath, uint64 InSourceHash, const TArray<FVertexData>& InVertices, TArray<uint32>& InIndices, TArray<FMeshSection>& InSections);
 	static bool LoadMeshFromBinary(const char* InFilePath, TArray<FVertexData>& OutVertices, TArray<uint32>& OutIndices, TArray<FMeshSection>& OutSections);
 
 	static bool LoadMtl(const char* InFilePath, TArray<FMtlData>& OutResult);
+	
+	// Validate bin file by Magic number and hash
+	static bool ValidateBinary(const char* InBinFilePath, const char* InObjFilePath);
 
 	static FObjIndex ParseFaceToken(const FString& Token);
+	// FNV-1a hash func
+	static uint64 ComputeFileHash(const std::filesystem::path& FilePath);
 };

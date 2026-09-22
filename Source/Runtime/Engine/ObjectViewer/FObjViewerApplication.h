@@ -45,6 +45,8 @@ private:
 	TArray<uint32> Indices;
 	TArray<FMeshSection> Sections;
 	TArray<FMtlData> MtlDatas;
+	uint64 CurrentObjHash = 0;
+
 	TMap<FString, FMtlData> MtlMap;
 	TMap<FString, TSharedPtr<FTexture>> TextureMap;
 

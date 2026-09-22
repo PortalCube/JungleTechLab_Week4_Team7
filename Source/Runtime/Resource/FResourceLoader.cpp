@@ -399,26 +399,51 @@ void FResourceLoader::LoadStaticMeshAsset(const FArchive& Archive, const FName& 
 	StaticMeshDesc.ID = ID;
 	StaticMeshDesc.Name = Archive.GetString("Name");
 	FString MeshFilePath = (fs::path(EngineUtil::GetContentDirectory()) / Archive.GetString("MeshFilePath")).string();
-
-	FRawObjData RawObjData{};
-	if (!FObjParser::LoadObj(MeshFilePath.c_str(), RawObjData))
-	{
-		throw EngineUtil::CreateError(
-			"[FResourceLoader::LoadStaticMeshAsset] OBJ 파일을 불러오는데 실패했습니다. ID: {}, Path: {}",
-			ID.ToString(),
-			MeshFilePath);
-	}
+	fs::path MeshBinPath = fs::path(MeshFilePath.substr(0, MeshFilePath.find_last_of('.')) + ".bin");
 
 	TArray<FVertexData> Vertices;
 	TArray<uint32> Indices;
 	TArray<FMeshSection> Sections;
-	if (!FObjParser::ConvertObjToVertex(RawObjData, Vertices, Indices, Sections))
+
+	bool bValid = false;
+	if (fs::exists(MeshBinPath))
 	{
-		throw EngineUtil::CreateError(
-			"[FResourceLoader::LoadStaticMeshAsset] OBJ 데이터를 정점 데이터로 변환하는데 실패했습니다. ID: {}, Path: {}",
-			ID.ToString(),
-			MeshFilePath);
+		bValid = FObjParser::ValidateBinary(MeshBinPath.string().c_str(), MeshFilePath.c_str());
 	}
+	
+	if (bValid)
+	{
+		if (!FObjParser::LoadMeshFromBinary(MeshBinPath.string().c_str(), Vertices, Indices, Sections))
+		{
+			throw EngineUtil::CreateError(
+				"[FResourceLoader::LoadStaticMeshAsset] BIN 데이터를 정점 데이터로 변환하는데 실패했습니다. ID: {}, Path: {}",
+				ID.ToString(),
+				MeshBinPath.string());
+		}
+	}
+	else
+	{
+		FRawObjData RawObjData{};
+		if (!FObjParser::LoadObj(MeshFilePath.c_str(), RawObjData))
+		{
+			throw EngineUtil::CreateError(
+				"[FResourceLoader::LoadStaticMeshAsset] OBJ 파일을 불러오는데 실패했습니다. ID: {}, Path: {}",
+				ID.ToString(),
+				MeshFilePath);
+		}
+
+		if (!FObjParser::ConvertObjToVertex(RawObjData, Vertices, Indices, Sections))
+		{
+			throw EngineUtil::CreateError(
+				"[FResourceLoader::LoadStaticMeshAsset] OBJ 데이터를 정점 데이터로 변환하는데 실패했습니다. ID: {}, Path: {}",
+				ID.ToString(),
+				MeshFilePath);
+		}
+
+		// bake 
+		uint64 ObjHash = FObjParser::ComputeFileHash(MeshFilePath);
+		FObjParser::SaveMeshToBinary(MeshBinPath.string().c_str(), ObjHash, Vertices, Indices, Sections);
+	}	
 
 	FRenderResourceLibrary& ResourceLibrary = FRenderResourceLibrary::Get();
 	FRenderer* Renderer = ResourceLibrary.GetRenderer();
