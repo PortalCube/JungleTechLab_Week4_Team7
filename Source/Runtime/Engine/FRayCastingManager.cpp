@@ -100,6 +100,9 @@ bool FRayCastingManager::RayIntersectsAABB(const FRay& Ray, const FAxisAlignedBo
 			}
 			else
 			{
+				//Orthographic모드 피킹버그 추가분
+				TMin[i] = -std::numeric_limits<float>::infinity(); 
+				TMax[i] = std::numeric_limits<float>::infinity(); 
 				continue;
 			}
 		}

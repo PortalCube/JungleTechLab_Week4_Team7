@@ -269,8 +269,19 @@ void FImguiEditorViewportWindow::UpdateCamera(FEditor &Editor, FEditorViewportCl
     CameraController.CameraMoveSpeed = Editor.State.GetCameraSpeed();
 
     FCamera &Camera = Viewport.ViewportCamera;
-    CameraController.UpdateMouseInput(Camera);
+    
 
+    // ORTHOGRAPHIC 화면모드와의 분기
+    if (Camera.Projection.ProjectionType == EProjectionType::Orthographic)
+    {
+        CameraController.UpdateMouseInput_ORTHOGRAPHIC(Camera);
+    }
+    else
+    {
+        CameraController.UpdateMouseInput(Camera);
+    }
+
+    
     // 우클릭 중에는 WASD 가 카메라 비행에 쓰이므로 단축키와 겹치지 않게 나눈다.
     if (FInputManager::Get().IsMouseDown(EMouseButton::Right))
     {
@@ -639,7 +650,8 @@ void FImguiEditorViewportWindow::DrawViewportHeader(int32 ViewportIndex,FEditor&
 
         if (bCameraOpen)
         {
-            FCamera& Camera = Editor.GetActiveViewport()->ViewportCamera;
+            FEditorViewportClient* Viewport = Editor.GetActiveViewport();
+            FCamera& Camera = Viewport->ViewportCamera;
 
             ImGui::TextUnformatted("PERSPECTIVE");
             ImGui::Separator();
@@ -655,13 +667,42 @@ void FImguiEditorViewportWindow::DrawViewportHeader(int32 ViewportIndex,FEditor&
             {
                 if(Camera.Projection.ProjectionType != EProjectionType::Orthographic)
                 Camera.Projection.ProjectionType = EProjectionType::Orthographic;
+                Viewport->eOrthogonalType = FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC;
             }
-            ImGui::MenuItem("Top");
-            ImGui::MenuItem("Bottom");
-            ImGui::MenuItem("Left");
-            ImGui::MenuItem("Right");
-            ImGui::MenuItem("Front");
-            ImGui::MenuItem("Back");
+            
+            if (ImGui::MenuItem("Top"))
+            {
+                if (Viewport->eOrthogonalType != FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_TOP)
+                    Viewport->SetOrthograpihcView(FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_TOP);
+            }
+            if(ImGui::MenuItem("Bottom"))
+            {
+                if (Viewport->eOrthogonalType != FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_BOTTOM)
+                    Viewport->SetOrthograpihcView(FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_BOTTOM);
+            }
+            if(ImGui::MenuItem("Left"))
+            {
+                if (Viewport->eOrthogonalType != FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_LEFT)
+                    Viewport->SetOrthograpihcView(FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_LEFT);
+
+            }
+            if(ImGui::MenuItem("Right"))
+            {
+                if (Viewport->eOrthogonalType != FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_RIGHT)
+                    Viewport->SetOrthograpihcView(FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_RIGHT);
+
+            }
+            if(ImGui::MenuItem("Front"))
+            {
+                if (Viewport->eOrthogonalType != FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_FRONT)
+                    Viewport->SetOrthograpihcView(FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_FRONT);
+
+            }
+            if (ImGui::MenuItem("Back")) 
+            {
+                if (Viewport->eOrthogonalType != FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_BACK)
+                    Viewport->SetOrthograpihcView(FEditorViewportClient::EOrthogonalType::ORTHOGRAPHIC_BACK);
+            }
 
             ImGui::EndMenu();
         }
@@ -674,7 +715,7 @@ void FImguiEditorViewportWindow::DrawViewportHeader(int32 ViewportIndex,FEditor&
 
         if (ImGui::Button("##Maximize", ImVec2(ButtonSize, ButtonSize)))
         {
-            // 추가: 실제 배치 변경은 다음 Process() 시작에서 처리
+            //실제 배치 변경은 다음 Process() 시작에서 처리
             PendingMaximizeViewport = ViewportIndex;
         }
 
@@ -736,3 +777,4 @@ void FImguiEditorViewportWindow::ApplyPendingViewportMaximize(FEditor& Editor)
     // ResizeView()가 활성 번호를 0으로 초기화하므로 다시 지정
     Editor.ActiveViewportIndex = ViewportIndex;
 }
+
