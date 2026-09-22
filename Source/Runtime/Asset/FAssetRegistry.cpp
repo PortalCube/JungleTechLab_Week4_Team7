@@ -7,7 +7,7 @@ namespace fs = std::filesystem;
 
 namespace
 {
-	bool IsSubpath(fs::path& OutTargetPath, const fs::path& Parent, const fs::path& Child)
+	bool IsSubpath(fs::path& OutTargetPath, bool& bOutIsDirectChild, const fs::path& Parent, const fs::path& Child)
 	{
 		fs::path ParentNormal = Parent.lexically_normal();
 		fs::path ChildNormal = Child.lexically_normal();
@@ -16,7 +16,9 @@ namespace
 
 		if (Relative.empty() || *Relative.begin() == ".." || *Relative.begin() == ".") { return false; }
 		
-		OutTargetPath = *Relative.begin();
+		auto RelativeIt = Relative.begin();
+		OutTargetPath = *RelativeIt;
+		bOutIsDirectChild = ++RelativeIt == Relative.end();
 		return true;
 	}
 }
@@ -64,13 +66,14 @@ FFolderView FAssetRegistry::GetAssetDirectory(const fs::path& ParentPath) const
 
 		fs::path AssetPath{ AssetIDString };
 		fs::path TargetPath;
+		bool bIsDirectChild = false;
 
-		if (!IsSubpath(TargetPath, ParentPath, AssetPath))
+		if (!IsSubpath(TargetPath, bIsDirectChild, ParentPath, AssetPath))
 		{
 			continue;
 		}
 
-		if (TargetPath.has_extension())
+		if (bIsDirectChild)
 		{
 			Result.Assets.push_back(Asset);
 		}
