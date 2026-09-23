@@ -133,7 +133,7 @@ void FRenderer::ClearDepth() {
       DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
-void FRenderer::SwapBuffer() { SwapChain->Present(1u, 0u); }
+void FRenderer::SwapBuffer() { SwapChain->Present(0u, 0u); }
 
 void FRenderer::OnWindowSize(UINT Width, UINT Height) {
   Context->OMSetRenderTargets(0, nullptr, nullptr);

@@ -30,13 +30,13 @@ void FTimeManager::Update()
     TimePoint Clock = SteadyClock::now();
     DeltaTime = Duration(Clock - PrevTime).count();
 
-    while (DeltaTime < TargetTime)
-    {
-        _mm_pause();
+    //while (DeltaTime < TargetTime)
+    //{
+    //    _mm_pause();
 
-        Clock = SteadyClock::now();
-        DeltaTime = Duration(Clock - PrevTime).count();
-    }
+    //    Clock = SteadyClock::now();
+    //    DeltaTime = Duration(Clock - PrevTime).count();
+    //}
 
     TempDeltaTime = DeltaTime;
     TempTime = Duration(Clock - StartTime).count();
